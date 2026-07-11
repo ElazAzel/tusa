@@ -3323,3 +3323,134 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .reward-stat { font: 700 10px var(--font-mono),monospace; color: var(--muted); }
 .multiplayer-badge { display: inline-block; padding: 4px 10px; border: 2px solid var(--black); border-radius: 99px; background: var(--pink); color: var(--white); font: 800 10px var(--font-mono),monospace; text-transform: uppercase; animation: pulse-live 1.5s ease infinite; }
 @keyframes pulse-live { 0%,100% { opacity: 1; } 50% { opacity: .6; } }
+
+/* ===== Mobile Bottom Navigation ===== */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  padding: 8px 0 env(safe-area-inset-bottom, 8px);
+  background: var(--white); border-top: 2px solid var(--black);
+  box-shadow: 0 -4px 12px rgba(0,0,0,.08);
+}
+.mobile-bottom-nav a {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 0; color: var(--muted); text-decoration: none;
+  font: 700 10px var(--font-inter),sans-serif;
+  transition: color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.mobile-bottom-nav a .material-symbols-rounded { font-size: 22px; }
+.mobile-bottom-nav a.active { color: var(--black); }
+.mobile-bottom-nav a:active { transform: scale(0.92); }
+@media (max-width: 768px) {
+  .mobile-bottom-nav { display: flex; }
+  .user-app-page { padding-bottom: 80px !important; }
+  .user-app-header nav { display: none; }
+  .user-app-header { justify-content: center; }
+}
+
+/* ===== Badge Cards ===== */
+.badge-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 16px 8px; border: 2px solid var(--black); border-radius: 14px;
+  background: var(--white); box-shadow: 3px 3px 0 var(--black);
+  text-align: center; min-height: 100px;
+  animation: badge-enter 0.4s ease both;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur);
+}
+.badge-card:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--black); }
+.badge-card.is-unlocked { background: #f6ffd0; border-color: var(--lime); }
+.badge-card.is-unlocked .material-symbols-rounded { color: var(--lime); filter: drop-shadow(0 0 6px rgba(201,255,5,.5)); }
+.badge-card.is-locked { opacity: .55; filter: grayscale(.3); }
+.badge-card.is-locked .material-symbols-rounded { color: var(--muted); }
+.badge-card strong { font-size: 11px; font-weight: 800; }
+@keyframes badge-enter {
+  from { opacity: 0; transform: translateY(12px) scale(.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ===== Profile Interactive ===== */
+.stat-card {
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.stat-card:active { transform: translate(2px, 2px) scale(.97); box-shadow: 2px 2px 0 var(--black); }
+.league-progress.near-complete span {
+  animation: glow-pulse 1.5s ease infinite;
+}
+@keyframes glow-pulse {
+  0%,100% { box-shadow: 0 0 8px rgba(201,255,5,.4); }
+  50% { box-shadow: 0 0 18px rgba(201,255,5,.8); }
+}
+
+/* ===== Dashboard Card Animations ===== */
+.user-party-card {
+  animation: card-slide-in 0.5s ease both;
+}
+.user-party-card.revealed,
+.user-party-card { opacity: 1; }
+.user-party-card:not(.revealed) { opacity: 0; transform: translateY(20px); }
+.user-party-card.revealed { opacity: 1; transform: translateY(0); transition: opacity 0.4s ease, transform 0.4s ease; }
+@keyframes card-slide-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.user-party-card:active { transform: scale(.98); }
+.user-party-card footer a:active,
+.user-party-card footer button:active { transform: scale(.95); }
+
+/* ===== Button Touch Feedback ===== */
+.user-app-create:active,
+.user-app-join:active { transform: translate(3px, 3px) !important; box-shadow: 2px 2px 0 var(--black) !important; }
+
+/* ===== Hero Shimmer ===== */
+.user-app-hero {
+  position: relative; overflow: hidden;
+}
+.user-app-hero::before {
+  content: ""; position: absolute; top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,.04) 50%, transparent 60%);
+  animation: hero-shimmer 8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes hero-shimmer {
+  0% { transform: translateX(-100%) rotate(0deg); }
+  100% { transform: translateX(100%) rotate(0deg); }
+}
+
+/* ===== Smooth Page Transitions ===== */
+.user-app-page,
+.profile-editor-page,
+.create-party-page {
+  animation: page-enter 0.3s ease;
+}
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Profile Editor Responsive ===== */
+@media (max-width: 600px) {
+  .profile-hero { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+  .profile-hero > div:last-child { display: none; }
+  .profile-stats { grid-template-columns: 1fr 1fr; }
+  .profile-editor-layout { grid-template-columns: 1fr; }
+  .profile-grid { grid-template-columns: 1fr; }
+  .badge-grid { grid-template-columns: repeat(3, 1fr); }
+  .mobile-bottom-nav { display: flex; }
+  .profile-editor-page { padding-bottom: 80px !important; }
+  .friends-page .friend-card { flex-wrap: wrap; gap: 8px; }
+  .friends-page .friend-actions { width: 100%; justify-content: stretch; }
+  .friends-page .friend-actions button { flex: 1; }
+  .leaderboard-page .leaderboard-row { flex-wrap: wrap; gap: 6px; }
+  .leaderboard-page .leaderboard-name { min-width: 0; flex: 1; }
+  .leaderboard-page .leaderboard-stats { width: 100%; text-align: right; }
+  .party-room-hero > div:last-child { gap: 6px; }
+  .party-room-hero > div:last-child > button { min-height: 38px; padding: 0 10px; font-size: 12px; }
+  .party-member-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 601px) and (max-width: 900px) {
+  .badge-grid { grid-template-columns: repeat(4, 1fr); }
+  .profile-stats { grid-template-columns: repeat(3, 1fr); }
+  .party-member-grid { grid-template-columns: repeat(3, 1fr); }
+}

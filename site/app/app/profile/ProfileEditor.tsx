@@ -12,6 +12,16 @@ const badgeCatalogue = Array.from({ length: 60 }, (_, index) => ({ id: `badge_${
 const benefitIcons: Record<string, string> = { beta_access: "vpn_key", profile_cover: "wallpaper", avatar_frame: "frame_person", chat_effect: "auto_awesome", name_color: "palette", badge: "verified", xp_multiplier: "trending_up", party_creation: "add_box" };
 const benefitLabels: Record<string, { ru: string; en: string }> = { beta_access: { ru: "Бета-доступ", en: "Beta access" }, profile_cover: { ru: "Обложка", en: "Cover" }, avatar_frame: { ru: "Рамка профиля", en: "Avatar frame" }, chat_effect: { ru: "Эффект чата", en: "Chat effect" }, name_color: { ru: "Цвет имени", en: "Name color" }, badge: { ru: "Ачивка", en: "Badge" }, xp_multiplier: { ru: "XP-множитель", en: "XP multiplier" }, party_creation: { ru: "Создание тус", en: "Party creation" } };
 
+const frameStyles: Record<string, { border: string; shadow: string; label: string }> = {
+  lime:  { border: "#c9ff05", shadow: "0 0 12px #c9ff05", label: "Lime" },
+  pink:  { border: "#ff1791", shadow: "0 0 12px #ff1791", label: "Pink" },
+  blue:  { border: "#2196f3", shadow: "0 0 12px #2196f3", label: "Blue" },
+  neon:  { border: "#b829ff", shadow: "0 0 12px #b829ff", label: "Neon" },
+  none:  { border: "transparent", shadow: "none", label: "None" },
+};
+
+function haptic(ms = 10) { try { navigator.vibrate?.(ms); } catch {} }
+
 function leagueFor(xp: number) {
   if (xp >= 3000) return { name: "Neon Legend", next: 5000, icon: "diamond" };
   if (xp >= 1800) return { name: "Platinum Crew", next: 3000, icon: "workspace_premium" };
@@ -20,27 +30,303 @@ function leagueFor(xp: number) {
   return { name: "Fresh Lime", next: 500, icon: "eco" };
 }
 
-function Icon({ name }: { name: string }) { return <span className="material-symbols-rounded" aria-hidden="true">{name}</span>; }
+function Icon({ name }: { name: string }) {
+  return <span className="material-symbols-rounded" aria-hidden="true">{name}</span>;
+}
 
 export default function ProfileEditor({ profile, parties }: { profile: UserProfile; parties: Party[] }) {
-  const [saved, setSaved] = useState(false); const [error, setError] = useState(""); const [promo, setPromo] = useState(""); const [promoMessage, setPromoMessage] = useState(""); const [showAllBadges, setShowAllBadges] = useState(false); const [gameStats, setGameStats] = useState({ gamesPlayed: 0, totalScore: 0 }); const [redemptions, setRedemptions] = useState<PromoRedemption[]>([]); const { t, locale } = useLocale(); const unlocked = profile.cosmetics.unlocked;
-  useEffect(() => { fetch("/api/user/stats").then((r) => r.json()).then((data) => { if (data.stats) setGameStats(data.stats); }).catch(() => undefined); fetch("/api/promos/redeem").then((r) => r.json()).then((data) => { if (data.redemptions) setRedemptions(data.redemptions); }).catch(() => undefined); }, []);
-  const league = leagueFor(profile.xp); const progress = Math.min(100, (profile.xp / league.next) * 100);
-  const unlockedBadgeIds = useMemo(() => new Set(badgeCatalogue.filter((badge) => profile.xp >= badge.threshold).map((badge) => badge.id)), [profile.xp]);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const [promo, setPromo] = useState("");
+  const [promoMessage, setPromoMessage] = useState("");
+  const [showAllBadges, setShowAllBadges] = useState(false);
+  const [gameStats, setGameStats] = useState({ gamesPlayed: 0, totalScore: 0 });
+  const [redemptions, setRedemptions] = useState<PromoRedemption[]>([]);
+  const { t, locale } = useLocale();
+  const unlocked = profile.cosmetics.unlocked;
+
+  useEffect(() => {
+    fetch("/api/user/stats").then((r) => r.json()).then((d) => { if (d.stats) setGameStats(d.stats); }).catch(() => undefined);
+    fetch("/api/promos/redeem").then((r) => r.json()).then((d) => { if (d.redemptions) setRedemptions(d.redemptions); }).catch(() => undefined);
+  }, []);
+
+  const league = leagueFor(profile.xp);
+  const progress = Math.min(100, (profile.xp / league.next) * 100);
+  const unlockedBadgeIds = useMemo(() => new Set(badgeCatalogue.filter((b) => profile.xp >= b.threshold).map((b) => b.id)), [profile.xp]);
   const attendance = parties.length;
   const perkName = (b: PromoBenefit) => benefitLabels[b.type]?.[locale] ?? b.type;
 
-  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); if (response.ok) { setSaved(true); setError(""); } else setError((await response.json()).error); }
-  async function redeem(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setPromoMessage(""); const response = await fetch("/api/promos/redeem", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: promo }) }); const data = await response.json(); if (response.ok) { setPromoMessage(t("profileRedeeming")); window.setTimeout(() => window.location.reload(), 700); } else setPromoMessage(data.error); }
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    haptic();
+    const data = Object.fromEntries(new FormData(event.currentTarget));
+    const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    if (response.ok) { setSaved(true); setError(""); setTimeout(() => setSaved(false), 2000); }
+    else setError((await response.json()).error);
+  }
+
+  async function redeem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    haptic();
+    setPromoMessage("");
+    const response = await fetch("/api/promos/redeem", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: promo }) });
+    const data = await response.json();
+    if (response.ok) { setPromoMessage(t("profileRedeeming")); window.setTimeout(() => window.location.reload(), 700); }
+    else setPromoMessage(data.error);
+  }
+
   async function enableNotifications() {
+    haptic();
     if (!("Notification" in window)) return;
     await Notification.requestPermission();
   }
+
   function exportData() {
+    haptic();
     const blob = new Blob([JSON.stringify({ profile, parties, redemptions }, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob); const anchor = document.createElement("a");
-    anchor.href = url; anchor.download = "tusa-game-data.json"; anchor.click(); URL.revokeObjectURL(url);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "tusa-game-data.json"; a.click(); URL.revokeObjectURL(url);
   }
 
-  return <main className="profile-editor-page"><header><Link href="/app">{t("backToParties")}</Link><strong>TUSA<span>.game</span></strong><LocaleToggle /></header><div className="profile-editor-layout"><div><div className="profile-hero"><div className={`profile-avatar frame-${profile.cosmetics.avatarFrame !== "none" ? profile.cosmetics.avatarFrame : "lime"}`}>{profile.displayName.slice(0, 2).toUpperCase()}</div><div><span>{t("profileHero")}</span><h2>{profile.displayName}</h2><p>{profile.bio}</p><div className="profile-meta"><b><Icon name="location_on" /> {profile.city || "\u2014"}</b><b><Icon name="groups" /> {profile.compashka || t("profileNoCompashka")}</b></div></div></div><div className="profile-stats"><article><Icon name="auto_awesome" /><strong>{profile.xp}</strong><span>{t("profileVibeScore")}</span></article><article><Icon name="local_fire_department" /><strong>0</strong><span>{t("profileStreak")}</span></article><article><Icon name="event_available" /><strong>{attendance}</strong><span>{t("profileEvents")}</span></article><article><Icon name="sports_esports" /><strong>{gameStats.gamesPlayed}</strong><span>{t("profileGames")}</span></article><article><Icon name="emoji_events" /><strong>{gameStats.totalScore}</strong><span>Score</span></article></div><div className="profile-grid"><section className="league-card"><div><span>{t("profileLeague")}</span><h3>{league.name}</h3><p>{t("profileNextLevel")}{Math.max(0, league.next - profile.xp)} {t("profileNextXp")}</p></div><Icon name={league.icon} /><div className="league-progress"><span style={{ width: `${progress}%` }} /></div></section><section className="frame-card"><div><span>{t("profileFrameTitle")}</span><h3>{t("profileFrameSub")}</h3></div><div>{(["lime", "pink", "blue"] as const).map((frame) => <button aria-label={frame === "lime" ? t("profileFrameLime") : frame === "pink" ? t("profileFramePink") : t("profileFrameBlue")} className={`${frame} ${profile.cosmetics.avatarFrame === frame ? "active" : ""}`} key={frame} onClick={() => { document.querySelector<HTMLSelectElement>(".cosmetic-avatar-frame")?.focus(); }}><span /></button>)}<span>{t("profileFramePick")}</span></div></section></div><section className="badge-section"><span className="admin-kicker">{t("profileXp")}</span><h2>{t("profileBadgeTitle")}</h2><div className="badge-grid">{[...badgeCatalogue].splice(0, showAllBadges ? Infinity : 10).map((badge) => <article key={badge.id} className={unlockedBadgeIds.has(badge.id) ? "" : "locked"}><Icon name={unlockedBadgeIds.has(badge.id) ? "emoji_events" : "lock"} /><span>{badge.name}</span></article>)}</div>{badgeCatalogue.length > 10 && <button className="admin-text-button" onClick={() => setShowAllBadges(!showAllBadges)}>{showAllBadges ? "Свернуть" : `Все бейджи (${badgeCatalogue.length})`}</button>}</section><section className="promo-redeem-card"><Icon name="redeem" /><h2>{t("profileRewards")}</h2><p>{t("profileCodeText")}</p><form onSubmit={redeem}><input name="code" value={promo} onChange={(e) => setPromo(e.target.value)} placeholder="ELAZ" autoCapitalize="characters" maxLength={32} required /><button type="submit">{t("profileActivate")}</button></form>{promoMessage && <p className="promo-status" role="status">{promoMessage}</p>}{redemptions.length > 0 && <div className="profile-perks"><span className="perks-title"><Icon name="emoji_events" /> {t("profileMyPerks")}</span>{(() => { const all: Map<string, PromoBenefit> = new Map(); redemptions.forEach((r) => r.benefits.forEach((b) => all.set(b.type, b))); return [...all.values()]; })().map((b) => <span key={b.type} className="perk-chip"><Icon name={benefitIcons[b.type] || "check_circle"} />{perkName(b)}</span>)}</div>}</section><section className="profile-editor-card"><form onSubmit={submit}><img src={profile.imageUrl} alt="" width={82} height={82} /><h1>{t("profileTitle")}</h1><label>{t("profileName")}<input name="displayName" defaultValue={profile.displayName} required maxLength={80} /></label><label>{t("profileHandle")}<input name="handle" defaultValue={profile.handle} required minLength={3} maxLength={24} /></label><label>{t("profileCity")}<input name="city" defaultValue={profile.city} maxLength={80} /></label><label>{t("profileBio")}<textarea name="bio" defaultValue={profile.bio} maxLength={300} /></label><fieldset className="cosmetic-controls"><legend>{t("profileStyle")}</legend><label className="brand-select">{t("profileCover")}<select name="cosmetics.cover" defaultValue={profile.cosmetics.cover} className="cosmetic-cover">{["lime", "beta", "midnight"].map((opt) => <option key={opt} value={opt} disabled={opt !== "lime" && !unlocked.includes(opt === "beta" ? "profile_cover" : opt === "midnight" ? "profile_cover" : "profile_cover")}>{t(opt === "lime" ? "profileLime" : opt === "beta" ? "profileBeta" : "profileMidnight")}</option>)}</select></label><label className="brand-select">{t("profileFrame")}<select name="cosmetics.avatarFrame" defaultValue={profile.cosmetics.avatarFrame} className="cosmetic-avatar-frame">{["none", "lime", "pink", "blue", "neon"].map((opt) => <option key={opt} value={opt} disabled={opt !== "none" && opt !== "lime" && opt !== "pink" && opt !== "blue" && !unlocked.includes(opt === "neon" ? "avatar_frame" : "avatar_frame")}>{t(opt === "none" ? "profileNoFrame" : opt === "neon" ? "profileNeon" : opt === "lime" ? "profileFrameLime" : opt === "pink" ? "profileFramePink" : "profileFrameBlue")}</option>)}</select></label><label className="brand-select">{t("profileEffect")}<select name="cosmetics.chatEffect" defaultValue={profile.cosmetics.chatEffect}>{["none", "sparkle", "glow"].map((opt) => <option key={opt} value={opt} disabled={opt !== "none" && !unlocked.includes(opt === "sparkle" ? "chat_effect" : "chat_effect")}>{t(opt === "none" ? "profileNoEffect" : opt === "sparkle" ? "profileSparkle" : "profileGlow")}</option>)}</select></label><label className="brand-select">{t("profileColor")}<select name="cosmetics.nameColor" defaultValue={profile.cosmetics.nameColor}>{["#000000", "#c9ff05", "#ff1791"].map((opt) => <option key={opt} value={opt} disabled={opt !== "#000000" && !unlocked.includes(opt === "#c9ff05" ? "name_color" : "name_color")}>{opt === "#000000" ? t("profileBlack") : opt === "#c9ff05" ? "Лайм" : "Розовый"}</option>)}</select></label></fieldset><button type="submit" disabled={saved}>{saved ? t("profileSaved") : t("profileSave")}</button>{error && <p className="form-error">{error}</p>}</form></section></div><div><section className="promo-redeem-card"><Icon name="notifications" /><h2>{t("profileSettings")}</h2><p>{t("profileSettingsDesc")}</p><button onClick={enableNotifications}>{t("profileEnablePush")}</button><button onClick={exportData} className="export-link">{t("profileExportData")}</button></section></div></div></main>;
+  const badgeGrid = [...badgeCatalogue].slice(0, showAllBadges ? Infinity : 10);
+
+  return (
+    <main className="profile-editor-page">
+      <header>
+        <Link href="/app" onClick={() => haptic()}>{t("backToParties")}</Link>
+        <strong>TUSA<span>.game</span></strong>
+        <LocaleToggle />
+      </header>
+
+      <div className="profile-editor-layout">
+        <div>
+          {/* ── Hero ── */}
+          <div className="profile-hero">
+            <div className={`profile-avatar frame-${profile.cosmetics.avatarFrame !== "none" ? profile.cosmetics.avatarFrame : "lime"}`}>
+              {profile.displayName.slice(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <span>{t("profileHero")}</span>
+              <h2>{profile.displayName}</h2>
+              <p>{profile.bio}</p>
+              <div className="profile-meta">
+                <b><Icon name="location_on" /> {profile.city || "\u2014"}</b>
+                <b><Icon name="groups" /> {profile.compashka || t("profileNoCompashka")}</b>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Stats (interactive) ── */}
+          <div className="profile-stats">
+            {[
+              { icon: "auto_awesome", val: profile.xp, label: t("profileVibeScore") },
+              { icon: "local_fire_department", val: 0, label: t("profileStreak") },
+              { icon: "event_available", val: attendance, label: t("profileEvents") },
+              { icon: "sports_esports", val: gameStats.gamesPlayed, label: t("profileGames") },
+              { icon: "emoji_events", val: gameStats.totalScore, label: "Score" },
+            ].map((s) => (
+              <article key={s.label} className="stat-card" onClick={() => haptic()}>
+                <Icon name={s.icon} />
+                <strong>{s.val}</strong>
+                <span>{s.label}</span>
+              </article>
+            ))}
+          </div>
+
+          <div className="profile-grid">
+            {/* ── League (pulsing at >80 %) ── */}
+            <section className="league-card">
+              <div>
+                <span>{t("profileLeague")}</span>
+                <h3>{league.name}</h3>
+                <p>{t("profileNextLevel")}{Math.max(0, league.next - profile.xp)} {t("profileNextXp")}</p>
+              </div>
+              <Icon name={league.icon} />
+              <div className={`league-progress${progress > 80 ? " near-complete" : ""}`}>
+                <span style={{ width: `${progress}%` }} />
+              </div>
+            </section>
+
+            {/* ── Frame picker (visual preview) ── */}
+            <section className="frame-card">
+              <div>
+                <span>{t("profileFrameTitle")}</span>
+                <h3>{t("profileFrameSub")}</h3>
+              </div>
+              <div className="frame-preview-row">
+                {(["none", "lime", "pink", "blue", "neon"] as const).map((frame) => {
+                  const fs = frameStyles[frame];
+                  const active = profile.cosmetics.avatarFrame === frame;
+                  const locked = frame !== "none" && frame !== "lime" && frame !== "pink" && frame !== "blue" && !unlocked.includes("avatar_frame");
+                  return (
+                    <button
+                      key={frame}
+                      type="button"
+                      aria-label={t(frame === "none" ? "profileNoFrame" : `profileFrame${frame.charAt(0).toUpperCase() + frame.slice(1)}` as never)}
+                      className={`frame-option ${active ? "active" : ""} ${locked ? "locked" : ""}`}
+                      onClick={() => haptic()}
+                      style={{
+                        borderColor: active ? fs.border : "transparent",
+                        boxShadow: active ? fs.shadow : "none",
+                      }}
+                    >
+                      <span className="frame-ring" style={{ borderColor: fs.border }} />
+                      <span className="frame-label">{fs.label}</span>
+                      {locked && <Icon name="lock" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+
+          {/* ── Badges ── */}
+          <section className="badge-section">
+            <span className="admin-kicker">{t("profileXp")}</span>
+            <h2>{t("profileBadgeTitle")}</h2>
+            <div className="badge-grid">
+              {badgeGrid.map((badge, index) => (
+                <article
+                  className={`badge-card ${unlockedBadgeIds.has(badge.id) ? "is-unlocked" : "is-locked"}`}
+                  key={badge.id}
+                  style={{ animationDelay: `${(index % 12) * 40}ms` }}
+                >
+                  <span className="material-symbols-rounded">
+                    {unlockedBadgeIds.has(badge.id) ? "emoji_events" : "lock"}
+                  </span>
+                  <strong>{badge.name}</strong>
+                </article>
+              ))}
+            </div>
+            {badgeCatalogue.length > 10 && (
+              <button className="admin-text-button" onClick={() => { haptic(); setShowAllBadges(!showAllBadges); }}>
+                {showAllBadges ? "Свернуть" : `Показать все (${badgeCatalogue.length})`}
+              </button>
+            )}
+          </section>
+
+          {/* ── Promo redeem ── */}
+          <section className="promo-redeem-card">
+            <Icon name="redeem" />
+            <h2>{t("profileRewards")}</h2>
+            <p>{t("profileCodeText")}</p>
+            <form onSubmit={redeem}>
+              <input name="code" value={promo} onChange={(e) => setPromo(e.target.value)} placeholder="ELAZ" autoCapitalize="characters" maxLength={32} required />
+              <button type="submit">{t("profileActivate")}</button>
+            </form>
+            {promoMessage && <p className="promo-status" role="status">{promoMessage}</p>}
+            {redemptions.length > 0 && (
+              <div className="profile-perks">
+                <span className="perks-title"><Icon name="emoji_events" /> {t("profileMyPerks")}</span>
+                {(() => {
+                  const all = new Map<string, PromoBenefit>();
+                  redemptions.forEach((r) => r.benefits.forEach((b) => all.set(b.type, b)));
+                  return [...all.values()];
+                })().map((b) => (
+                  <span key={b.type} className="perk-chip">
+                    <Icon name={benefitIcons[b.type] || "check_circle"} />
+                    {perkName(b)}
+                  </span>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ── Profile editor form ── */}
+          <section className="profile-editor-card">
+            <form onSubmit={submit}>
+              <img src={profile.imageUrl} alt="" width={82} height={82} />
+              <h1>{t("profileTitle")}</h1>
+
+              <label>{t("profileName")}
+                <input name="displayName" defaultValue={profile.displayName} required maxLength={80} />
+              </label>
+              <label>{t("profileHandle")}
+                <input name="handle" defaultValue={profile.handle} required minLength={3} maxLength={24} />
+              </label>
+              <label>{t("profileCity")}
+                <input name="city" defaultValue={profile.city} maxLength={80} />
+              </label>
+              <label>{t("profileBio")}
+                <textarea name="bio" defaultValue={profile.bio} maxLength={300} />
+              </label>
+
+              <fieldset className="cosmetic-controls">
+                <legend>{t("profileStyle")}</legend>
+                <label className="brand-select">{t("profileCover")}
+                  <select name="cosmetics.cover" defaultValue={profile.cosmetics.cover} className="cosmetic-cover">
+                    {["lime", "beta", "midnight"].map((opt) => (
+                      <option key={opt} value={opt} disabled={opt !== "lime" && !unlocked.includes("profile_cover")}>
+                        {t(opt === "lime" ? "profileLime" : opt === "beta" ? "profileBeta" : "profileMidnight")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="brand-select">{t("profileFrame")}
+                  <select name="cosmetics.avatarFrame" defaultValue={profile.cosmetics.avatarFrame} className="cosmetic-avatar-frame">
+                    {["none", "lime", "pink", "blue", "neon"].map((opt) => (
+                      <option key={opt} value={opt} disabled={opt !== "none" && opt !== "lime" && opt !== "pink" && opt !== "blue" && !unlocked.includes("avatar_frame")}>
+                        {t(opt === "none" ? "profileNoFrame" : opt === "neon" ? "profileNeon" : opt === "lime" ? "profileFrameLime" : opt === "pink" ? "profileFramePink" : "profileFrameBlue")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="brand-select">{t("profileEffect")}
+                  <select name="cosmetics.chatEffect" defaultValue={profile.cosmetics.chatEffect}>
+                    {["none", "sparkle", "glow"].map((opt) => (
+                      <option key={opt} value={opt} disabled={opt !== "none" && !unlocked.includes("chat_effect")}>
+                        {t(opt === "none" ? "profileNoEffect" : opt === "sparkle" ? "profileSparkle" : "profileGlow")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="brand-select">{t("profileColor")}
+                  <select name="cosmetics.nameColor" defaultValue={profile.cosmetics.nameColor}>
+                    {["#000000", "#c9ff05", "#ff1791"].map((opt) => (
+                      <option key={opt} value={opt} disabled={opt !== "#000000" && !unlocked.includes("name_color")}>
+                        {opt === "#000000" ? t("profileBlack") : opt === "#c9ff05" ? "Лайм" : "Розовый"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </fieldset>
+
+              <button type="submit" disabled={saved} className={saved ? "saved-transition" : ""}>
+                {saved ? t("profileSaved") : t("profileSave")}
+              </button>
+              {error && <p className="form-error">{error}</p>}
+            </form>
+          </section>
+        </div>
+
+        {/* ── Sidebar ── */}
+        <div>
+          <section className="promo-redeem-card">
+            <Icon name="notifications" />
+            <h2>{t("profileSettings")}</h2>
+            <p>{t("profileSettingsDesc")}</p>
+            <button onClick={enableNotifications}>{t("profileEnablePush")}</button>
+            <button onClick={exportData} className="export-link">{t("profileExportData")}</button>
+          </section>
+        </div>
+      </div>
+
+      {/* ── Mobile bottom nav ── */}
+      <nav className="mobile-bottom-nav">
+        <Link href="/app" onClick={() => haptic()}>
+          <Icon name="home" /><span>Home</span>
+        </Link>
+        <Link href="/app/friends" onClick={() => haptic()}>
+          <Icon name="group" /><span>Friends</span>
+        </Link>
+        <Link href="/app/leaderboard" onClick={() => haptic()}>
+          <Icon name="leaderboard" /><span>Top</span>
+        </Link>
+        <Link href="/app/profile" className="active" onClick={() => haptic()}>
+          <Icon name="person" /><span>Profile</span>
+        </Link>
+      </nav>
+    </main>
+  );
 }
