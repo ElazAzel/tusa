@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Party, UserProfile } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { formatEventDate } from "@/lib/event-format";
@@ -17,6 +17,9 @@ export default function UserDashboard({ profile, parties }: { profile: UserProfi
   const [copied, setCopied] = useState("");
   const { locale, t } = useLocale();
   const cardsRef = useRef<HTMLDivElement>(null);
+  const startY = useRef(0);
+  const [pulling, setPulling] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
@@ -42,6 +45,28 @@ export default function UserDashboard({ profile, parties }: { profile: UserProfi
     setCopied(party.id);
     soundSuccess();
     window.setTimeout(() => setCopied(""), 1600);
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    if (window.scrollY > 0) return;
+    startY.current = e.touches[0].clientY;
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (startY.current === 0) return;
+    const diff = e.touches[0].clientY - startY.current;
+    if (diff > 60 && !refreshing) setPulling(true);
+  }
+
+  async function handleTouchEnd() {
+    startY.current = 0;
+    if (pulling && !refreshing) {
+      setRefreshing(true);
+      soundTap();
+      await new Promise((r) => setTimeout(r, 1200));
+      window.location.reload();
+    }
+    setPulling(false);
   }
 
   return <main className="user-app-page">
