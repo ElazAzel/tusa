@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import type { Party, PartyRole, RsvpStatus, GameSession, ChatMessage, GameScore } from "@/lib/parties";
@@ -28,16 +29,17 @@ import { soundChat, soundTap, soundReward } from "@/lib/audio";
 
 type GameId = "alias" | "mafia" | "truth" | "never" | "beer" | "quiz" | "pairs" | "uno";
 
+type TitleKey = "gamesAliasTitle" | "gamesMafiaTitle" | "gamesTruthTitle" | "gamesNeverTitle" | "gamesBeerTitle" | "gamesQuizTitle" | "gamesPairsTitle" | "gamesUnoTitle";
 type DescKey = "gamesAliasDesc" | "gamesMafiaDesc" | "gamesTruthDesc" | "gamesNeverDesc" | "gamesBeerDesc" | "gamesQuizDesc" | "gamesPairsDesc" | "gamesUnoDesc";
-const gameCatalogue: Array<{ id: GameId; title: string; descKey: DescKey; icon: string; players: string; tone: string }> = [
-  { id: "alias", title: "Alias", descKey: "gamesAliasDesc", icon: "record_voice_over", players: "4+", tone: "lime" },
-  { id: "mafia", title: "Mafia Lite", descKey: "gamesMafiaDesc", icon: "mystery", players: "5+", tone: "pink" },
-  { id: "truth", title: "Truth or Dare", descKey: "gamesTruthDesc", icon: "casino", players: "2+", tone: "blue" },
-  { id: "never", title: "Never Have I Ever", descKey: "gamesNeverDesc", icon: "front_hand", players: "3+", tone: "cream" },
-  { id: "beer", title: "Beer Pong", descKey: "gamesBeerDesc", icon: "sports_bar", players: "2+", tone: "pink" },
-  { id: "quiz", title: "Quiz Battle", descKey: "gamesQuizDesc", icon: "quiz", players: "2+", tone: "lime" },
-  { id: "pairs", title: "Random Pair", descKey: "gamesPairsDesc", icon: "shuffle", players: "4+", tone: "blue" },
-  { id: "uno", title: "Uno Tracker", descKey: "gamesUnoDesc", icon: "style", players: "2+", tone: "cream" },
+const gameCatalogue: Array<{ id: GameId; titleKey: TitleKey; descKey: DescKey; icon: string; players: string; tone: string }> = [
+  { id: "alias", titleKey: "gamesAliasTitle", descKey: "gamesAliasDesc", icon: "record_voice_over", players: "4+", tone: "lime" },
+  { id: "mafia", titleKey: "gamesMafiaTitle", descKey: "gamesMafiaDesc", icon: "mystery", players: "5+", tone: "pink" },
+  { id: "truth", titleKey: "gamesTruthTitle", descKey: "gamesTruthDesc", icon: "casino", players: "2+", tone: "blue" },
+  { id: "never", titleKey: "gamesNeverTitle", descKey: "gamesNeverDesc", icon: "front_hand", players: "3+", tone: "cream" },
+  { id: "beer", titleKey: "gamesBeerTitle", descKey: "gamesBeerDesc", icon: "sports_bar", players: "2+", tone: "pink" },
+  { id: "quiz", titleKey: "gamesQuizTitle", descKey: "gamesQuizDesc", icon: "quiz", players: "2+", tone: "lime" },
+  { id: "pairs", titleKey: "gamesPairsTitle", descKey: "gamesPairsDesc", icon: "shuffle", players: "4+", tone: "blue" },
+  { id: "uno", titleKey: "gamesUnoTitle", descKey: "gamesUnoDesc", icon: "style", players: "2+", tone: "cream" },
 ];
 
 export default function PartyRoom({ party }: { party: Party }) {
@@ -60,6 +62,7 @@ export default function PartyRoom({ party }: { party: Party }) {
   const [rsvpFilter, setRsvpFilter] = useState<"all" | RsvpStatus>("all");
   const [gameResults, setGameResults] = useState<{ scores: GameScore[]; gameTitle: string } | null>(null);
   const { user } = useUser();
+  const router = useRouter();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatStreamRef = useRef<HTMLDivElement>(null);
   const { locale, t } = useLocale();
@@ -67,17 +70,22 @@ export default function PartyRoom({ party }: { party: Party }) {
   const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/join/${party.inviteCode}` : "";
   const filteredMembers = rsvpFilter === "all" ? members : members.filter((m) => m.rsvpStatus === rsvpFilter);
   const activeSession = activeSessions.find((s) => s.id === gameSession);
-  const gameRole = activeSession ? useGameRole(activeSession.participants ?? [], user?.id) : "stage";
+  const gameRole = useGameRole(activeSession?.participants ?? [], user?.id);
 
   const liveChat = useLiveStream<Record<string, unknown>>(`chat:${party.id}`);
+
+  useEffect(() => {
+    liveChat.events.forEach((raw) => {
+      if (raw.type === "reaction" && raw.messageId) {
+        setChatMessages((prev) => prev.map((m) => m.id === raw.messageId ? { ...m, reactions: raw.reactions as Record<string, string[]> } : m));
+      }
+    });
+  }, [liveChat.events]);
 
   const allChatMessages = useMemo(() => {
     const existing = new Set(chatMessages.map((msg) => msg.id));
     const liveFiltered = liveChat.events.filter((raw) => {
-      if (raw.type === "reaction" && raw.messageId) {
-        setChatMessages((prev) => prev.map((m) => m.id === raw.messageId ? { ...m, reactions: raw.reactions as Record<string, string[]> } : m));
-        return false;
-      }
+      if (raw.type === "reaction") return false;
       return raw.id && !existing.has(raw.id as string);
     }).map((raw) => raw as unknown as ChatMessage);
     return [...chatMessages, ...liveFiltered];
@@ -144,6 +152,7 @@ export default function PartyRoom({ party }: { party: Party }) {
   }, [party.id]);
 
   function launchGame(game: GameId) {
+    setSelectedGame(game);
     fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", partyId: party.id, game }) })
       .then((r) => r.json()).then((data) => {
         if (data.session) {
@@ -151,18 +160,17 @@ export default function PartyRoom({ party }: { party: Party }) {
           setActiveSessions((prev) => [data.session, ...prev.filter((s) => s.id !== data.session.id)]);
         }
       }).catch(() => undefined);
-    setSelectedGame(game);
   }
 
   function joinSession(sessionId: string, game: string) {
+    setSelectedGame(game as GameId);
+    setGameSession(sessionId);
     fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "join", sessionId }) })
       .then((r) => r.json()).then((data) => {
         if (data.session) {
-          setGameSession(sessionId);
           setActiveSessions((prev) => prev.map((s) => s.id === sessionId ? data.session : s));
         }
       }).catch(() => undefined);
-    setSelectedGame(game as GameId);
   }
 
   function saveGameScore(score: number) {
@@ -170,7 +178,7 @@ export default function PartyRoom({ party }: { party: Party }) {
     const game = gameCatalogue.find((g) => g.id === selectedGame);
     fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "score", sessionId: gameSession, score, metadata: { game: selectedGame } }) })
       .then((r) => r.json()).then((data) => {
-        if (data.scores) setGameResults({ scores: data.scores as GameScore[], gameTitle: game?.title ?? "" });
+        if (data.scores) setGameResults({ scores: data.scores as GameScore[], gameTitle: game ? t(game.titleKey) : "" });
       }).catch(() => undefined);
   }
 
@@ -203,8 +211,8 @@ export default function PartyRoom({ party }: { party: Party }) {
   }
 
   async function updateRsvp(status: RsvpStatus) { setRsvp(status); await fetch(`/api/parties/${party.inviteCode}/rsvp`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rsvp: status }) }); }
-  async function deleteParty() { if (!confirm(t("roomDeleteConfirm"))) return; await fetch("/api/parties", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: party.id }) }); window.location.assign("/app"); }
-  async function saveEdit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); await fetch("/api/parties", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...data, id: party.id }) }); setEditing(false); window.location.reload(); }
+  async function deleteParty() { if (!confirm(t("roomDeleteConfirm"))) return; await fetch("/api/parties", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: party.id }) }); router.push("/app"); }
+  async function saveEdit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); await fetch("/api/parties", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...data, id: party.id }) }); setEditing(false); router.refresh(); }
   async function generateQr() {
     try { const QRCode = (await import("qrcode")); const url = await QRCode.toDataURL(inviteUrl, { width: 320, margin: 2, color: { dark: "#000000", light: "#ffffff" } }); setQrUrl(url); }
     catch { setError(t("createError")); }
@@ -221,7 +229,7 @@ export default function PartyRoom({ party }: { party: Party }) {
       selectedGame === "quiz" ? <QuizBattle {...props} /> :
       selectedGame === "pairs" ? <RandomPair {...props} /> :
       selectedGame === "uno" ? <UnoTracker {...props} /> : null;
-    return <section className="party-room-panel"><div className="active-game-head"><button onClick={backToCatalogue} type="button"><span className="material-symbols-rounded">arrow_back</span> {t("gamesBack")}</button><div><span>{t("gamesMode")}</span><h2>{game?.title ?? ""}</h2></div><span className="demo-chip">{game?.players}{t("gamesPlayers")}</span></div>{board}</section>;
+    return <section className="party-room-panel"><div className="active-game-head"><button onClick={backToCatalogue} type="button"><span className="material-symbols-rounded">arrow_back</span> {t("gamesBack")}</button><div><span>{t("gamesMode")}</span><h2>{game ? t(game.titleKey) : ""}</h2></div><span className="demo-chip">{game?.players}{t("gamesPlayers")}</span></div>{board}</section>;
   }
 
   return <main className={`party-room ${party.adultOnly ? "party-room--adult" : "party-room--family"}`}>
@@ -237,12 +245,12 @@ export default function PartyRoom({ party }: { party: Party }) {
       <p>{formatEventDate(party.date, locale)} · {party.time} · {party.venue}</p>
       <div className="party-room-rsvp">
         <b>{t("eventHubGoing")}: {party.rsvpCounts.going}</b>
-        <b>{String(t("eventHubThinkingCount")).replace("·", "")}: {party.rsvpCounts.maybe}</b>
+        <b>{t("eventHubThinkingCount")}: {party.rsvpCounts.maybe}</b>
       </div>
       <div className="party-room-rsvp-toggle">
         {["going", "maybe", "pass"].map((status) => (
           <button className={rsvp === status ? "active" : ""} key={status} onClick={() => updateRsvp(status as RsvpStatus)} type="button">
-            {status === "going" ? t("eventHubGoing") : status === "maybe" ? String(t("eventHubThinkingCount")).replace(" ·", "") : t("eventHubPass")}
+            {status === "going" ? t("eventHubGoing") : status === "maybe" ? t("eventHubThinkingCount") : t("eventHubPass")}
           </button>
         ))}
       </div>
@@ -252,7 +260,7 @@ export default function PartyRoom({ party }: { party: Party }) {
         <button onClick={() => setTab("chat")} className={tab === "chat" ? "active" : ""} type="button">{t("roomChat")}</button>
         <button onClick={() => setTab("shop")} className={tab === "shop" ? "active" : ""} type="button">{t("shoppingSub")}</button>
         <button onClick={() => setTab("gallery")} className={tab === "gallery" ? "active" : ""} type="button">{t("gallerySub")}</button>
-        <button onClick={() => setTab("koins")} className={tab === "koins" ? "active" : ""} type="button">KOINS</button>
+        <button onClick={() => setTab("koins")} className={tab === "koins" ? "active" : ""} type="button">{t("demoNavKoins")}</button>
       </div>
     </section>
 
@@ -275,12 +283,12 @@ export default function PartyRoom({ party }: { party: Party }) {
         <div className="rsvp-filter-tabs">
           {(["all", "going", "maybe", "pass"] as const).map((filter) => (
             <button key={filter} className={rsvpFilter === filter ? "active" : ""} onClick={() => setRsvpFilter(filter)} type="button">
-              {filter === "all" ? t("roomInside") : filter === "going" ? t("eventHubGoing") : filter === "maybe" ? String(t("eventHubThinkingCount")).replace(" ·", "") : t("eventHubPass")}
+              {filter === "all" ? t("roomInside") : filter === "going" ? t("eventHubGoing") : filter === "maybe" ? t("eventHubThinkingCount") : t("eventHubPass")}
               {filter !== "all" && <span> ({members.filter((m) => m.rsvpStatus === filter).length})</span>}
             </button>
           ))}
         </div>
-        <div className="party-member-grid">{filteredMembers.map((m) => <div key={m.clerkUserId} className={`party-member-card ${m.role === "owner" ? "is-owner" : m.role === "co_host" ? "is-cohost" : ""}`}><span className="party-member-role">{m.role === "owner" ? "👑" : m.role === "co_host" ? "⭐" : ""}</span><strong>{m.displayName}</strong><span className="party-member-status">{m.rsvpStatus === "going" ? t("eventHubGoing") : m.rsvpStatus === "maybe" ? String(t("eventHubThinkingCount")).replace("·", "") : t("eventHubPass")}</span>{isOwner && m.role !== "owner" && <button className="party-action-btn" onClick={() => toggleRole(m.clerkUserId, m.role === "co_host" ? "guest" : "co_host")} type="button">{m.role === "co_host" ? t("roomRemoveCoHost") : t("roomCoHost")}</button>}</div>)}</div>
+        <div className="party-member-grid">{filteredMembers.map((m) => <div key={m.clerkUserId} className={`party-member-card ${m.role === "owner" ? "is-owner" : m.role === "co_host" ? "is-cohost" : ""}`}><span className="party-member-role">{m.role === "owner" ? "👑" : m.role === "co_host" ? "⭐" : ""}</span><strong>{m.displayName}</strong><span className="party-member-status">{m.rsvpStatus === "going" ? t("eventHubGoing") : m.rsvpStatus === "maybe" ? t("eventHubThinkingCount") : t("eventHubPass")}</span>{isOwner && m.role !== "owner" && <button className="party-action-btn" onClick={() => toggleRole(m.clerkUserId, m.role === "co_host" ? "guest" : "co_host")} type="button">{m.role === "co_host" ? t("roomRemoveCoHost") : t("roomCoHost")}</button>}</div>)}</div>
       </div>
     </section>}
 
@@ -293,10 +301,10 @@ export default function PartyRoom({ party }: { party: Party }) {
           return <button className={`game-launch-card ${game.tone}`} key={game.id} type="button">
             <span className="material-symbols-rounded">{game.icon}</span>
             <span className="game-player-count">{game.players}</span>
-            <h3>{game.title}</h3>
+            <h3>{t(game.titleKey)}</h3>
             <p>{t(game.descKey)}</p>
             <div className="game-card-actions">
-              <strong onClick={() => launchGame(game.id)}>{t("gamesLaunch")} <span className="material-symbols-rounded">arrow_forward</span></strong>
+              <button className="game-launch-btn" onClick={() => launchGame(game.id)} type="button">{t("gamesLaunch")} <span className="material-symbols-rounded">arrow_forward</span></button>
               {existingSession && <button className="game-join-btn" onClick={() => joinSession(existingSession.id, game.id)} type="button">
                 <span className="material-symbols-rounded">login</span> {t("gameJoinSession")}
               </button>}
@@ -326,7 +334,7 @@ export default function PartyRoom({ party }: { party: Party }) {
       <h2>{t("roomChatTitle")}</h2>
       <div className="party-chat-stream" ref={chatStreamRef}>
         {allChatMessages.length ? allChatMessages.map((item, index) => {
-          const isMe = item.userId === party.ownerId;
+          const isMe = item.userId === user?.id;
           const sticker = item.type === "sticker" ? tusaStickers.find((s) => s.id === item.stickerId) : null;
           const reactionEntries = item.reactions ? Object.entries(item.reactions) : [];
           return <div className={`party-chat-bubble ${isMe ? "is-me" : "is-other"} ${item.type === "voice" ? "is-voice" : ""} ${item.type === "sticker" ? "is-sticker" : ""}`} key={item.id || index} onDoubleClick={() => setReactionTarget(reactionTarget === item.id ? null : item.id)}>
@@ -347,7 +355,7 @@ export default function PartyRoom({ party }: { party: Party }) {
             </span>
             {reactionEntries.length > 0 && <div className="chat-reactions">
               {reactionEntries.map(([emoji, users]) => (
-                <button key={emoji} className={`chat-reaction ${users.includes(party.ownerId) ? "is-active" : ""}`} onClick={() => react(item.id, emoji)} type="button">
+                <button key={emoji} className={`chat-reaction ${user?.id && users.includes(user.id) ? "is-active" : ""}`} onClick={() => react(item.id, emoji)} type="button">
                   {emoji} <span>{users.length}</span>
                 </button>
               ))}
