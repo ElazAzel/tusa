@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useMultiplayerGame } from "@/app/components/useMultiplayerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
+import { soundTap, soundSuccess } from "@/lib/audio";
 
 const truths = [
   "Who in this room would you invite on a trip first?",
@@ -258,6 +259,7 @@ export default function TruthOrDare({ partyId, sessionId, onSave }: { partyId: s
   const shuffledTruths = useMemo(() => shuffle(locale === "ru" ? truthsRu : truths), [locale]);
   const shuffledDares = useMemo(() => shuffle(locale === "ru" ? daresRu : dares), [locale]);
   function next() {
+    soundTap();
     if (mode === "truth") setState((prev) => ({ ...prev, truthIndex: prev.truthIndex + 1 }));
     else setState((prev) => ({ ...prev, dareIndex: prev.dareIndex + 1 }));
     setState((prev) => ({ ...prev, count: prev.count + 1 }));

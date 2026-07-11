@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { useMultiplayerGame } from "@/app/components/useMultiplayerGame";
+import { soundCorrect, soundPass, soundWin } from "@/lib/audio";
+import { confetti } from "@/lib/confetti";
 
 const wordsEn = [
   "BBQ", "Karaoke", "Crush", "Alarm", "Almaty", "Meme", "Friday", "Door code", "Playlist",
@@ -75,6 +77,7 @@ export default function AliasGame({ partyId, sessionId, onSave }: { partyId: str
 
   function answer(guessed: boolean) {
     if (!running) return;
+    if (guessed) soundCorrect(); else soundPass();
     setState((prev) => ({
       ...prev,
       score: guessed ? prev.score + 1 : prev.score,
@@ -82,7 +85,7 @@ export default function AliasGame({ partyId, sessionId, onSave }: { partyId: str
     }));
   }
 
-  function finish() { onSave(score); setState({ running: false, seconds: 60, wordIndex: 0, score: 0, round: round + 1 }); }
+  function finish() { soundWin(); confetti(); onSave(score); setState({ running: false, seconds: 60, wordIndex: 0, score: 0, round: round + 1 }); }
 
   function start() { setState({ running: true, seconds: 60, wordIndex: 0, score: 0, round }); }
 

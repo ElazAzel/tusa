@@ -5,12 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import type { Party, UserProfile } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { formatEventDate } from "@/lib/event-format";
+import { soundTap, soundSuccess } from "@/lib/audio";
 
 function Icon({ name }: { name: string }) {
   return <span className="material-symbols-rounded" aria-hidden="true">{name}</span>;
 }
 
-function haptic(ms = 10) { try { navigator.vibrate?.(ms); } catch {} }
+function haptic(ms = 10) { try { navigator.vibrate?.(ms); } catch {} soundTap(); }
 
 export default function UserDashboard({ profile, parties }: { profile: UserProfile; parties: Party[] }) {
   const [copied, setCopied] = useState("");
@@ -39,6 +40,7 @@ export default function UserDashboard({ profile, parties }: { profile: UserProfi
     }
     await navigator.clipboard.writeText(url);
     setCopied(party.id);
+    soundSuccess();
     window.setTimeout(() => setCopied(""), 1600);
   }
 

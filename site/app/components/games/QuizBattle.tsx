@@ -3,6 +3,8 @@
 import { useMemo } from "react";
 import { useMultiplayerGame } from "@/app/components/useMultiplayerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
+import { soundCorrect, soundWrong, soundWin } from "@/lib/audio";
+import { confetti } from "@/lib/confetti";
 
 const questionsEn = [
   { question: "What is the capital of Kazakhstan?", options: ["Almaty", "Astana", "Shymkent", "Karaganda"], answer: "Astana" },
@@ -151,11 +153,12 @@ export default function QuizBattle({ partyId, sessionId, onSave }: { partyId: st
 
   function select(option: string) {
     setState((prev) => ({ ...prev, selected: option }));
-    if (option === shuffled[state.index].answer) setState((prev) => ({ ...prev, score: prev.score + 1 }));
+    if (option === shuffled[state.index].answer) { setState((prev) => ({ ...prev, score: prev.score + 1 })); soundCorrect(); }
+    else soundWrong();
   }
 
   function next() {
-    if (state.index === shuffled.length - 1) { onSave(state.score); setState((prev) => ({ ...prev, index: 0, score: 0, selected: "" })); }
+    if (state.index === shuffled.length - 1) { soundWin(); confetti(); onSave(state.score); setState((prev) => ({ ...prev, index: 0, score: 0, selected: "" })); }
     else setState((prev) => ({ ...prev, index: prev.index + 1, selected: "" }));
   }
 

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useMultiplayerGame } from "@/app/components/useMultiplayerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
+import { soundCorrect, soundTap } from "@/lib/audio";
 
 const promptsEn = [
   "Never have I ever fallen asleep at a party.",
@@ -152,7 +153,7 @@ export default function NeverHaveIEver({ partyId, sessionId, onSave }: { partyId
   const { locale, t } = useLocale();
   const { state, setState } = useMultiplayerGame<NeverState>(sessionId ?? null, () => ({ index: 0, count: 0 }));
   const shuffled = useMemo(() => shuffle(locale === "ru" ? promptsRu : promptsEn), [locale]);
-  function me() { setState((prev) => ({ ...prev, count: prev.count + 1, index: prev.index + 1 })); }
+  function me() { soundCorrect(); setState((prev) => ({ ...prev, count: prev.count + 1, index: prev.index + 1 })); }
 
   return <div className="party-game-board game-board-enter"><span className="game-step">{t("neverHeader")}</span><h3 className="game-prompt-swap" key={`prompt-${state.index}`}>{shuffled[state.index % shuffled.length]}</h3><strong className="confession-count" key={`confessions-${state.count}`}>{state.count}{t("neverConfessions")}</strong><div className="game-primary-actions"><button className="demo-action demo-action--white" onClick={() => setState((prev) => ({ ...prev, index: prev.index + 1 }))} type="button">{t("neverSkip")}</button><button className="demo-action demo-action--lime" onClick={me} type="button">{t("neverMe")}</button><button className="demo-action demo-action--dark" onClick={() => onSave(state.count)} type="button">{t("neverSave")}</button></div>{sessionId && <span className="multiplayer-badge">LIVE</span>}</div>;
 }

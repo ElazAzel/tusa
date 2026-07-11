@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { Party, PromoBenefit, PromoRedemption, UserProfile } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleToggle from "@/app/components/LocaleToggle";
+import { soundTap, soundSuccess, soundReward } from "@/lib/audio";
 
 const badgeFamilies = ["Организатор", "Игрок", "Хроникёр", "Казначей", "Душа компании", "Пунктуальный", "Командный", "Исследователь", "Мемолог", "Голос вечера"];
 const badgeCatalogue = Array.from({ length: 60 }, (_, index) => ({ id: `badge_${index + 1}`, name: `${badgeFamilies[index % badgeFamilies.length]} \u00b7 ${Math.floor(index / badgeFamilies.length) + 1}`, threshold: (index + 1) * 120 }));
@@ -20,7 +21,7 @@ const frameStyles: Record<string, { border: string; shadow: string; label: strin
   none:  { border: "transparent", shadow: "none", label: "None" },
 };
 
-function haptic(ms = 10) { try { navigator.vibrate?.(ms); } catch {} }
+function haptic(ms = 10) { try { navigator.vibrate?.(ms); } catch {} soundTap(); }
 
 function leagueFor(xp: number) {
   if (xp >= 3000) return { name: "Neon Legend", next: 5000, icon: "diamond" };
@@ -61,7 +62,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
     haptic();
     const data = Object.fromEntries(new FormData(event.currentTarget));
     const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    if (response.ok) { setSaved(true); setError(""); setTimeout(() => setSaved(false), 2000); }
+    if (response.ok) { setSaved(true); setError(""); soundSuccess(); setTimeout(() => setSaved(false), 2000); }
     else setError((await response.json()).error);
   }
 

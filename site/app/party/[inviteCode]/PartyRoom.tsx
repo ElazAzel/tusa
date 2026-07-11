@@ -22,6 +22,7 @@ import StickerPicker from "@/app/components/chat/StickerPicker";
 import EmojiPicker from "@/app/components/chat/EmojiPicker";
 import { tusaStickers } from "@/app/components/chat/stickers";
 import { eventDateInputValue, formatEventDate } from "@/lib/event-format";
+import { soundChat, soundTap, soundReward } from "@/lib/audio";
 
 type GameId = "alias" | "mafia" | "truth" | "never" | "beer" | "quiz" | "pairs" | "uno";
 
@@ -89,6 +90,7 @@ export default function PartyRoom({ party }: { party: Party }) {
   function send() {
     const text = message.trim();
     if (!text) return;
+    soundChat();
     fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partyId: party.id, text }) })
       .then(() => setMessage("")).catch(() => undefined);
   }
