@@ -1,0 +1,14 @@
+{
+  "name": "TUSA.game",
+  "short_name": "TUSA",
+  "description": "Your hangout in one click",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#f8f4ed",
+  "theme_color": "#f8f4ed",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/brand/tusa-game-icon.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/tusa-game-icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

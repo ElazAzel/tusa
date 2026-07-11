@@ -1,0 +1,186 @@
+# TUSA.io — Design System & Tone of Voice
+
+> **Product:** TUSA.io  
+> **Tagline (EN):** One link, whole squad inside.  
+> **Tagline (RU):** Твоя туса. В один клик. Без душноты.  
+> **Doc version:** v1.0  
+> **Last updated:** 2026-07-10  
+> **Owner:** Ильяс Азелханов — CEO, NAVYK / TUSA.io  
+> **Status:** 🟢 Living document
+
+---
+
+## 📌 How to use this doc / Как пользоваться этим документом
+
+**EN.** This is the single source of truth for TUSA.io's brand, voice, and interface. Designers use it for tokens and components. Devs use it for CSS variables and behavior specs. Copywriters use it for tone, microcopy, and headline patterns. If something on the product contradicts this doc — the doc wins until governance updates it (see §11).
+
+**RU.** Это единый источник правды по бренду, голосу и интерфейсу TUSA.io. Дизайнеры берут отсюда токены и компоненты. Разработчики — CSS-переменные и поведение. Копирайтеры — тон, микрокопию и паттерны заголовков. Если в продукте что-то противоречит этому доку — прав док, пока апдейт не пройдёт через governance (§11).
+
+---
+
+## 🧭 Table of Contents
+
+1. [Brand Essence](#1-brand-essence)
+2. [Personality & Archetype](#2-personality--archetype)
+3. [Tone of Voice](#3-tone-of-voice)
+4. [Visual Identity](#4-visual-identity)
+5. [Neo-Brutalism Design Language](#5-neo-brutalism-design-language)
+6. [Layout & Grid](#6-layout--grid)
+7. [Content Patterns](#7-content-patterns)
+8. [Accessibility](#8-accessibility)
+9. [Voice Examples in the Wild](#9-voice-examples-in-the-wild)
+10. [Governance](#10-governance)
+
+---
+
+## 1. Brand Essence
+
+### 🇬🇧 EN
+
+**Mission.** Take the friction out of getting friends together — one link opens the whole hangout: people, games, shopping list, photos, bets, memories.
+
+**Vision.** In 5 years, "let's TUSA it" is how young people across the CIS start any group hangout — the way "let's Zoom" became a verb for meetings.
+
+**Positioning.** *TUSA.io — one link, whole squad inside. A PWA platform for friend hangouts.*
+
+**Brand promise.** From "who's in?" to "look at these photos" — one place, no chaos, no downloads, no corporate energy.
+
+**Target audience.**
+- Students and young professionals, 18–30.
+- Squads of 4–12 people who hang out regularly.
+- Primary market: Kazakhstan (Almaty, Astana, regional hubs). Expansion: CIS.
+- Behavior: mobile-first, allergic to app-store installs, live in Telegram / WhatsApp / Instagram, plan hangouts in group chats.
+
+### 🇷🇺 RU
+
+**Миссия.** Убрать трение из процесса «собраться с друзьями». Одна ссылка — и внутри уже вся туса: люди, игры, покупки, фотки, ставки, воспоминания.
+
+**Видение.** Через 5 лет «давай затусим через TUSA» — это то, как молодёжь СНГ по умолчанию начинает любой групповой ивент. Как «давай в Zoom» стало глаголом для встреч.
+
+**Позиционирование.** *TUSA.io — одна ссылка, вся туса внутри. PWA-платформа для дружеских ивентов.*
+
+**Обещание бренда.** От «кто идёт?» до «зацени фотки» — всё в одном месте. Без хаоса, без скачиваний, без корпоративной душноты.
+
+**Целевая аудитория.**
+- Студенты и молодые специалисты, 18–30.
+- Компании по 4–12 человек, которые тусят регулярно.
+- Основной рынок: Казахстан (Алматы, Астана, регионы). Дальше: СНГ.
+- Поведение: mobile-first, аллергия на App Store, живут в Telegram / WhatsApp / Instagram, планируют тусы в групповых чатах.
+
+---
+
+## 2. Personality & Archetype
+
+### 🇬🇧 EN
+
+**Primary archetype: Jester × Everyman.**  
+The Jester brings the energy, the humor, the "let's not take ourselves too seriously". The Everyman keeps us honest, inclusive, and never above the user. Together: the friend in your squad who actually gets things done, but also makes you laugh doing it.
+
+**Six personality traits.**
+
+| # | Trait | What it means in practice |
+|---|---|---|
+| 1 | Chatty | Talks like a group chat, not a press release. |
+| 2 | Witty | Small jokes, sharp lines, never punching down. |
+| 3 | Forward-thinking | Feels like 2026, not 2016. PWA-native, mobile-native. |
+| 4 | Unbothered | Confident, chill, doesn't oversell. |
+| 5 | Inclusive | Any squad, any city, any budget within reason. |
+| 6 | Slightly cheeky | Just enough attitude to feel like a friend, never a brand. |
+
+**TUSA is / TUSA is not.**
+
+| TUSA is ✅ | TUSA is not ❌ |
+|---|---|
+| A group chat that grew up | A social network |
+| Party OS for your friends | An event marketplace |
+| Playful and self-aware | Ironic-cringe or edgy |
+| Low-effort, high-vibe | Gamified corporate wellness |
+| Kazakhstan-native, global-ready | Silicon-Valley-cosplay |
+| PWA, one link, zero installs | Yet another app to download |
+
+### 🇷🇺 RU
+
+**Основной архетип: Шут × Свой парень.**  
+Шут даёт энергию, юмор, «давай не будем душными». Свой парень — честность, инклюзивность, «мы не сверху юзера, мы рядом». Вместе: тот друг в компании, который реально всё организует, но при этом ещё и стебёт по-доброму.
+
+**Шесть черт характера.**
+
+| # | Черта | Как это на практике |
+|---|---|---|
+| 1 | Общительный | Говорит как в чате друзей, а не как пресс-релиз. |
+| 2 | С юмором | Лёгкий стёб, острые формулировки, без «сверху вниз». |
+| 3 | В будущем | Ощущается как 2026, а не 2016. PWA-native, mobile-native. |
+| 4 | Расслабленный | Уверенный, без надрыва, ничего не впаривает. |
+| 5 | Инклюзивный | Любая компания, любой город, любой адекватный бюджет. |
+| 6 | Слегка дерзкий | Ровно столько привкуса, чтобы звучать как друг, а не как бренд. |
+
+**TUSA — это / TUSA — это не.**
+
+| TUSA — это ✅ | TUSA — это не ❌ |
+|---|---|
+| Групповой чат, который повзрослел | Соцсеть |
+| Party OS для своих | Афиша ивентов |
+| Игривый и самоироничный | Кринж и «на хайпе» |
+| Мало усилий — много вайба | Геймифицированный тимбилдинг |
+| Родом из Казахстана, готов к миру | Косплей Кремниевой долины |
+| PWA, одна ссылка, ноль установок | Ещё одно приложение для скачивания |
+
+---
+
+## 3. Tone of Voice
+
+### 🇬🇧 EN
+
+**Core principles.**
+1. **Human first.** Write like a person, not a product page.
+2. **Short and punchy.** If a sentence can lose 3 words, cut them.
+3. **No corporate cringe.** Ban words: "leverage", "solution", "seamless", "revolutionary", "ecosystem" in body copy.
+4. **Slang, sparingly.** One dose per screen, never forced, never dated.
+5. **Always end with clarity.** Jokes are fine — confusion isn't. Every screen must tell the user what to do next.
+6. **Confident, not loud.** No ALL CAPS shouting. Neo-brutalism gives us the volume; the copy stays cool.
+
+**Do / Don't — copy edition.**
+
+| ✅ Do | ❌ Don't |
+|---|---|
+| "One link. Whole squad inside." | "TUSA.io leverages PWA technology to seamlessly connect your friends." |
+| "Who's bringing ice?" | "Please coordinate the acquisition of ice among participants." |
+| "You're in. We'll ping you first." | "Thank you for your registration. Kindly await further correspondence." |
+| "Game starts in 3 min." | "The gaming experience is set to commence shortly." |
+| "Photos land here live." | "Enjoy real-time multimedia synchronization." |
+| "Something broke. Not your fault." | "An unexpected error has occurred (code 503)." |
+
+**Sample microcopy.**
+
+```txt
+CTA buttons
+  Primary:      Join the waitlist  ·  Start a hangout  ·  Send the link
+  Secondary:    See how it works   ·  Peek inside      ·  Not now
+
+Empty states
+  "No hangouts yet. Kick one off — takes 30 seconds."
+  "Nobody's bought anything yet. Someone's gotta be the ice hero."
+  "Gallery's empty. First photo sets the vibe."
+
+Errors
+  "Link's cooked. Ask your friend for a fresh one."
+  "Internet ghosted us. Try again in a sec."
+  "That email looks a bit off — mind checking it?"
+
+Success
+  "You're in. We'll ping you when the first wave opens."
+  "Event live. Drop the link in your chat."
+  "Photo up. Squad's gonna love this one."
+
+Push notifications
+  "🔥 Amir just added you to a hangout. Peek inside."
+  "Game starts in 3 min. Grab your phone."
+  "New photos in the gallery. Come flex."
+
+Onboarding steps
+  Step 1: "Name your hangout. Something your friends will actually recognize."
+  Step 2: "Send the link. That's the whole invite system."
+  Step 3: "That's it. Everything else lives inside."
+
+Waitlist confirmation
+  "You're #154 in the first wave. We move fast — check your inbox soon."

@@ -1,0 +1,2115 @@
+Product Requirements Document (PRD)
+TUSA.io — PWA-платформа для дружеских ивентов
+Версия: 1.0
+Статус: Draft for CTO Review
+Тип продукта: PWA, mobile-first, offline-first, real-time social event platform
+Принципиальное ограничение: без ИИ, только детерминированные алгоритмы и
+предсказуемые правила обработки данных
+
+
+1. Executive Summary
+1.1 Продукт
+TUSA.io — это PWA-платформа для дружеских ивентов, объединяющая в одном месте
+планирование события, приглашения, RSVP, чат, игры, виртуальные ставки, совместные
+покупки, фото-галерею и прогрессию профиля.
+
+1.2 Цель продукта
+
+Собрать в одном продукте все инструменты, которые компания друзей обычно разносит по
+разным приложениям:
+
+     создание и координация ивента;
+     коммуникация до, во время и после встречи;
+     развлечения и игровые механики;
+     совместные покупки и сплиты;
+     фотоархив и recap;
+     социальная прогрессия и retention-механики.
+
+1.3 Целевая аудитория
+
+Основной сегмент: компании друзей 5–20 человек, возраст 17–29 лет.
+
+Подсегменты
+
+    Сегмент                 Описание                          Потребности
+                Спонтанные встречи,                Быстрое создание ивента, чат, игры,
+Студенты
+                квартирники, поездки               сплиты
+Молодые         Регулярные встречи,
+                                                   Координация ролей, RSVP, платежи
+специалисты     тематические тусовки
+                Настолки, спорт, бар-туры,
+Хобби-комьюнити                                    Матчмейкинг, счёт, галерея
+                выезды
+Мини-           Один-два человека, которые         Удобные инвайты, массовые
+организаторы    “всегда всё собирают”              уведомления, контроль участия
+
+1.4 Ценностное предложение
+
+TUSA.io снижает организационный хаос дружеских ивентов, заменяя несколько
+разрозненных инструментов одним PWA-приложением:
+
+     один event space на всю компанию;
+     real-time координация без обязательной установки приложения;
+     офлайн-доступ к ключевым данным;
+     игровые и социальные механики для удержания;
+     прозрачные расходы, роли и участие.
+
+1.5 Бизнес-модель
+
+   Источник
+                                                  Модель
+   выручки
+Event Pass          3000 ₸ за создание/активацию ивента с полным набором функций
+Pro Subscription    Ежемесячная/квартальная подписка для power users / hosts
+                    Дополнительные темы, наборы бейджей, кастомные invite-pack, extra
+Add-ons
+                    storage, premium reel templates
+
+1.6 Проблемы рынка
+
+Пользователи сегодня решают один ивент через 5–7 разрозненных инструментов:
+
+     мессенджер для чата;
+     таблица/заметки для закупа;
+     отдельные переводы для сплитов;
+     голосование вручную;
+     фото после ивента теряются;
+     игры/ставки не структурированы;
+     нет общей event memory layer.
+
+1.7 JTBD (Jobs To Be Done)
+
+                      JTBD                           Контекст          Outcome
+“Когда я собираю друзей на ивент, я хочу быстро                 Снижение хаоса и no-
+                                                   Подготовка
+понять, кто придёт”                                             show
+“Когда мы уже тусим, я хочу иметь один чат, игры и Во время     Повышение
+счёт”                                              ивента       вовлечённости
+“Когда мы покупаем что-то вместе, я хочу быстро Закуп /
+                                                                Снижение трений
+посчитать, кто кому должен”                        финансы
+“Когда ивент закончился, я хочу сохранить                       Retention и повторные
+                                                   После ивента
+воспоминания и highlights”                                      ивенты
+
+1.8 KPI продукта
+
+North Star Metric
+
+Monthly Active Event Groups (MAEG) — число уникальных компаний, завершивших хотя
+бы 1 активный ивент в месяц.
+
+Core KPI
+
+              Метрика                   Цель
+Event creation to RSVP conversion > 65%
+Среднее число участников на ивент 7–12
+D7 retention host                 > 35%
+D30 retention group               > 20%
+Invite open rate                  > 60%
+RSVP response rate                > 70%
+Chat participation rate           > 75% участников
+Games engagement per event        > 40% ивентов
+              Метрика                       Цель
+Split completion rate             > 80%
+Gallery upload participation      > 50% участников
+Crash-free sessions               > 99.5%
+Push delivery success             > 95%
+
+
+2. Product Vision and Principles
+2.1 Видение продукта
+
+Создать основную цифровую операционную систему для дружеских ивентов, которая
+работает быстро, предсказуемо, без обязательной установки, с сильным real-time UX и
+игровой социальной прогрессией.
+
+2.2 Product Principles
+
+   1. Mobile-first — главный сценарий использования с телефона.
+   2. PWA-first — приложение должно работать без app store.
+   3. Offline-first — ключевые данные доступны при плохом интернете.
+   4. Real-time-first — чат, RSVP, игры и ставки обновляются мгновенно.
+   5. Deterministic by design — без ИИ, только объяснимые алгоритмы.
+   6. Low-friction onboarding — вход по ссылке/QR, минимум трения.
+   7. Social utility before gimmicks — сначала полезность, потом “фишки”.
+   8. Host efficiency — сокращение ручной координации организатора.
+   9. Privacy by default — закрытые группы, scoped access.
+  10. Composable event stack — модули можно включать по необходимости.
+
+2.3 Ограничения продукта
+     Без ИИ и генеративных систем.
+     Только детерминированные, тестируемые, объяснимые алгоритмы.
+     В MVP приоритет — стабильность, скорость, основная полезность.
+     Ограничение на сложность медиапайплайна и advanced moderation в MVP.
+
+
+3. Scope and Assumptions
+3.1 Входит в продукт
+
+     Auth и профили
+     Event Hub
+     RSVP
+     Hype Invites
+     Real-time чат
+     Игры и game sessions
+     KOINS betting
+     Shopping list + split
+     Gallery
+     XP/Badges/Leagues
+     Push уведомления
+     SMS fallback
+     PWA installability
+     Offline caching и локальное хранение
+
+3.2 Не входит в MVP
+     17 из 25 игр
+        Полноценная видеогалерея и heavy media editing
+        ML/AI рекомендации
+        Marketplace внешних ивентов
+        Публичные social feeds
+        Desktop-first admin suite
+        Advanced anti-fraud scoring
+        Multi-region sharding на старте
+        Rich moderation dashboard L2+
+
+3.3 Ключевые допущения
+        Большинство групп используют продукт эпизодически, а не ежедневно.
+        Один ивент обычно создаёт 1 host и 1–2 co-host.
+        Пользователи готовы использовать PWA, если onboarding friction низкий.
+        У части пользователей будет нестабильный интернет во время ивента.
+        Виртуальная валюта KOINS не должна рассматриваться как real-money gambling.
+        Платежные интеграции нужны для сплитов и event pass, а не для ставок.
+
+3.4 Зависимости
+
+     Зависимость                Назначение                             Риск
+Vercel / Railway / DO     Хостинг                   Vendor dependence
+Cloudflare                CDN, caching, edge        Конфигурационная сложность
+Twilio / Mobizon          SMS fallback              Cost/delivery variance
+                                                    Регуляторные и интеграционные
+Kaspi / Stripe / ЮKassa Платежи
+                                                    ограничения
+R2/S3-compatible
+                          Медиа                     Egress / consistency
+storage
+                          Real-time, cache, rate
+Redis                                               Потеря volatile state при misconfig
+                          limiting
+
+
+4. System Architecture (high-level)
+4.1 Архитектурный стиль
+TUSA.io проектируется как PWA на Next.js 15 (App Router) с real-time слоем на
+WebSocket/Socket.io, backend API на Node.js, state/caching через PostgreSQL + Redis +
+IndexedDB, media storage на S3-compatible storage (Cloudflare R2).
+
+4.2 Основные слои
+
+       Слой                                 Назначение
+Client (PWA)      UI, локальный кеш, offline queue, push, installability
+API Layer         REST/GraphQL для CRUD и бизнес-логики
+Real-time Gateway WebSocket-сессии, presence, live updates
+Workers / Jobs    SMS dispatch, push retries, media processing, recap generation
+Database          Source of truth
+Cache / PubSub    Быстрый доступ, rate limits, socket fanout coordination
+Object Storage    Фото, voice notes, invite audio snippets
+CDN / Edge        Быстрая раздача статических и media assets
+Observability     Logs, metrics, tracing, alerts
+
+4.3 High-level PWA Architecture
+        Next.js 15 App Router для SSR/ISR/RSC, route-level code splitting.
+     Service Worker (Workbox):
+           precache shell;
+           runtime cache API GET;
+           background sync для отложенных действий;
+           offline fallback page;
+           push notifications.
+     IndexedDB:
+           кеш событий;
+           последние сообщения чата;
+           queue непросланных сообщений / RSVP / shopping updates.
+     Socket.io client:
+           real-time transport;
+           reconnect with backoff;
+           optimistic UI.
+
+4.4 Offline-first подход
+
+Offline-available data
+
+     список ивентов пользователя;
+     данные текущего ивента;
+     RSVP статусы (last known);
+     последние N сообщений чата;
+     shopping list текущего ивента;
+     игровые состояния в read-only или queued-write режиме;
+     профиль, badges, XP snapshot.
+
+Offline-write queue
+
+Локально буферизуются:
+
+     отправка чата;
+     реакции;
+     RSVP;
+     shopping item create/update;
+     score updates;
+     photo metadata uploads (не сами binary blobs, если сеть отсутствует полностью).
+
+Sync strategy
+
+     client генерирует clientMutationId;
+     backend обрабатывает idempotent mutations;
+     после reconnect выполняется replay в порядке timestamp + dependency graph.
+
+4.5 Real-time Components
+
+     Компонент          Протокол               Назначение
+Chat                    WebSocket Сообщения, реакции, typing, threads
+RSVP live updates       WebSocket Обновление attendance
+Games                   WebSocket FSM transitions, score sync
+Betting                 WebSocket Odds/pool updates
+Presence                WebSocket Online state
+Broadcast notifications Push/SMS Out-of-band communication
+
+4.6 Edge/cache стратегия
+
+     Static assets: Cloudflare CDN + immutable cache headers.
+     Media: CDN with signed access for private event media.
+     SSR pages event invite/public landing: edge caching short TTL.
+     API GET responses:
+           public invite data: 30–60 sec cache;
+           event details private: no public cache, Redis-backed.
+     ETag / If-None-Match для экономии трафика.
+     SW runtime cache policies:
+           stale-while-revalidate для non-critical GET;
+           network-first для frequently changing event state;
+           cache-first для shell/assets.
+
+
+4.7 Медиа-пайплайн
+   1. Client uploads via signed URL.
+   2. Object stored in R2/S3.
+   3. Worker validates MIME/size/hash.
+   4. Optional image compression / thumbnail generation.
+   5. EXIF extraction.
+   6. Metadata persisted in PostgreSQL.
+   7. CDN URL generated.
+   8. Gallery real-time refresh event published.
+
+4.8 Deterministic-only approach
+
+     HypeMeter — moving average.
+     AutoSchedule — rules based on energy curve.
+     Recap Generator — template based.
+     Matchmaking — greedy partition.
+     Anti-Double — Levenshtein.
+     Odds — Elo-lite.
+     Photo grouping — EXIF time windows.
+
+4.9 ASCII Architecture Diagram
+                     +----------------------+
+                     |    Mobile Browser /   |
+                     |    Installed PWA      |
+                     | Next.js App + SW      |
+                     | IndexedDB + Socket    |
+                     +----------+-----------+
+                                 |
+                     HTTPS / WSS|
+                                 |
+              +----------------+----------------+
+              | Cloudflare CDN / Edge Cache        |
+              +----------------+----------------+
+                                 |
+         +---------------------+----------------------+
+         |                                               |
++--------v---------+                            +--------v---------+
+| Next.js Web App |                             | Real-time Gateway|
+| SSR/RSC/API BFF |                             | Socket.io / WS   |
++--------+---------+                            +--------+---------+
+         |                                               |
+         +---------------------+----------------------+
+                                 |
+                     +----------v-----------+
+                     | Backend API Layer     |
+                     | REST + GraphQL        |
+                     | Auth + RBAC + Logic |
+                     +----+----------+------+
+                           |          |
+             +-----------+            +----------------------+
+             |                                             |
+   +---------v---------+                       +-----------v-----------+
+   | PostgreSQL         |                      | Redis                |
+   | source of truth    |                      | cache/pubsub/limits |
+   +---------+---------+                       +-----------+-----------+
+             |                                          |
+             |                                +---------v---------+
+             |                                | Workers / Jobs    |
+             |                                | SMS / media /     |
+             |                                | retries / recap   |
+             |                                +---------+---------+
+             |                                          |
+   +---------v-----------+                    +---------v---------+
+   | Object Storage R2   |<-------------------| Signed upload flow|
+   | photos/voice/audio |                     +-------------------+
+   +---------+-----------+
+             |
+   +---------v-----------+
+   | CDN Media Delivery |
+   +---------------------+
+
+
+
+5. Functional Requirements
+
+5A. Event Hub Module
+5A.1 Цель модуля
+Обеспечить полный lifecycle дружеского ивента: создание, приглашения, RSVP,
+распределение ролей, оповещения и единая event-space точка входа.
+
+5A.2 User Stories
+
+     Как host, я хочу создать ивент за <2 минут, чтобы быстро собрать друзей.
+     Как участник, я хочу ответить “иду/мб/пас” в 1 тап, чтобы не писать в чат.
+     Как host, я хочу отправить красивый invite по ссылке/QR, чтобы повысить отклик.
+     Как co-host, я хочу видеть статусы и роли, чтобы помогать с организацией.
+     Как участник, я хочу получать напоминания даже если push выключен.
+
+5A.3 Основные сущности
+     event
+     event_participant
+     invite
+     rsvp_update
+     event_role_assignment
+     event_blast
+
+
+5A.4 User Flows
+
+Flow: создание ивента
+
+   1. Пользователь нажимает “Создать ивент”.
+   2. Заполняет обязательные поля.
+   3. Система валидирует дату, лимит, timezone.
+   4. Генерируется event page.
+   5. Host получает invite link/QR.
+   6. Можно сразу добавить co-host и роли.
+
+Flow: RSVP
+
+   1. Пользователь открывает invite link.
+   2. Аутентифицируется или заходит по ограниченному guest flow.
+   3. Выбирает статус: going, maybe, pass.
+   4. Видит summary и комментарий.
+   5. Host получает real-time update.
+
+5A.5 Поля создания ивента
+
+       Поле                Тип     Обяз.                  Валидация
+title                string(3–120)   Да trim, no HTML
+description          string(0–2000) Нет sanitize
+category             enum            Да house_party/trip/boardgames/sport/barbecue/other
+start_at             timestamptz     Да > now - 5m
+end_at               timestamptz    Нет > start_at
+timezone             string          Да IANA timezone
+venue_name           string(0–120)  Нет trim
+venue_address        string(0–255)  Нет trim
+geo_lat / geo_lng    decimal        Нет valid coordinates
+participant_limit    int            Нет 2–50
+privacy              enum            Да private/unlisted
+cover_image_url      string         Нет valid HTTPS
+vibe_tags            string[]       Нет max 10
+allow_guest_plus_one bool           Нет default false
+disposable_gallery   bool           Нет default false
+
+5A.6 MUST / SHOULD / COULD
+
+MUST
+
+     Создание, редактирование, удаление ивента.
+     Invite links и QR.
+     RSVP статусы: иду / мб / пас.
+     Text Blast через push, SMS fallback.
+     Роли: host, co-host, dj, chef, chronicler, treasurer, driver.
+     Participant list и live count.
+     Event visibility и access control.
+
+SHOULD
+
+     Шаблоны ивентов.
+     Duplicate event.
+     Reminder schedule presets.
+     Invite audio snippet upload до 15 сек.
+     Пинованные event notes.
+
+COULD
+
+     Weather/manual checklist blocks.
+     Multiple venues/route points.
+     Shared countdown widget.
+
+5A.7 Бизнес-правила
+
+     У ивента должен быть минимум 1 host.
+     co-host может редактировать ивент, но не может transfer ownership без host action.
+     RSVP может изменяться неограниченно до event_locked_at (если задано).
+     Invite link может быть single-event scoped.
+     QR код декодирует invite URL, а не raw event ID.
+     SMS fallback отправляется только участникам с валидным телефоном и opt-in.
+     Participant limit: RSVP going не должен превышать лимит, если strict_limit=true.
+5A.8 Edge Cases
+
+     Участник ответил RSVP офлайн → должен синхронизироваться без дубликата.
+     Срок ивента прошёл, но gallery/chat post-event ещё доступны.
+     Host удаляет ивент во время активного чата.
+     Invite link утёк вне группы.
+     Event time changed after many RSVP confirmations.
+     SMS quota exceeded.
+
+5A.9 Acceptance Criteria
+
+     Ивент создаётся за ≤ 5 API round trips.
+     RSVP update отображается другим участникам в течение ≤ 1 сек.
+     Invite link корректно открывается на mobile web и в установленной PWA.
+     QR invite сканируется внешними QR apps и ведёт на HTTPS URL.
+     Text Blast делает push first, SMS fallback only for undelivered/inactive push-eligible users
+     by policy.
+     Ролевые permissions проверяются на backend.
+
+
+5B. Chat Module
+5B.1 Цель модуля
+
+Предоставить real-time коммуникационный слой внутри ивента без необходимости
+переходить в внешний мессенджер.
+
+5B.2 User Stories
+
+     Как участник, я хочу писать сообщения в общий чат и подгруппы.
+     Как host, я хочу быстро донести update до всех.
+     Как участник, я хочу отправить voice note, если неудобно печатать.
+     Как пользователь с плохим интернетом, я хочу видеть последние сообщения офлайн.
+
+5B.3 Основные сущности
+
+     chat_thread
+     chat_message
+     reaction
+     voice_note
+     message_receipt
+
+5B.4 User Flows
+
+Flow: отправка сообщения
+
+   1. Пользователь печатает сообщение.
+   2. Client assigns temp ID.
+   3. Message locally stored in IndexedDB.
+   4. Отправка по WebSocket.
+   5. Server validates membership/thread permissions.
+   6. Server ack с canonical message ID.
+   7. UI заменяет temp record.
+
+Flow: voice note
+
+   1. Пользователь удерживает кнопку записи.
+   2. Записывается до 60 сек.
+   3. Blob загружается по signed URL.
+   4. Создаётся message типа voice.
+   5. TTL задаётся на автоудаление.
+
+5B.5 MUST / SHOULD / COULD
+
+MUST
+
+     Real-time messaging по WebSocket.
+     Общий thread на ивент.
+     Подгруппы/треды.
+     Emoji reactions.
+     Voice messages с автоудалением 60 сек.
+     IndexedDB local cache.
+     Message delivery ack.
+
+SHOULD
+
+     Typing indicators.
+     Read markers на уровне thread.
+     Message pinning для host/co-host.
+     Link previews по allowlist.
+
+COULD
+
+     Mentions.
+     Poll messages.
+     Quick-reply templates.
+
+5B.6 Бизнес-правила
+
+     Только участники ивента могут писать в event chat.
+     Archived/removed participant не может отправлять новые сообщения.
+     Voice note hard limit: 60 секунд, max file size configurable.
+     Тред может быть public_event, role_scoped, manual_group.
+     Реакция пользователя на сообщение по одному emoji может быть только одна.
+
+5B.7 Edge Cases
+
+     Duplicate send on reconnect.
+     Message ordering при network jitter.
+     Удалённый пользователь остаётся в локальном кеше.
+     Voice upload succeeds, message create fails.
+     Thread deleted while user typing.
+
+5B.8 Acceptance Criteria
+
+     Средняя latency message-to-fanout < 50 мс внутри региона.
+     После reload последние 100 сообщений доступны из IndexedDB.
+     Повторная отправка одного clientMutationId не создаёт duplicate.
+     Voice note удаляется из UI, DB metadata и object storage по TTL policy.
+     Reactions синхронизируются real-time и согласованы между клиентами.
+
+
+5C. Games Module
+5C.1 Цель модуля
+
+Встроить игровые механики в ивент: быстрый запуск, формирование команд, контроль
+состояния игры, счёт и таблицы лидеров.
+5C.2 MVP и Full Scope
+
+MVP: 8 игр
+
+   1. Alias
+   2. Mafia Lite
+   3. Truth or Dare
+   4. Never Have I Ever
+   5. Beer Pong Scoreboard
+   6. Quiz Battle
+   7. Random Pair Challenge
+   8. Uno Score Tracker
+
+Full Scope: 25 игр после MVP
+
+Категории:
+
+     word/party games
+     drinking games
+     team games
+     trivia
+     mini-challenges
+     score-only companion games
+
+5C.3 User Stories
+
+     Как host, я хочу запустить игру без установки отдельного приложения.
+     Как участник, я хочу получить честное распределение по командам.
+     Как группа, мы хотим видеть прозрачный счёт и историю раундов.
+
+5C.4 Основные сущности
+
+     game
+     game_session
+     game_participant
+     game_round
+     game_score_entry
+     leaderboard_snapshot
+
+
+5C.5 Functional Requirements
+
+MUST
+
+     Game lobby per event.
+     Game start/join/leave.
+     FSM state management.
+     Score tracking.
+     Balanced teams.
+     Round-robin pairing where relevant.
+     Event-scoped leaderboards.
+
+SHOULD
+
+     Preset rulesets.
+     Pause/resume.
+     Host override.
+     Game summaries in recap.
+
+COULD
+     Tournament mode.
+     Brackets.
+     Seasonal competitive ladders.
+
+5C.6 FSM States
+
+   State               Описание
+draft     создана сессия, участники собираются
+ready     достаточно участников
+active    игра идёт
+paused    временная остановка
+completed игра завершена
+cancelled отменена
+
+5C.7 Бизнес-правила
+
+     Сессия принадлежит одному ивенту.
+     Только host/co-host/game owner может стартовать.
+     Не все игры требуют одинаковый набор игроков.
+     Счёт может меняться только в active или paused с host override.
+     Leaderboard агрегируется по event и optionally по compashka.
+
+5C.8 Edge Cases
+     Игрок покинул игру посреди раунда.
+     Нечётное число игроков.
+     Одновременные score updates.
+     Host disconnect during active game.
+     Reconnect with stale state.
+
+5C.9 Acceptance Criteria
+
+     Любая игра описывается FSM-конфигом.
+     State transition rules валидируются на сервере.
+     Команды формируются детерминированно при одинаковом входе.
+     Score history audit trail сохраняется.
+     Leaderboard корректно пересчитывается после rollback/override.
+
+
+5D. Betting Module (KOINS)
+5D.1 Цель модуля
+Создать event-local виртуальную betting-механику с игровой валютой KOINS для споров,
+прогнозов и вовлечения без real-money settlement.
+
+5D.2 User Stories
+
+     Как участник, я хочу поставить KOINS на исход игры или челленджа.
+     Как host, я хочу закрыть и рассчитать пари одним действием.
+     Как система, я хочу предотвращать abuse и мультиставки.
+
+5D.3 Основные сущности
+
+     wallet
+     bet
+     bet_entry
+     bet_outcome
+     koins_transaction
+
+
+5D.4 MUST / SHOULD / COULD
+
+MUST
+
+     Виртуальная валюта KOINS.
+     Создание пари.
+     Участие в пуле.
+     Odds calculation (Elo-lite / rule-based).
+     Settlement.
+     Audit trail транзакций.
+
+SHOULD
+
+     Limits per user/event.
+     Host validation of results.
+     Suspicious behavior rules.
+
+COULD
+
+     Seasonal KOINS leagues.
+     Cosmetic rewards for KOINS.
+     Streak-based boosters.
+
+5D.5 Бизнес-правила
+
+     KOINS не выводятся в реальные деньги.
+     Bet должен быть привязан к event или game session.
+     User не может ставить при недостаточном балансе.
+     Settlement необратим без admin override.
+     Odds snapshot фиксируется на момент join.
+     Fraud control: self-dealing/rapid repeated hedging запрещены по правилам.
+
+5D.6 Abuse Prevention
+
+     velocity limits;
+     max active bets per user/event;
+     anti-collusion rules на одинаковые device fingerprint/IP patterns;
+     manual flagging for abnormal win rate;
+     immutable ledger for KOINS transactions.
+
+5D.7 Acceptance Criteria
+
+     Баланс KOINS консистентен при concurrent joins.
+     Bet settlement идемпотентен.
+     При недостаточном балансе API возвращает deterministic rejection.
+     Odds history логируется.
+
+
+5E. Shopping List Module
+5E.1 Цель модуля
+
+Снизить хаос совместных закупок и пост-фактум расчётов между участниками.
+
+5E.2 User Stories
+    Как участник, я хочу добавить товар в общий список.
+    Как группа, мы хотим избегать дублей.
+    Как treasurer, я хочу автоматически посчитать, кто кому должен.
+    Как пользователь из KZ/СНГ, я хочу быстро оплатить через привычные способы.
+
+5E.3 Основные сущности
+    shopping_list
+    shopping_list_item
+    purchase_record
+    split_settlement
+
+
+5E.4 MUST / SHOULD / COULD
+
+MUST
+
+    Shared list.
+    Mark item purchased.
+    Anti-Double (fuzzy duplicates).
+    Split calculator.
+    Payment links / integrations: Kaspi / SBP style flows where applicable in allowed rails.
+
+SHOULD
+
+    Quantity + unit.
+    Assigned buyer.
+    Category grouping.
+    Debt status tracking.
+
+COULD
+
+    Store presets.
+    Budget cap warnings.
+    Receipt attach.
+
+5E.5 Бизнес-правила
+
+    Список привязан к ивенту.
+    Duplicate warning не блокирует добавление, а предлагает merge.
+    Split mode: equal / weighted / selected participants only.
+    Treasurer и host могут финализировать split.
+    Integrations only for payment facilitation, not accounting source of truth.
+
+5E.6 Edge Cases
+
+    Один и тот же товар разными языками/транслитом.
+    Negative or zero prices.
+    Partial payment by several users.
+    User left event after purchase.
+    Offline edits conflict.
+
+5E.7 Acceptance Criteria
+
+    Duplicate score считается детерминированно.
+    Split calculator минимизирует число транзакций.
+    Shopping list редактируется офлайн и синхронизируется без потери данных.
+    Payment deep link генерируется только при наличии итогового settlement.
+5F. Gallery Module
+5F.1 Цель модуля
+
+Создать event-scoped фотоархив и post-event memory layer.
+
+5F.2 User Stories
+
+     Как участник, я хочу быстро загрузить фото в одну общую галерею.
+     Как chronicler, я хочу упорядочить фото по моментам.
+     Как группа, мы хотим временную галерею для приватных событий.
+     Как host, я хочу сгенерировать короткий recap/reel.
+
+5F.3 Основные сущности
+
+     photo
+     photo_tag
+     gallery_album
+     gallery_drop
+     reel_asset
+
+5F.4 MUST / SHOULD / COULD
+
+MUST
+
+     Photo upload.
+     Manual tagging.
+     EXIF clustering.
+     Disposable mode.
+     FlashBack drop.
+     TUSA Reel (rule-based sequence assembly).
+
+SHOULD
+
+     Bulk upload.
+     Thumbnail generation.
+     Cover selection.
+     Download pack.
+
+COULD
+
+     Animated transitions.
+     Event collage templates.
+     Slideshow mode.
+
+5F.5 Бизнес-правила
+     Upload only for event participants.
+     Max file size configurable.
+     EXIF metadata используется только для clustering/sorting.
+     Disposable mode удаляет фото по TTL.
+     Manual tags имеют controlled vocabulary + custom tags with sanitation.
+     Reel собирается по правилам, без AI.
+
+5F.6 Edge Cases
+
+     Фото без EXIF.
+     Дубликаты по hash.
+     Неверная ориентация.
+     Upload прервался.
+     User deleted from event after upload.
+     Disposable TTL expired while client offline.
+
+5F.7 Acceptance Criteria
+     Фото доступны в галерее после загрузки ≤ 5 сек для файлов до N MB.
+     EXIF clustering группирует фото в моменты по временным окнам.
+     Disposable cleanup удаляет metadata + object file по retention policy.
+     Reel формируется детерминированно из доступных фото.
+
+
+5G. Profile Module
+5G.1 Цель модуля
+
+Формировать долгосрочное удержание через социальную идентичность, прогрессию и
+статусы внутри компании.
+
+5G.2 User Stories
+     Как участник, я хочу видеть свой VibeScore.
+     Как пользователь, я хочу получать бейджи за активность.
+     Как группа друзей, мы хотим объединяться в compashki.
+     Как конкурентный пользователь, я хочу продвигаться по league tiers.
+
+5G.3 Основные сущности
+
+     user
+     xp_transaction
+     badge
+     user_badge
+     league
+     compashka
+     customization_item
+
+
+5G.4 MUST / SHOULD / COULD
+
+MUST
+
+     XP system (VibeScore).
+     Streaks.
+     Leagues.
+     60+ badge types.
+     Customization: skins, frames.
+     Compashki groups.
+
+SHOULD
+
+     Seasonal stats.
+     Activity breakdown.
+     Event recap contribution stats.
+
+COULD
+
+     Cross-event prestige.
+     Clan-versus-clan boards.
+5G.5 Бизнес-правила
+
+     XP начисляется только за валидированные действия.
+     Повторяющиеся действия имеют daily cap.
+     Badge rules детерминированы и описаны конфигом.
+     League progression рассчитывается периодически batch-job’ом.
+     Compashka может быть private/invite-only.
+
+5G.6 Edge Cases
+
+     User merges multiple accounts.
+     Abuse by spam actions for XP.
+     Retroactive badge unlock after delayed sync.
+     User deleted but compashka history preserved partially.
+
+5G.7 Acceptance Criteria
+
+     XP ledger является source of truth.
+     Badge выдаётся не более одного раза, если badge non-repeatable.
+     Streak корректно не ломается при timezone-aware usage.
+     League recalculation повторяема и audit-friendly.
+
+
+6. Technical Requirements
+6A. Frontend
+Stack
+
+Категория                                  Технология
+Framework Next.js 15 (App Router)
+UI         React 19-compatible stack
+Styling    Tailwind CSS
+State      Zustand по умолчанию, Redux Toolkit если потребуется сложная нормализация
+PWA        Workbox
+Real-time Socket.io client
+Storage    IndexedDB
+Forms      React Hook Form / Formik equivalent
+Validation Zod / Yup
+i18n       next-intl / i18n routing
+Analytics privacy-aware product analytics
+A11y       WCAG baseline
+
+Frontend Requirements
+     responsive mobile-first layouts;
+     install prompt support;
+     optimistic UI for chat, RSVP, shopping;
+     route-based code splitting;
+     image optimization;
+     lazy hydration where possible;
+     skeleton loading states;
+     network awareness (online/offline);
+     secure handling of media upload tokens;
+     minimal bundle for invite/open pages.
+Accessibility
+
+     keyboard navigability for core actions;
+     screen-reader labels for primary controls;
+     contrast AA minimum;
+     tap targets ≥ 44px;
+     captions/labels for voice-note UI states.
+
+
+6B. Backend
+Recommended baseline
+     Node.js
+     NestJS preferred for modularity, DTOs, guards, WebSocket gateways
+     Альтернативы: Fastify для higher throughput, Express не приоритетен для сложного
+     долгоживущего продукта.
+
+Backend Requirements
+
+     REST for transactional CRUD;
+     GraphQL optional for profile/dashboard aggregated reads;
+     Socket.io / native WS gateway;
+     background jobs for:
+            push/SMS retries,
+            media processing,
+            badge recalculation,
+            league updates,
+            disposable cleanup,
+            recap generation;
+     request idempotency for mutation endpoints;
+     DTO validation on all external inputs;
+     role-aware permission middleware;
+     rate limit and abuse controls;
+     audit logging for admin-sensitive operations;
+     signed URLs for upload/download where needed.
+
+
+6C. Database
+Components
+
+         Layer             Technology                        Role
+Primary DB              PostgreSQL         transactional source of truth
+Cache / ephemeral state Redis              cache, session hints, rate limits, pubsub
+Local client DB         IndexedDB          offline store
+Media storage           S3-compatible / R2 files
+
+Data Management Requirements
+
+     PostgreSQL with migrations and schema versioning;
+     daily backups + PITR if available;
+     retention policies:
+            voice notes temp;
+            disposable gallery TTL;
+            logs per compliance class;
+     soft delete for user-generated entities where needed;
+     immutable ledger tables for XP/KOINS.
+6D. Infrastructure
+Baseline deployment
+
+Component                        Option
+Web frontend Vercel
+API / WS     Railway or DigitalOcean App Platform / Droplets
+CDN          Cloudflare
+Media        Cloudflare R2
+SMS          Twilio / Mobizon (KZ)
+Payments     Kaspi / Stripe / ЮKassa
+
+Environments
+
+     dev
+     stage
+     prod
+
+
+CI/CD
+     GitHub Actions or equivalent;
+     preview deployments for frontend;
+     migration gating for stage/prod;
+     smoke tests on deploy;
+     rollback runbooks.
+
+Observability
+
+     centralized logs;
+     APM tracing;
+     socket connection metrics;
+     queue metrics;
+     business KPI dashboards;
+     on-call alerts for error spikes, delivery failures, queue lag.
+
+Secrets and DR
+     environment-specific secrets management;
+     key rotation policy;
+     backup restore drill every quarter;
+     RTO target ≤ 4h, RPO ≤ 15 min for critical DB.
+
+
+7. API Specification
+7.1 Общие API правила
+Auth
+
+     Bearer JWT access token
+     Refresh token via secure HTTP-only cookie or rotated token strategy
+     Public invite endpoints may have limited unauthenticated mode
+
+Response envelope
+{
+    "success": true,
+    "data": {},
+    "meta": {},
+    "error": null
+}
+
+Error envelope
+{
+    "success": false,
+    "data": null,
+    "error": {
+      "code": "EVENT_NOT_FOUND",
+      "message": "Event not found",
+      "details": {}
+    }
+}
+
+Common HTTP statuses
+
+       200 OK
+       201 Created
+       202 Accepted
+       204 No Content
+       400 Bad Request
+       401 Unauthorized
+       403 Forbidden
+       404 Not Found
+       409 Conflict
+       422 Unprocessable Entity
+       429 Too Many Requests
+       500 Internal Server Error
+
+
+
+7.2 Event Hub API
+Summary Table
+
+          Endpoint      Method          Auth               Назначение
+/api/events             POST   JWT                      создать ивент
+/api/events/:id         GET    JWT/public invite scoped получить ивент
+/api/events/:id         PUT    JWT + role               обновить ивент
+/api/events/:id         DELETE JWT + host               удалить ивент
+/api/events/:id/rsvp    POST   JWT                      обновить RSVP
+/api/events/:id/invites POST   JWT + host/co-host       создать инвайты
+/api/events/:id/blast   POST   JWT + host/co-host       текстовая рассылка
+
+POST /api/events
+
+Auth: JWT
+
+Request
+{
+    "title": "Friday Rooftop",
+    "description": "Берите пледы",
+    "category": "house_party",
+    "start_at": "2026-08-14T19:00:00+05:00",
+    "end_at": "2026-08-15T01:00:00+05:00",
+    "timezone": "Asia/Almaty",
+    "venue_name": "Roof 17",
+    "venue_address": "Almaty",
+    "participant_limit": 12,
+    "privacy": "private",
+    "vibe_tags": ["chill", "music"]
+}
+
+Response
+
+{
+    "success": true,
+    "data": {
+      "id": "evt_123",
+      "title": "Friday Rooftop",
+      "host_user_id": "usr_1",
+      "status": "scheduled",
+      "invite_url": "https://tusa.io/i/inv_abc"
+    }
+}
+
+Errors
+
+       VALIDATION_ERROR
+       UNSUPPORTED_TIMEZONE
+       PARTICIPANT_LIMIT_INVALID
+
+
+GET /api/events/:id
+Auth: JWT or scoped invite token
+
+Response
+{
+    "success": true,
+    "data": {
+      "id": "evt_123",
+      "title": "Friday Rooftop",
+      "description": "Берите пледы",
+      "participants_summary": {
+         "going": 8,
+         "maybe": 2,
+         "pass": 1
+      },
+      "roles": [
+         {"role": "host", "user_id": "usr_1"},
+         {"role": "dj", "user_id": "usr_7"}
+      ]
+    }
+}
+
+
+PUT /api/events/:id
+
+Auth: JWT + host/co-host
+
+Request
+
+{
+    "title": "Friday Rooftop Updated",
+    "start_at": "2026-08-14T20:00:00+05:00"
+}
+
+
+DELETE /api/events/:id
+Auth: JWT + host
+Response: 204 No Content
+
+POST /api/events/:id/rsvp
+
+Auth: JWT
+Request
+{
+    "status": "going",
+    "comment": "Буду к 20:30",
+    "clientMutationId": "cmid_001"
+}
+
+Response
+{
+    "success": true,
+    "data": {
+      "event_id": "evt_123",
+      "user_id": "usr_2",
+      "status": "going",
+      "updated_at": "2026-08-13T11:22:33Z"
+    }
+}
+
+
+POST /api/events/:id/invites
+Auth: JWT + host/co-host
+
+Request
+{
+    "mode": "link",
+    "max_uses": 20,
+    "expires_at": "2026-08-14T23:59:59+05:00",
+    "audio_snippet_url": "https://cdn.tusa.io/invites/audio_1.m4a"
+}
+
+Response
+{
+    "success": true,
+    "data": {
+      "invite_id": "inv_abc",
+      "invite_url": "https://tusa.io/i/inv_abc",
+      "qr_image_url": "https://cdn.tusa.io/qr/inv_abc.png"
+    }
+}
+
+Error Codes
+
+       EVENT_NOT_FOUND
+       NOT_EVENT_MEMBER
+       ROLE_REQUIRED
+       INVITE_EXPIRED
+       RSVP_LOCKED
+       EVENT_ALREADY_STARTED
+
+
+
+7.3 Chat API
+              Endpoint           Method Auth           Назначение
+/api/chat/messages               POST JWT отправить сообщение fallback/HTTP
+/api/chat/threads/:id/messages   GET    JWT получить сообщения
+/api/chat/messages/:id/reactions POST JWT добавить реакцию
+
+
+POST /api/chat/messages
+
+Auth: JWT
+Request
+{
+    "thread_id": "thr_1",
+    "type": "text",
+    "text": "Кто уже выехал?",
+    "clientMutationId": "msg_tmp_1"
+}
+
+Response
+{
+    "success": true,
+    "data": {
+      "id": "msg_101",
+      "thread_id": "thr_1",
+      "sender_user_id": "usr_2",
+      "type": "text",
+      "text": "Кто уже выехал?",
+      "created_at": "2026-08-14T12:00:00Z"
+    }
+}
+
+GET /api/chat/threads/:id/messages
+Query: cursor, limit
+Response
+{
+    "success": true,
+    "data": {
+      "items": [],
+      "next_cursor": "c_2"
+    }
+}
+
+Errors
+
+       THREAD_NOT_FOUND
+       MESSAGE_TOO_LONG
+       VOICE_TTL_EXCEEDED
+       NOT_THREAD_MEMBER
+
+
+
+7.4 Games API
+          Endpoint      Method Auth       Назначение
+/api/games              GET   JWT       каталог игр
+/api/games/:id/start    POST JWT + role старт игры
+/api/games/:id/score    POST JWT + role обновить счёт
+/api/games/sessions/:id GET   JWT       получить сессию
+
+POST /api/games/:id/start
+
+Request
+{
+    "event_id": "evt_123",
+    "participants": ["usr_1", "usr_2", "usr_3", "usr_4"],
+    "ruleset": "default",
+    "team_mode": "balanced"
+}
+
+Response
+{
+    "success": true,
+    "data": {
+      "game_session_id": "gs_1",
+      "state": "active",
+      "teams": [
+        ["usr_1", "usr_4"],
+        ["usr_2", "usr_3"]
+      ]
+    }
+}
+
+POST /api/games/:id/score
+Request
+{
+    "game_session_id": "gs_1",
+    "score_events": [
+       {"participant_id": "usr_1", "delta": 10}
+    ],
+    "clientMutationId": "score_001"
+}
+
+Errors
+
+       GAME_NOT_FOUND
+       INVALID_STATE_TRANSITION
+       INSUFFICIENT_PLAYERS
+       SCORE_CONFLICT
+
+
+
+7.5 Betting API
+         Endpoint    Method Auth      Назначение
+/api/bets            POST JWT        создать ставку
+/api/bets/:id/join   POST JWT        войти в ставку
+/api/bets/:id/settle POST JWT + host рассчитать
+
+
+POST /api/bets
+{
+    "event_id": "evt_123",
+    "type": "game_outcome",
+    "subject_ref": "gs_1",
+    "options": ["team_a", "team_b"],
+    "close_at": "2026-08-14T21:30:00+05:00",
+    "min_stake": 10
+}
+
+POST /api/bets/:id/join
+{
+    "option": "team_a",
+    "stake": 50,
+    "clientMutationId": "betjoin_1"
+}
+
+POST /api/bets/:id/settle
+{
+    "winning_option": "team_a"
+}
+
+Errors
+       INSUFFICIENT_KOINS
+       BET_CLOSED
+       INVALID_OPTION
+       BET_ALREADY_SETTLED
+
+
+
+7.6 Gallery API
+        Endpoint      Method Auth          Назначение
+/api/gallery/:eventId GET    JWT получить галерею
+/api/gallery/upload   POST JWT получить upload token / register file
+
+GET /api/gallery/:eventId
+Response
+{
+    "success": true,
+    "data": {
+      "clusters": [
+        {
+          "cluster_id": "cl_1",
+          "started_at": "2026-08-14T18:00:00Z",
+          "photos": []
+        }
+      ]
+    }
+}
+
+
+POST /api/gallery/upload
+{
+    "event_id": "evt_123",
+    "filename": "IMG_1234.JPG",
+    "content_type": "image/jpeg",
+    "size_bytes": 2456789,
+    "checksum_sha256": "..."
+}
+
+Response
+{
+    "success": true,
+    "data": {
+      "upload_url": "https://r2-upload.example.com/...",
+      "photo_id": "pho_1",
+      "expires_in_sec": 900
+    }
+}
+
+
+
+7.7 Shopping API
+            Endpoint          Method Auth   Назначение
+/api/shopping/items           POST JWT добавить позицию
+/api/shopping/items/:id       PUT    JWT обновить
+/api/shopping/split/calculate POST JWT посчитать сплит
+
+
+POST /api/shopping/items
+{
+    "shopping_list_id": "sl_1",
+    "name": "Coca Cola 2L",
+    "quantity": 2,
+    "unit": "bottle",
+    "estimated_price": 900
+}
+
+
+POST /api/shopping/split/calculate
+{
+    "event_id": "evt_123",
+    "mode": "equal",
+    "included_user_ids": ["usr_1", "usr_2", "usr_3"],
+    "purchases": [
+      {"paid_by": "usr_1", "amount": 4500},
+      {"paid_by": "usr_2", "amount": 1500}
+    ]
+}
+
+Response
+{
+    "success": true,
+    "data": {
+      "total": 6000,
+      "settlements": [
+        {"from_user_id": "usr_3", "to_user_id": "usr_1", "amount": 2000}
+      ]
+    }
+}
+
+
+
+7.8 Profile API
+         Endpoint    Method   Auth    Назначение
+/api/profile/:userId GET    JWT      профиль
+/api/profile/xp      POST JWT/system начислить XP
+
+GET /api/profile/:userId
+{
+    "success": true,
+    "data": {
+      "user_id": "usr_1",
+      "display_name": "Arman",
+      "vibe_score": 1240,
+      "league": "silver",
+      "badges": []
+    }
+}
+
+POST /api/profile/xp
+{
+    "user_id": "usr_1",
+    "source": "event_attendance",
+    "source_ref": "evt_123",
+    "amount": 25
+}
+
+Errors
+
+       XP_RULE_VIOLATION
+       BADGE_ALREADY_GRANTED
+       PROFILE_NOT_FOUND
+
+
+
+7.9 WebSocket Events
+client -> server
+
+    Event                                  Payload
+chat:send      {threadId, type, text?, mediaRef?, clientMutationId}
+chat:react     {messageId, emoji, action}
+chat:typing    {threadId, isTyping}
+event:rsvp     {eventId, status, clientMutationId}
+game:start     {gameId, eventId, participants, ruleset}
+game:score     {gameSessionId, scoreEvents, clientMutationId}
+bet:join       {betId, option, stake, clientMutationId}
+presence:ping {eventId}
+sync:ack       {lastServerSeq}
+
+
+server -> client
+
+            Event                  Payload
+chat:message             canonical message payload
+chat:reaction            reaction delta
+chat:typing              typing state
+event:rsvp_updated       participant RSVP delta
+event:participant_joined user summary
+game:state_changed       FSM state update
+game:score_updated       score snapshot or delta
+bet:updated              odds/pool/status
+gallery:photo_added      photo metadata
+shopping:item_updated    shopping delta
+system:notice            info/warning
+sync:resync_required     client must refetch state
+
+Reconnect Behavior
+
+     exponential backoff: 1s, 2s, 5s, 10s, 20s;
+     session token revalidation on reconnect;
+     client sends last seen sequence number;
+     server replays buffered deltas or sends resync_required;
+     unsent local mutations replayed with idempotency keys;
+     if reconnect > TTL for volatile rooms, client refetches thread/event snapshots.
+
+
+8. Data Models (ER Diagram Concepts)
+     Типы указаны в терминах PostgreSQL.
+
+8.1 users
+   Поле           Тип     Req Индекс             Примечание
+id           uuid          Да PK
+phone        varchar(32) Нет unique partial normalized
+email        varchar(255) Нет unique partial lowercase
+display_name varchar(80) Да idx
+username     varchar(40) Нет unique          optional
+avatar_url   text         Нет                HTTPS
+birth_year   smallint     Нет                age gating only
+    Поле          Тип     Req Индекс               Примечание
+locale        varchar(10) Да                  ru, kk, en
+timezone      varchar(64) Да                  IANA
+vibe_score    int          Да idx             denormalized snapshot
+league_id     uuid        Нет idx             FK
+created_at    timestamptz Да idx
+deleted_at    timestamptz Нет idx             soft delete
+
+8.2 events
+      Поле              Тип     Req Индекс
+id                 uuid          Да PK
+host_user_id       uuid          Да idx
+title              varchar(120) Да idx
+description        text         Нет
+category           varchar(32) Да idx
+start_at           timestamptz Да idx
+end_at             timestamptz Нет idx
+timezone           varchar(64) Да
+venue_name         varchar(120) Нет
+venue_address      varchar(255) Нет
+geo_point          point        Нет gist optional
+participant_limit int           Нет
+privacy            varchar(16) Да idx
+status             varchar(16) Да idx
+cover_image_url text            Нет
+disposable_gallery boolean       Да
+created_at         timestamptz Да idx
+updated_at         timestamptz Да
+
+8.3 event_participants
+       Поле              Тип
+id                   uuid
+event_id             uuid
+user_id              uuid
+role                 varchar(24)
+rsvp_status          varchar(16)
+joined_via_invite_id uuid
+joined_at            timestamptz
+removed_at           timestamptz
+
+Индексы:
+
+     unique (event_id, user_id)
+     idx (event_id, rsvp_status)
+     idx (event_id, role)
+
+8.4 invites
+      Поле             Тип
+id                 uuid
+       Поле            Тип
+event_id           uuid
+created_by_user_id uuid
+token              varchar(128)
+mode               varchar(16)
+audio_snippet_url text
+max_uses           int
+used_count         int
+expires_at         timestamptz
+created_at         timestamptz
+
+Индексы: unique (token), idx (event_id)
+
+8.5 rsvp_updates
+  Поле         Тип
+id         uuid
+event_id uuid
+user_id    uuid
+old_status varchar(16)
+new_status varchar(16)
+comment varchar(255)
+created_at timestamptz
+
+Индекс: (event_id, created_at desc)
+
+8.6 chat_threads
+      Поле             Тип
+id                 uuid
+event_id           uuid
+thread_type        varchar(24)
+title              varchar(80)
+created_by_user_id uuid
+role_scope         varchar(24)
+created_at         timestamptz
+archived_at        timestamptz
+
+8.7 chat_messages
+       Поле              Тип
+id                  uuid
+thread_id           uuid
+sender_user_id      uuid
+message_type        varchar(16)
+text                text
+media_url           text
+reply_to_message_id uuid
+client_mutation_id varchar(64)
+created_at          timestamptz
+edited_at           timestamptz
+       Поле            Тип
+deleted_at          timestamptz
+
+Индексы:
+
+     unique (sender_user_id, client_mutation_id) partial
+     idx (thread_id, created_at)
+     idx (reply_to_message_id)
+
+8.8 reactions
+  Поле         Тип
+id         uuid
+message_id uuid
+user_id    uuid
+emoji      varchar(16)
+created_at timestamptz
+
+Индексы: unique (message_id, user_id, emoji)
+
+8.9 voice_notes
+   Поле           Тип
+id           uuid
+message_id uuid
+duration_sec smallint
+file_url     text
+expires_at timestamptz
+deleted_at timestamptz
+
+8.10 games
+     Поле          Тип
+id             uuid
+code           varchar(32)
+title          varchar(80)
+category       varchar(32)
+min_players    int
+max_players    int
+supports_teams boolean
+ruleset_schema jsonb
+is_mvp_enabled boolean
+
+8.11 game_sessions
+      Поле             Тип
+id                 uuid
+event_id           uuid
+game_id            uuid
+created_by_user_id uuid
+state              varchar(16)
+ruleset            varchar(32)
+       Поле           Тип
+team_config       jsonb
+score_snapshot    jsonb
+started_at        timestamptz
+ended_at          timestamptz
+
+8.12 game_participants
+     Поле           Тип
+id              uuid
+game_session_id uuid
+user_id         uuid
+team_no         smallint
+seat_no         smallint
+rating_before   int
+rating_after    int
+joined_at       timestamptz
+
+Индексы: unique (game_session_id, user_id)
+
+8.13 bets
+      Поле             Тип
+id                 uuid
+event_id           uuid
+game_session_id uuid
+created_by_user_id uuid
+bet_type           varchar(24)
+options            jsonb
+odds_snapshot      jsonb
+pool_total         int
+min_stake          int
+close_at           timestamptz
+settled_at         timestamptz
+winning_option     varchar(32)
+status             varchar(16)
+
+
+8.14 bet_entries
+  Поле         Тип
+id         uuid
+bet_id     uuid
+user_id    uuid
+option_key varchar(32)
+stake      int
+payout     int
+created_at timestamptz
+
+Индексы: (bet_id), (user_id, created_at desc)
+
+8.15 shopping_lists
+      Поле             Тип
+id                 uuid
+event_id           uuid
+title              varchar(80)
+created_by_user_id uuid
+status             varchar(16)
+created_at         timestamptz
+
+8.16 shopping_list_items
+       Поле              Тип
+id                   uuid
+shopping_list_id     uuid
+name                 varchar(120)
+normalized_name      varchar(120)
+quantity             numeric(10,2)
+unit                 varchar(16)
+estimated_price      int
+actual_price         int
+assigned_user_id     uuid
+purchased_by_user_id uuid
+is_purchased         boolean
+duplicate_of_item_id uuid
+created_at           timestamptz
+
+Индексы:
+
+     idx (shopping_list_id)
+     idx (shopping_list_id, normalized_name)
+
+8.17 split_settlements
+     Поле            Тип
+id               uuid
+event_id         uuid
+from_user_id     uuid
+to_user_id       uuid
+amount           int
+currency         varchar(8)
+status           varchar(16)
+payment_provider varchar(16)
+payment_ref      varchar(128)
+created_at       timestamptz
+
+8.18 photos
+       Поле              Тип
+id                  uuid
+event_id            uuid
+uploaded_by_user_id uuid
+object_key          text
+       Поле                Тип
+cdn_url              text
+mime_type            varchar(64)
+size_bytes           bigint
+checksum_sha256      varchar(64)
+exif_taken_at        timestamptz
+exif_payload         jsonb
+cluster_key          varchar(64)
+is_disposable        boolean
+expires_at           timestamptz
+created_at           timestamptz
+deleted_at           timestamptz
+
+Индексы:
+
+     idx (event_id, created_at)
+     idx (event_id, exif_taken_at)
+     unique (event_id, checksum_sha256) partial
+
+8.19 photo_tags
+      Поле            Тип
+id                uuid
+photo_id          uuid
+tagged_by_user_id uuid
+tag_type          varchar(24)
+tag_value         varchar(64)
+created_at        timestamptz
+
+8.20 xp_transactions
+  Поле         Тип
+id         uuid
+user_id    uuid
+source     varchar(32)
+source_ref varchar(64)
+amount int
+created_at timestamptz
+
+Индексы: (user_id, created_at desc), unique (user_id, source, source_ref) for
+idempotent sources
+
+8.21 badges
+  Поле          Тип
+id          uuid
+code        varchar(40)
+title       varchar(80)
+description varchar(255)
+rarity      varchar(16)
+rule_config jsonb
+repeatable boolean
+8.22 user_badges
+  Поле         Тип
+id         uuid
+user_id    uuid
+badge_id uuid
+awarded_at timestamptz
+source_ref varchar(64)
+
+Индексы: unique (user_id, badge_id) where non-repeatable
+
+8.23 leagues
+   Поле        Тип
+id          uuid
+code        varchar(32)
+title       varchar(64)
+min_score int
+max_score int
+season_code varchar(16)
+
+8.24 compashki
+    Поле          Тип
+id            uuid
+title         varchar(80)
+owner_user_id uuid
+privacy       varchar(16)
+invite_code   varchar(32)
+created_at    timestamptz
+
+Integrity Constraints
+
+     FK on all ownership references.
+     Enum-like fields enforced via DB constraints or reference tables.
+     amount > 0 for payments, stakes, split amounts.
+     duration_sec <= 60 for voice notes.
+     start_at < end_at when end_at present.
+     participant uniqueness per event/game session.
+
+ER Relationship Summary
+     users 1:N events
+     events 1:N event_participants
+     events 1:N invites
+     events 1:N chat_threads
+     chat_threads 1:N chat_messages
+     chat_messages 1:N reactions
+     chat_messages 1:1 voice_notes optional
+     events 1:N game_sessions
+     game_sessions 1:N game_participants
+     events 1:N bets
+     bets 1:N bet_entries
+     events 1:N shopping_lists
+     shopping_lists 1:N shopping_list_items
+     events 1:N photos
+     photos 1:N photo_tags
+     users 1:N xp_transactions
+     users N:M badges via user_badges
+     leagues 1:N users
+     users N:M compashki through membership table to be added in implementation
+
+
+Partitioning / Indexing Recommendations
+     Partition high-volume tables by month or by event_id hash when scale requires:
+            chat_messages
+            reactions
+            photos
+            xp_transactions
+     Use BRIN for append-heavy timestamp tables if row counts grow large.
+     Create covering indexes for hottest read paths:
+           event participants summary,
+           thread messages pagination,
+           gallery by event/time.
+     Redis cache keys:
+            event:{id}:summary
+            thread:{id}:recent
+            user:{id}:profile_snapshot
+
+
+
+9. Algorithms (detailed)
+9A. Fair-Shuffle (Fisher–Yates)
+Назначение: честное перемешивание списка игроков/челленджей.
+
+Вход: массив A[0..n-1]
+Выход: случайно переставленный массив
+
+Шаги
+
+   1. Идти с конца массива к началу.
+   2. Для каждого i выбрать j в [0, i].
+   3. Поменять A[i] и A[j].
+
+Псевдокод
+for i from n-1 downto 1:
+    j = randomInt(0, i)
+    swap(A[i], A[j])
+return A
+
+Сложность: O(n) time, O(1) extra space
+Ограничения: нужен качественный PRNG, seedable for reproducibility if required
+Edge cases: n=0, n=1, deterministic replay with same seed
+
+
+9B. Balanced-Teams (greedy partition)
+Назначение: приблизительно равные команды по рейтингу/опыту.
+
+Вход: список игроков с весом w
+Выход: 2 или N команд
+
+Шаги
+   1. Отсортировать игроков по убыванию веса.
+   2. По очереди класть игрока в команду с минимальной текущей суммой весов.
+   3. Для tie-break — stable deterministic order by user id.
+
+Псевдокод
+sort players by weight desc, user_id asc
+init teams
+for p in players:
+    t = team with min(total_weight)
+    add p to t
+return teams
+
+Сложность: O(n log n)
+Ограничения: не оптимально глобально, но быстро
+Edge cases: одинаковые веса, нечётное число игроков, принудительные teammates
+
+
+9C. Round-Robin Pairing
+Назначение: генерация расписания пар/матчей.
+
+Вход: список игроков
+Выход: список раундов с парами
+
+Шаги
+
+   1. Если нечётное число игроков — добавить BYE.
+   2. Зафиксировать первого игрока.
+   3. Остальных вращать по кругу.
+   4. На каждом раунде формировать пары зеркально.
+
+Псевдокод
+if odd(players): add BYE
+pivot = players[0]
+rest = players[1:]
+for round in 1..len(players)-1:
+    lineup = [pivot] + rest
+    pairs = mirrorPairs(lineup)
+    save pairs
+    rest = rotate(rest)
+
+Сложность: O(n^2)
+Ограничения: подходит для round-robin игр
+Edge cases: BYE rounds, player dropout mid-tournament
+
+
+9D. Elo-lite Rating
+Назначение: лёгкий рейтинг для игр и odds.
+
+Вход: ratingA, ratingB, result
+Выход: новые рейтинги
+
+Формула
+
+       E(A) = 1 / (1 + 10^((RB - RA)/400))
+       RA' = RA + K * (S - E(A))
+
+Где:
+
+       S = 1, если выиграл A
+       S = 0.5, если ничья
+     S = 0, если проигрыш
+     K configurable, напр. 16/24/32
+
+Псевдокод
+expectedA = 1 / (1 + 10 ^ ((RB - RA)/400))
+newRA = RA + K * (scoreA - expectedA)
+newRB = RB + K * ((1-scoreA) - (1-expectedA))
+
+Сложность: O(1)
+Ограничения: упрощённая модель; для team games нужен aggregated team rating
+Edge cases: новый игрок с default rating, outlier streaks
+
+
+9E. Anti-Double (Levenshtein)
+Назначение: находить вероятные дубли в shopping list.
+
+Вход: новый item name, существующие items
+Выход: similarity score / candidate duplicates
+
+Шаги
+
+   1. Normalize string:
+           lowercase
+           trim
+           remove punctuation
+           translit simplification
+           unit stripping
+   2. Посчитать Levenshtein distance до candidate pool.
+   3. Преобразовать в similarity.
+   4. Если similarity > threshold, показать предупреждение.
+
+Псевдокод
+normNew = normalize(name)
+for item in items:
+    normOld = normalize(item.name)
+    d = levenshtein(normNew, normOld)
+    sim = 1 - d / max(len(normNew), len(normOld))
+    if sim >= threshold:
+        candidates.add(item, sim)
+return sortBy(sim desc)
+
+Сложность: O(n*m*k) в наивном виде
+Ограничения: fuzzy matching несовершенен для разных брендов/языков
+Edge cases: "cola", "coca-cola", "кола", "coca cola 2л"
+
+
+9F. Split Calculator (minimize transactions)
+Назначение: минимизировать количество переводов между участниками.
+
+Вход: net balance per user
+Выход: список транзакций from -> to -> amount
+
+Шаги
+
+   1. Посчитать баланс каждого: paid - owed.
+   2. Разделить на debtors (<0) и creditors (>0).
+   3. Жадно матчить крупнейшего debtor с крупнейшим creditor.
+   4. Продолжать, пока все балансы не занулятся.
+
+Псевдокод
+debtors = sort ascending balances
+creditors = sort descending balances
+while debtors and creditors:
+    d = top debtor
+    c = top creditor
+    amt = min(abs(d.balance), c.balance)
+    add settlement(d -> c, amt)
+    update balances
+    remove zero balances
+return settlements
+
+Сложность: O(n log n)
+Ограничения: жадный подход обычно близок к оптимальному
+Edge cases: rounding by currency, excluded users, weighted split
+
+
+9G. HypeMeter (moving average)
+Назначение: вычислять динамику “разогрева” ивента.
+
+Вход: time series событий:
+
+     invite opens
+     RSVP going
+     chat activity
+     reactions
+     gallery pre-drop interactions
+
+Выход: score 0–100
+
+Шаги
+
+   1. Каждому событию назначается вес.
+   2. Считается moving average по скользящему окну.
+   3. Старые события затухают.
+   4. Score clamp 0
+

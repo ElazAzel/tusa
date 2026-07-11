@@ -1,0 +1,1000 @@
+       Руководство по разработке игровых
+               режимов TUSA.io
+               28 social party games для Stage + Controller архитектуры в PWA
+
+
+TUSA.io — это PWA-платформа для дружеских ивентов, вечеринок, квартирников,
+барных активностей и гибридных онлайн/офлайн встреч. Базовая идея проста: общий
+экран показывает то, что важно всем, а телефон каждого игрока работает как
+приватный контроллер, карточка роли, пульт ввода и персональный интерфейс
+действий.
+
+Документ ниже написан как прикладное product, game-design и tech-руководство. Его
+цель — не «вдохновить на идеи», а дать разработчику, дизайнеру и продакту рабочее
+основание для MVP и последующих версий. Если после прочтения у команды
+останется меньше «а как это вообще будет работать?», значит документ делает свою
+работу.
+
+
+
+
+Содержание
+ 1. Платформа TUSA.io и архитектура           17. Cards of Chaos
+    Stage + Controller                        18. Truth or Dare
+ 2. Сводная матрица по играм                  19. Never Have I Ever
+ 3. Общие технические принципы                20. Would You Rather
+ 4. Единый шаблон game states и               21. Two Truths and a Lie
+    WebSocket
+                                              22. Blank Slate
+ 5. Монетизация, retention и replayability
+                                              23. Wavelength
+ 6. Alias (Word Blast)
+                                              24. Brain Burst (Kahoot-style)
+ 7. Mafia (Nightfall)
+                                              25. Guess the Song
+ 8. Werewolf (One Night)
+                                              26. Bomb Party
+ 9. Codenames (Code Crack)
+                                              27. Gartic Phone
+10. Spyfall
+                                              28. Bunker (Bunker Escape)
+11. Impostor
+                                              29. Wheel of Fate
+12. Crocodil (Mime Riot)                      30. Kiss / Marry / Kill
+13. Heads Up
+                                              31. Charades
+14. Pictionary (Scribble Fight)
+                                              32. Music Quiz
+15. Quiplash                                  33. Trivia
+16. Psych / Fibbage
+Платформа TUSA.io и архитектура Stage + Controller
+Stage — это общий экран: TV, проектор, экран бара, ноутбук ведущего или tablet в режиме
+киоска. Stage показывает общие таймеры, прогресс, результаты, статус игроков, reveal-
+моменты, таблицы очков и то, что должно синхронно проживаться комнатой.
+
+Controller — телефон игрока. Он всегда персонализирован: хранит скрытую роль, слово,
+варианты выбора, личный статус, кнопки действий, ввод текста, голосование, жесты и
+мини-инструкции. Controller должен быть максимально быстрым, «толстопальцевым» и
+устойчивым к шумной обстановке, плохому Wi-Fi и человеческой импровизации.
+
+Базовый сценарий почти у всех игр одинаков:
+
+   1. Lobby: host создаёт комнату, получает room code и QR, выбирает игру и базовые
+      настройки.
+   2. Join flow: игроки сканируют QR или вводят короткий код, указывают nickname,
+      выбирают аватар/цвет, подтверждают готовность.
+   3. Round: игра переходит в активную фазу. Stage показывает общую структуру, Controller
+      — личные действия.
+   4. Results: reveal, очки, смешные моменты, правильные ответы, устранённые игроки,
+      аргументы, командный результат.
+   5. Leaderboard: общий счёт матча, следующий раунд, rematch, смена игры без распада
+      комнаты.
+
+  UX note. Вечеринка — это не desktop-приложение. Интерфейс должен выдерживать
+  ситуацию, где люди смеются, спорят, отворачиваются от экрана, кладут телефон
+  экраном вниз и возвращаются через 20 секунд. Любое важное действие должно быть
+  понятно без чтения длинной инструкции.
+
+
+
+
+Сводная матрица по играм
+
+ Игра                   Жанр                Игроки   Сложность   Realtime   Content risk
+
+ Alias                  word / teams        4–20     Medium      Medium     Low
+
+ Mafia                  social deduction    6–16     High        Low        Medium
+
+ Werewolf (One Night)   social deduction    4–10     High        Medium     Low
+
+ Codenames              teams / word        4–12     Medium      Low        Low
+
+ Spyfall                deduction / bluff   4–12     Medium      Low        Low
+
+ Impostor               bluff / word        4–12     Low         Low        Low
+
+ Crocodil               mime / teams        4–20     Medium      High       Low
+
+ Heads Up               guessing / motion   2–12     Medium      High       Low
+
+ Pictionary             drawing             3–12     High        High       Low
+ Игра                   Жанр                      Игроки   Сложность   Realtime   Content risk
+
+ Quiplash               prompt / comedy           3–10     Medium      Medium     High
+
+ Psych / Fibbage        prompt / deception        3–10     Medium      Medium     High
+
+ Cards of Chaos         cards / UGC humor         4–12     Medium      Low        High
+
+ Truth or Dare          social prompt             3–20     Low         Low        High
+
+ Never Have I Ever      social prompt             3–20     Low         Low        High
+
+ Would You Rather       poll / social             3–50     Low         Low        Medium
+
+ Two Truths and a Lie   social bluff              3–20     Low         Low        Medium
+
+ Blank Slate            word match                3–12     Low         Low        Low
+
+ Wavelength             scale / teams             4–16     Medium      Low        Low
+
+ Brain Burst            quiz                      2–100    Medium      High       Low
+
+ Guess the Song         music quiz                2–50     High        High       High
+
+ Bomb Party             word realtime             2–12     Medium      High       Low
+
+ Gartic Phone           drawing chain             4–12     High        Medium     Medium
+
+ Bunker                 argument / elimination    5–12     Medium      Low        Medium
+
+ Wheel of Fate          randomizer / party tool   2–100    Low         Low        Medium
+
+ Kiss / Marry / Kill    social prompt             3–20     Low         Low        High
+
+ Charades               mime                      4–20     Low         High       Low
+
+ Music Quiz             music metadata quiz       2–50     Medium      Medium     High
+
+ Trivia                 general quiz              2–100    Low         Medium     Low
+
+
+
+Общие технические принципы
+
+1. Room lifecycle
+      room_created: host создал комнату, получил room code, QR и базовый конфиг.
+      room_open: игроки могут присоединяться, менять nick, выбирать команду.
+      game_selected: выбран режим, загружены ассеты, словари, колоды, таймеры.
+      match_running: активный матч из нескольких раундов.
+      match_paused: host поставил игру на паузу, например из-за спора или ухода игрока.
+      match_finished: показаны результаты, сохранена статистика, доступен rematch.
+      room_expired: комната закрыта по TTL или вручную host.
+
+
+2. Host controls
+      Старт/пауза/продолжить/пропустить раунд.
+      Кик игрока, mute UGC, смена команды, ручной rebalance.
+    Перегенерация задания при контент-проблеме.
+    Reveal admin info только там, где это безопасно для механики.
+    Переключение difficulty, family mode, adult mode, локаль, таймеры.
+
+
+3. Reconnect logic
+    Игрок идентифицируется по playerId + session token + roomId.
+    После reconnect сервер восстанавливает последний валидный controller state.
+    Если игрок разорвал соединение в критический момент голосования, room state
+    хранит deadline; по истечении срока применяется default action: abstain, no vote, skip
+    или autopass — зависит от игры.
+    Stage всегда truth source. Controller может временно рассинхронизироваться, но при
+    reconnect обязан пересобраться из server snapshot.
+
+
+4. Latency tolerance
+    В играх на текст и голосование достаточно server-authoritative модели с дедлайном 2–
+    10 секунд.
+    В realtime играх на рисование, мимику, акселерометр и быстрые ответы нужны мягкие
+    тайм-бакеты, серверная нормализация timestamp и визуальная задержка на Stage не
+    более 200–400 мс.
+    Для мобильного интернета рекомендуется heartbeat раз в 5–10 секунд и soft reconnect
+    без потери UI-контекста.
+
+
+5. Anti-cheat basics
+    Приватные данные никогда не рендерить на Stage.
+    В quiz/music играх не отправлять правильный ответ на контроллер до lock-in.
+    Ограничивать частоту событий ввода, особенно drawing stroke, shake, tilt, buzz.
+    Логировать подозрительно быстрые ответы и массовые reconnect-аномалии.
+    В social deduction не показывать метаданные, по которым можно вычислить роль:
+    одинаковое время открытия карточек, одинаковая длина текста, одинаковые состояния
+    ожидания.
+
+
+6. Accessibility
+    Цвет не должен быть единственным носителем информации; важны иконка, текст,
+    форма, позиция.
+    Крупная типографика на Stage, высокий контраст, понятные статусы.
+    Поддержка screen reader на Controller для меню, onboarding и quiz-вопросов.
+    Режим без гироскопа и режим без аудио как fallback.
+    Вибро-обратная связь полезна, но не должна быть обязательной.
+
+
+7. Localization
+    Все строки — через ключи локализации, включая системные ошибки, таймеры и роли.
+      Словари и промпты хранятся по языкам и тематическим пакетам.
+      Музыкальные и культурные категории должны учитывать регион.
+
+
+8. Moderation & content safety
+      UGC-игры требуют profanity filter, blacklist по slur-словам, rate limit и room-level
+      reporting.
+      Для social prompt игр нужны семейные пресеты и флаг «без романтики/без жести/без
+      алкоголя».
+      Контент, вводимый игроками, желательно скрывать до review-фазы или хотя бы
+      логировать с флагом room.
+
+
+9. Telemetry / events
+      Системные события: join, reconnect, drop, ready, game start, round start, round end, pause,
+      rematch.
+      Игровые события: submit_answer, cast_vote, reveal_card, shake_detected,
+      drawing_started, timer_expired.
+      Продуктовые метрики: conversion из join в first round, average round duration, quit rate
+      per game, replay rate, moderation rate, reconnection rate.
+
+
+Единый шаблон game states и WebSocket-коммуникации
+Для большинства режимов удобно использовать одинаковый каркас состояния. Ниже
+универсальный шаблон, который затем специализируется под каждую игру.
+
+ Сущность                 Поля
+
+ Room state               roomId, hostId, gameId, status, settings, locale, players, teams, spectators,
+                          currentRound, scoreboard, moderationFlags, startedAt
+
+ Player state             playerId, nickname, teamId, connectionStatus, ready, score, eliminated,
+                          role/privateData, submissionStatus, lastSeenAt
+
+ Round state              roundIndex, phase, timer, prompt/card/secret, publicBoard, submissions, votes,
+                          results, tieBreakInfo
+
+
+
+Базовые game states
+   1. lobby
+   2. setup
+   3. private-reveal
+   4. active
+   5. locked
+   6. resolution
+   7. scoreboard
+   8. match-end
+Типовые WebSocket события
+
+Направление       События
+
+client → server   join_room, rejoin_room, set_nickname, set_ready, choose_team, host_update_settings,
+                  host_start_game, submit_text, submit_vote, submit_guess, submit_drawing,
+                  submit_motion, skip, confirm_seen
+
+server → client   room_snapshot, player_joined, player_left, phase_changed, private_payload,
+                  timer_started, timer_sync, public_board_updated, answer_locked, vote_result,
+                  round_result, score_updated, match_result, moderation_warning, reconnect_restored
+
+
+ Tech note. На практике лучше иметь один общий envelope: {type, roomId, gameId,
+ phase, timestamp, payload}. Это упрощает дебаг, запись реплеев и построение
+ аналитики. Каждая игра добавляет собственные payload-модели, но инфраструктура
+ комнаты остаётся общей.
+
+
+
+
+Монетизация, retention и replayability
+     Монетизация по контент-пакам: словари, музыкальные категории, локальные мемы,
+     сезонные наборы, корпоративные наборы.
+     Subscription / premium room: больше игроков, безлимитные комнаты, branded themes,
+     advanced moderation, tournament mode.
+     Consumable boosts использовать осторожно; party games плохо переносят pay-to-win.
+     Retention лучше работает через progression: badges, streaks, favourite categories, party
+     history, funniest answers, host achievements.
+     Replayability строится на вариативности контента, team mode, custom packs, rematch
+     with twist и миксовании игр без распада комнаты.
+
+ MVP. На старте выгоднее запускать игры с низкой стоимостью контента и без дорогих
+ лицензий: Alias, Impostor, Blank Slate, Trivia, Would You Rather, Two Truths and a Lie,
+ Bomb Party.
+
+
+
+
+1. Alias (Word Blast)
+
+Быстрая                    Значение
+спецификация
+
+Жанр                       Командная словесная игра
+
+Игроки                     min 4 / recommended 6–12 / max 20
+
+Раунд / матч               60–90 сек / 5–10 раундов
+
+Сложность                  Medium
+A. Концепт
+Игрок объясняет слово своей команде, не называя сам ответ и его корень. Игра отлично
+подходит для дружеских ивентов, потому что создаёт быстрый темп, много смеха и почти не
+требует обучения.
+
+
+B. Механика игры
+     Цель игры: набрать больше очков, чем другие команды, угадывая максимальное
+     число слов за отведённое время.
+     Правила: 1) команды формируются в лобби; 2) в раунде один активный объясняющий
+     получает слово на Controller; 3) команда вслух отгадывает; 4) объясняющий жмёт
+     «Угадали» или «Пас»; 5) запрещено произносить корень, однокоренные формы,
+     прямой перевод и буквенное спеллинг-объяснение, если режимом не разрешено; 6) по
+     окончании таймера результаты фиксируются.
+     Условия победы: команда первой набирает целевой счёт или лидирует после
+     заданного числа раундов.
+     Условия поражения: меньше очков; в соревновательном строгом режиме — штраф за
+     запрещённые объяснения.
+
+
+C. Game Loop
+     Подготовка раунда: сервер выбирает активную команду, объясняющего и пакет слов
+     без повторов.
+     Активная фаза: таймер 60–90 секунд, цикл «слово → ответ → подтверждение/пас».
+     Разрешение: подсчёт угаданных, пасов, штрафов и streak bonus.
+     Переход: ход переходит следующей команде; активный игрок ротируется.
+     End conditions: матч заканчивается по целевому счёту, лимиту раундов или по выбору
+     host.
+
+
+D. User Flow
+     Вход: игроки подключаются по room code/QR, попадают в лобби выбора команды.
+     Лобби: настройка длительности, язык словаря, сложность, allowed pass, strict root
+     mode.
+     Экраны: Join → Lobby → Team setup → Round intro → Active word → Round result →
+     Leaderboard.
+     Host: выбирает число команд, включает family mode, запускает матч, при споре
+     вручную применяет штраф.
+     Игрок: подтверждает готовность, видит очередь, в свой ход объясняет или угадывает
+     устно.
+     Выбывшие: не применимо; все остаются активны.
+
+
+E. Stage Screen
+На общем экране — активная команда, имя объясняющего, крупный таймер, общий счёт,
+индикатор раунда, список последних угаданных слов, число пасов и короткие напоминания
+о запретах. После раунда — reveal с результатами и таблицей команд.
+
+
+F. Controller Screen
+У объясняющего — крупное слово, кнопки «Угадали», «Пас», «Спорный случай»,
+оставшееся время и счёт хода. У остальных — экран команды с надписью «Отгадывайте
+вслух», таймер и статус активного игрока. При reconnect — восстановление текущего слова
+только для объясняющего; у остальных лишь статус ожидания.
+
+
+G. UI/UX детали
+     Тон: быстрый, энергичный, без визуального шума.
+     Компоненты: таймер, счёт, карточка слова, лог последних ответов.
+     Анимации: здесь достаточно мгновенной смены слова и аккуратного reveal
+     результатов; без излишеств.
+     Цветовая схема: тёмно-синий, белый, акцентный оранжевый для таймера и зелёный/
+     серый для guess/pass.
+     Снижение нагрузки: на Controller одна доминирующая кнопочная зона; не более
+     одного слова на экран.
+     Для шумной компании: крупный таймер и цветовой сигнал окончания времени.
+
+
+H. Техническая спецификация
+     Формат: teams / word / speed.
+     Game states: lobby, team-setup, round-intro, active-word, locked, round-result,
+     leaderboard, match-end.
+     WebSocket: c→s: choose_team, ready, confirm_guess, pass_word, report_violation; s→c:
+     team_assigned, round_started, private_word, timer_sync, round_summary, score_updated.
+     Room state: teams, activeTeam, activeExplainerIndex, wordDeck, usedWords, scoreLimit.
+     Player state: teamId, turnOrder, personalStats, reconnectToken.
+     Round state: currentWord, guessedWords, passedWords, violations, secondsLeft.
+     Алгоритмы: дедупликация слов по лемме; anti-repeat по матчу; балансировка
+     сложности по пакету; ротация объясняющих.
+     Edge cases: двойной тап по «Угадали» — idempotency key; disconnect объясняющего
+     — 5-секундная пауза и передача хода host-решением; спорное слово — флаг в review
+     queue.
+
+
+I. Скоринг и лидерборды
+     +1 за угаданное слово.
+     0 за пас или -1 в строгом режиме.
+     Штраф -1 за подтверждённое нарушение правил объяснения.
+     Победитель — команда с наибольшим счётом.
+     В статистике: words guessed, passes, average round score, favorite category, violations
+     rate.
+J. Production Notes
+Сложность: Medium. MVP: 2 команды, готовый словарь, один таймер, без автоматической
+проверки корня. v2/v3: кастомные пакеты, voice moderation, турнирный режим,
+асинхронные ревью спорных слов. Риски: минимальные; главное — качество словаря и
+локализации.
+
+
+
+
+2. Mafia (Nightfall)
+
+ Быстрая                 Значение
+ спецификация
+
+ Жанр                    Social deduction с ролями
+
+ Игроки                  min 6 / recommended 8–12 / max 16
+
+ Раунд / матч            8–15 мин / 1 матч 20–45 мин
+
+ Сложность               High
+
+
+
+A. Концепт
+Классическая «Мафия» в цифровой форме, где телефоны раздают роли, проводят ночные
+фазы и фиксируют голосования без ведущего-архивариуса. Идеальна для компании, потому
+что создаёт драму, ложь, коалиции и эмоциональные reveal-моменты.
+
+
+B. Механика игры
+      Цель игры: для мирных — вычислить и устранить мафию; для мафии — получить
+      численное равенство или большинство.
+      Правила: 1) в начале сервер случайно раздаёт роли; 2) ночь — приватные действия
+      ролей; 3) день — обсуждение; 4) голосование на устранение; 5) reveal зависит от
+      режима: открытые роли или скрытый вылет; 6) цикл повторяется.
+      Условия победы: мафия побеждает при равенстве с мирными; мирные — при
+      устранении всей мафии.
+      Условия поражения: достижение условия победы соперника.
+
+
+C. Game Loop
+      Подготовка: выбор набора ролей, проверка допустимого состава по размеру комнаты.
+      Активная фаза: чередование night actions → day discussion → voting.
+      Разрешение: сервер применяет приоритет ролей, resolve kill/save/investigate.
+      Переход: обновление alive/eliminated состояния, следующий цикл день/ночь.
+      End conditions: одна из сторон достигла условия победы или host завершил по
+      таймауту.
+
+
+D. User Flow
+     Вход: игроки заходят в лобби, видят рекомендуемый состав ролей.
+     Лобби: host выбирает режим reveal, длину обсуждения, роли: мафия, доктор,
+     комиссар, мирный и др.
+     Экраны: Join → Lobby → Private role reveal → Night phase → Day discussion → Vote
+     → Resolution → Endgame.
+     Host: может отключить микрофонно спорные роли, паузить, форсировать переход фаз.
+     Игрок: видит только свою роль и доступные ночные действия.
+     Выбывший: Controller переходит в spectator mode: без доступа к ролям живых, можно
+     смотреть таймеры и историю, но нельзя писать UGC, если режим строгий.
+
+
+E. Stage Screen
+Stage показывает фазу («Ночь», «Обсуждение», «Голосование»), таймер дня, количество
+живых игроков, мягкие инструкции и затем результаты голосования. Ночью Stage не должен
+показывать подсказки, способные выдать активные роли; лучше — нейтральная
+затемнённая сцена и progress ring.
+
+
+F. Controller Screen
+Каждый игрок получает приватную карточку роли. Ночью роли с действием видят список
+допустимых целей и кнопку подтверждения. Мирные ночью видят только экран ожидания.
+После вылета игрок видит spectator state и журнал общих событий без скрытых данных.
+Ошибки reconnect особенно критичны: при восстановлении нельзя повторно отправить night
+action.
+
+
+G. UI/UX детали
+     Тон: напряжённый, кинематографичный, но информативный.
+     Компоненты: role card, vote list, alive roster, day timer, night lock overlay.
+     Цвета: графитовый, бордовый, кремовый; зелёный только для doctor/save, чтобы не
+     путать с мирными.
+     Снижение нагрузки: в каждый момент только одно действие: выбрать цель или
+     ждать.
+     Для большой комнаты: Stage должен показывать кто уже проголосовал, но не как
+     именно.
+
+
+H. Техническая спецификация
+     Формат: social deduction / elimination.
+     Game states: lobby, role-deal, night-open, night-action, day-open, discussion, voting, vote-
+     resolution, win-check, match-end.
+     WebSocket: c→s: submit_night_action, submit_vote, ready_for_next_phase; s→c:
+     private_role, phase_changed, vote_open, action_confirmed, elimination_result, win_result.
+     Room state: roleSet, aliveCount, phaseTimer, dayIndex, publicHistory.
+     Player state: role, alive, silenced, protected, investigated, voteCast, eliminatedAt.
+     Round state: nightActions, voteMap, tieBreakStage, pendingResolution.
+      Алгоритмы: криптографически честная рандомизация ролей; приоритет ночных
+      действий; tie-break голосования: revote → no-elimination; скрытие метаданных по
+      длине текста роли.
+      Edge cases: disconnect у мафии ночью — default no action или коллективный выбор
+      оставшихся; ничья в vote — revote; host quit — room host migration.
+
+
+I. Скоринг и лидерборды
+      Базово игра может быть без «очков» и с матчевой победой стороны.
+      Для persistent stats: победа роли, survival rate, correct votes, successful investigations,
+      successful saves.
+      Победитель комнаты — победившая сторона; внутри стороны можно давать MVP за
+      вклад.
+
+
+J. Production Notes
+Сложность: High. MVP: роли мафия/доктор/комиссар/мирный, один цикл день/ночь,
+открытое выбывание. v2/v3: расширенные роли, anonymous notes, tournament mode. Риски:
+токсичность, затягивание обсуждений, коллюзия офлайн («покажи телефон»). Нужны
+privacy reminders и быстрый режим.
+
+
+
+
+3. Werewolf (One Night)
+
+ Быстрая                   Значение
+ спецификация
+
+ Жанр                      Быстрая social deduction
+
+ Игроки                    min 4 / recommended 5–8 / max 10
+
+ Раунд / матч              8–10 мин / 3–5 раундов
+
+ Сложность                 High
+
+
+
+A. Концепт
+Укороченная мафия на один цикл: роли могут меняться ночью, а утром все голосуют один
+раз. Отлично подходит для быстрых вечеринок, где никто не хочет сидеть выбывшим
+полчаса.
+
+
+B. Механика игры
+      Цель: вычислить оборотней или, играя за оборотней, увести голосование от себя.
+      Правила: 1) раздать роли игрокам и в центр; 2) ночью роли выполняют действия по
+      фиксированному порядку; 3) некоторые роли меняют карты; 4) днём идёт короткое
+      обсуждение; 5) все голосуют одновременно; 6) по итогам раскрываются финальные
+      роли.
+      Победа: зависит от финального распределения ролей и результата голосования.
+     Поражение: команда проигрывает при невыполнении условий своей стороны.
+
+
+C. Game Loop
+     Подготовка: сервер подбирает role set и центр-карты.
+     Активная фаза: автоматизированная ночная последовательность с приватными
+     экранами.
+     Разрешение: обсуждение 2–4 минуты, затем одновременный vote.
+     Переход: reveal всех ролей и лог ночных перестановок.
+     End conditions: матч обычно состоит из нескольких независимых раундов.
+
+
+D. User Flow
+     Вход и лобби: стандартные; host выбирает role pack и время обсуждения.
+     Экраны: Lobby → Role reveal → Night actions → Discussion → Vote → Final reveal →
+     Scoreboard.
+     Host: задаёт набор ролей и может включить guided narration text на Stage.
+     Игрок: ночью выполняет только допустимое действие своей роли; днём обсуждает
+     устно.
+     Выбывание: отсутствует до конца раунда, что критично для комфорта.
+
+
+E. Stage Screen
+Stage показывает текущую ночную роль-очередь без раскрытия персональных данных,
+затем таймер обсуждения и экран голосования с индикатором «кто уже проголосовал».
+Финальный reveal должен быть театральным: исходные роли, финальные роли, сработавшие
+swaps.
+
+
+F. Controller Screen
+Controller хранит исходную роль, инструкции и, если роль позволяет, интерфейс просмотра/
+обмена карт. После смены роли игрок может либо узнать новую роль, либо нет — зависит от
+правил конкретной роли. После vote экран блокируется и показывает «Голос принят».
+
+
+G. UI/UX детали
+     Тон: мистический, но быстрый.
+     Компоненты: role card, center cards, swap animation в логике экрана, таймер
+     дискуссии.
+     Цвета: тёмно-фиолетовый, серый, янтарный.
+     Снижение нагрузки: guided text на Controller по шагам, чтобы не помнить порядок
+     ролей.
+
+
+H. Техническая спецификация
+     Формат: social deduction / simultaneous reveal.
+     Game states: lobby, setup, night-sequence, discussion, vote, final-reveal, match-end.
+      WebSocket: c→s: night_select, night_swap, final_vote; s→c: private_role, night_step,
+      action_result_private, vote_open, final_state.
+      Данные: room: roleDeck, centerCards; player: originalRole, currentRole, actionTrace;
+      round: actionOrder, voteMap.
+      Алгоритмы: deterministic action order; audit trail ночных swaps; winner resolver по
+      финальным ролям.
+      Edge cases: конфликтующие swaps, late reconnect during night, vote tie — digital-friendly
+      правило: все лидеры «умирают» одновременно.
+
+
+I. Скоринг и лидерборды
+      Очки можно начислять по победившей стороне, например +2 за победу, +1 за
+      успешную ключевую роль.
+      Статистика: win rate per role, accuracy of votes, bluff success.
+
+
+J. Production Notes
+Сложность: High. MVP: 6–8 базовых ролей и один набор правил. v2/v3: кастомные пакеты
+ролей, narrated voice pack, replay timeline. Риски: сложность объяснения; нужен очень
+хороший onboarding.
+
+
+
+
+4. Codenames (Code Crack)
+
+ Быстрая                   Значение
+ спецификация
+
+ Жанр                      Командная ассоциация слов
+
+ Игроки                    min 4 / recommended 4–10 / max 12
+
+ Раунд / матч              5–12 мин / best of 3
+
+ Сложность                 Medium
+
+
+
+A. Концепт
+Две команды пытаются открыть свои слова на сетке, используя однословные подсказки
+капитанов. Для вечеринки это сильный режим, потому что сочетает интеллект, командную
+синхронизацию и хорошие поводы для «что у тебя вообще в голове?».
+
+
+B. Механика игры
+      Цель: открыть все слова своей команды, не попав в assassin.
+      Правила: 1) создаётся сетка слов и секретная карта цветов; 2) капитаны получают
+      приватную карту; 3) активный капитан даёт подсказку «слово + число»; 4) команда
+      выбирает слова; 5) при ошибке ход переходит.
+      Победа: открыты все свои слова.
+     Поражение: открыт assassin или соперник открыл все свои слова раньше.
+
+
+C. Game Loop
+     Setup: генерация сетки и распределение капитанов.
+     Активная фаза: подсказка капитана → последовательные guesses команды.
+     Разрешение: подсветка цвета открытого слова и переход хода.
+     Переход: другая команда получает свой ход.
+     End: все слова открыты или assassin выбран.
+
+
+D. User Flow
+     Лобби: разделение на 2 команды и выбор капитанов.
+     Экраны: Lobby → Team assignment → Captain reveal → Board → Guess resolution →
+     Match result.
+     Host: может перемешать сетку, перекинуть игроков, переключить строгий словарь.
+     Игрок: если капитан — видит карту; если угадывающий — выбирает клетку.
+
+
+E. Stage Screen
+Stage показывает сетку 5x5, активную команду, последнюю подсказку и счёт оставшихся
+слов по командам. Секретная карта не должна быть видна на Stage; только после конца
+раунда — полный reveal.
+
+
+F. Controller Screen
+Капитан видит board map с цветами, поле ввода подсказки и числа. Обычный игрок видит
+только общую сетку и кнопки выбора слова. После выбора — лок состояния «ожидание
+подтверждения». Spectator — только публичный board.
+
+
+G. UI/UX детали
+     Тон: чистый, аналитический.
+     Компоненты: сетка слов, счётчик remaining, prompt strip.
+     Цвета: тёмно-красный, тёмно-синий, бежевый, чёрный для assassin.
+     Снижение нагрузки: на Controller слово-кнопки крупные, без лишних эффектов.
+
+
+H. Техническая спецификация
+     Формат: teams / deduction / turn-based.
+     States: lobby, team-assign, captain-briefing, clue-input, team-guess, turn-resolution,
+     endgame.
+     WS: c→s clue_submit, word_pick, end_turn; s→c captain_map, board_update,
+     clue_published, turn_changed, match_result.
+     Данные: room board, cardMap, activeTeam; player captainFlag/teamId; round clueHistory,
+     selectedWords.
+      Алгоритмы: выбор словаря без омонимических ловушек; запрет прямой морфологии
+      подсказки; tie не нужен.
+      Edge cases: капитан disconnect — временная замена host; accidental double pick —
+      idempotent.
+
+
+I. Скоринг и лидерборды
+      Матчевая победа или score by opened words.
+      Бонусы: flawless round без ошибок.
+      Статистика: captain win rate, average clue efficiency, assassin mistakes.
+
+
+J. Production Notes
+Сложность: Medium. MVP: базовая сетка, 2 команды, встроенный словарь. v2/v3: custom
+categories, remote captain mode, AI clue validator. Риски: качество словаря и локальные
+правила подсказок.
+
+
+
+
+5. Spyfall
+
+ Быстрая                  Значение
+ спецификация
+
+ Жанр                     Дедукция / скрытая роль
+
+ Игроки                   min 4 / recommended 6–10 / max 12
+
+ Раунд / матч             6–10 мин / 4–8 раундов
+
+ Сложность                Medium
+
+
+
+A. Концепт
+Все, кроме одного, знают локацию; шпион пытается угадать её, а остальные — вычислить
+шпиона. Для дружеских ивентов это идеальный баланс между разговором, блефом и
+короткой длительностью.
+
+
+B. Механика игры
+      Цель: не-шпионы должны определить шпиона; шпион должен выжить или угадать
+      локацию.
+      Правила: 1) игрокам раздаются роли; 2) не-шпионы получают локацию, шпион —
+      только факт, что он шпион; 3) игроки по очереди задают друг другу вопросы; 4)
+      возможен досрочный call vote; 5) шпион может в любой момент сделать guess location.
+      Победа: шпион угадал локацию или не был вычислен; остальные — если верно
+      вычислили шпиона.
+      Поражение: обратный исход.
+C. Game Loop
+     Setup: выбор локации и шпиона.
+     Активная фаза: таймер вопросов и ответов.
+     Разрешение: vote на шпиона или guess шпиона по локации.
+     Переход: reveal и ротация question owner.
+     End: лимит раундов или очков.
+
+
+D. User Flow
+     Лобби: host выбирает пак локаций и длительность раунда.
+     Экраны: Lobby → Role reveal → Discussion/Q&A → Vote or Spy guess → Reveal →
+     Leaderboard.
+     Host: может форсировать vote, если компания застряла.
+     Игрок: видит свою роль и список ролей внутри локации только если режим позволяет.
+
+
+E. Stage Screen
+Stage показывает таймер, порядок хода вопросов, кто кому задаёт вопрос, количество
+доступных голосов и after-action reveal. Локацию до конца раунда показывать нельзя;
+подсказка в виде набора возможных локаций допустима только в easy mode.
+
+
+F. Controller Screen
+Не-шпион видит название локации и, опционально, свою внутреннюю роль в локации.
+Шпион видит карточку «Ты шпион». Во время игры Controller может показывать подсказку
+«Не называй локацию напрямую». Кнопки: ask next, call vote, accuse, guess location.
+
+
+G. UI/UX детали
+     Тон: интрига, лёгкая шпионская эстетика.
+     Цвета: чёрный, тёмно-зелёный, песочный.
+     Снижение нагрузки: заранее показывать очередность вопросов.
+     Для шумной компании: Stage должен явно обозначать «кто говорит сейчас».
+
+
+H. Техническая спецификация
+     Формат: social deduction / discussion.
+     States: lobby, deal, qa-phase, vote-open, spy-guess, reveal, match-end.
+     WS: c→s ask_next, call_vote, cast_vote, spy_guess; s→c private_role, turn_pointer,
+     vote_started, reveal_result.
+     Данные: room locationPack, currentQuestioner; player isSpy, locationRole; round voteMap,
+     spyGuess.
+     Алгоритмы: fair rotation question order; anti-repeat локаций; optional hint system.
+     Edge cases: multiple vote calls — merge; тайм-аут без vote — автофинал без additional
+     points.
+I. Скоринг и лидерборды
+      Шпион: +2 за правильную локацию, +1 за выживание.
+      Не-шпионы: +1 каждому за верное вычисление, +2 обвинителю при consensus mode.
+      Статистика: spy win rate, average guess timing, favorite packs.
+
+
+J. Production Notes
+Сложность Medium. MVP — базовые локации, один шпион, один таймер. v2 — локальные
+пакеты, пользовательские темы, voice-hosted narration. Риски — утечки информации офлайн,
+спорность локаций, токсичное обвинение.
+
+
+
+
+6. Impostor
+
+ Быстрая                  Значение
+ спецификация
+
+ Жанр                     Словесный блеф
+
+ Игроки                   min 4 / recommended 5–10 / max 12
+
+ Раунд / матч             4–8 мин / 5–10 раундов
+
+ Сложность                Low
+
+
+
+A. Концепт
+Все, кроме одного, знают слово. Каждый по очереди даёт короткую подсказку, а затем
+группа пытается вычислить impostor. Это лёгкий в объяснении режим с хорошим social
+friction, но без тяжёлой ролевой нагрузки.
+
+
+B. Механика игры
+      Цель: для группы — найти impostor; для impostor — остаться нераскрытым или
+      угадать слово.
+      Правила: раздаётся слово всем, кроме одного; игроки по кругу дают 1 подсказку;
+      затем идёт голосование; если impostor вычислен — он может сделать финальный
+      guess.
+      Победа: зависит от vote и финального guess impostor.
+      Поражение: обратный исход.
+
+
+C. Game Loop
+      Setup: слово + impostor.
+      Активная фаза: clue circle.
+      Разрешение: vote → финальный guess impostor.
+      Переход: reveal и новый раунд с новым impostor.
+      End: 5–10 раундов или очковый лимит.
+D. User Flow
+     Join → Lobby → Private word reveal → Clue order → Vote → Final guess → Results.
+     Host: выбирает категории, длину подсказки, режим команд не нужен.
+     Игрок: видит своё слово или карточку impostor; в нужный момент вводит подсказку
+     или произносит устно.
+
+
+E. Stage Screen
+Stage показывает порядок игроков, текущего выступающего, таймер подсказки, затем
+интерфейс голосования и финальный reveal слова. Важно не показывать текстовые
+подсказки раньше времени, если они вводятся на Controller.
+
+
+F. Controller Screen
+Игрок видит либо слово, либо роль impostor. Для цифрового friendly-варианта подсказка
+может вводиться текстом и затем по очереди раскрываться на Stage, чтобы уменьшить
+споры «кто что сказал». После голосования — экран ожидания или финальный guess для
+impostor.
+
+
+G. UI/UX детали
+     Тон: лёгкий, комедийный, без лишней драмы.
+     Цвета: серый, жёлтый, чёрный.
+     Снижение нагрузки: короткие лимиты на подсказку, один экран — одно действие.
+
+
+H. Техническая спецификация
+     Формат: bluff / word / vote.
+     States: lobby, reveal, clue-collect, clue-reveal, vote, impostor-guess, result.
+     WS: submit_clue, cast_vote, final_guess; private_word, clue_order, vote_open,
+     result_payload.
+     Данные: room categories; player role/score; round secretWord, clues, votes.
+     Алгоритмы: anti-repeat слов, clue dedup warning, выбор impostor без повторов подряд.
+     Edge cases: игрок отправил пустую подсказку — auto-skip и warning; tie vote — digital-
+     friendly second vote с двумя лидерами.
+
+
+I. Скоринг и лидерборды
+     Группа: +1 за правильное вычисление.
+     Impostor: +2 за выживание, +1 дополнительно за правильный финальный guess.
+     Статистика: impostor escape rate, clue creativity score по лайкам можно добавить позже.
+
+
+J. Production Notes
+Сложность Low. MVP — готовые слова и простое голосование. v2 — режим ввода
+текстовых подсказок, custom categories. Риски низкие; важно фильтровать UGC-подсказки.
+7. Crocodil (Mime Riot)
+
+ Быстрая                Значение
+ спецификация
+
+ Жанр                   Пантомима / команды
+
+ Игроки                 min 4 / recommended 6–14 / max 20
+
+ Раунд / матч           45–75 сек / 6–12 раундов
+
+ Сложность              Medium
+
+
+
+A. Концепт
+Игрок изображает слово жестами, а команда угадывает. Цифровая версия выигрывает за
+счёт приватного слова на телефоне, таймеров и ускоренного управления через акселерометр.
+
+
+B. Механика игры
+      Цель: угадать как можно больше слов за раунд.
+      Правила: активный мим получает слово; команда угадывает вслух; игрок
+      подтверждает успех наклоном телефона вправо, пас — влево, либо кнопками; нельзя
+      говорить и показывать буквы.
+      Победа: больше очков у команды по итогу матча.
+      Поражение: меньше очков или штраф за нарушения, если включён строгий режим.
+
+
+C. Game Loop
+      Подготовка: выбор слова и активного мима.
+      Активная фаза: таймер и цикл gesture → guess → confirm/pass.
+      Разрешение: подсчёт угаданных и пасов.
+      Переход: смена команды/мима.
+      End: по раундам или очкам.
+
+
+D. User Flow
+      Join → Lobby → Team setup → Round intro → Mime active → Round result.
+      Host: выбирает категории, strict mode и включает/выключает управление наклоном.
+      Игрок: в свой ход держит Controller горизонтально, видит слово, наклоняет для
+      подтверждения.
+
+
+E. Stage Screen
+Stage показывает активную команду, имя мима, таймер, счёт этого раунда и список
+последних угаданных слов. Если tilt mode включён, Stage может отображать пиктограммы
+«наклон вправо = угадали, влево = пас».
+
+
+F. Controller Screen
+Главный экран — крупное слово, индикатор ориентации, кнопки fallback, вибрация при
+смене слова. При отсутствии гироскопа или запрета motion permissions — автоматический
+переход на кнопки. Reconnect возвращает текущее слово и таймер; если раунд закончился,
+Controller блокируется.
+
+
+G. UI/UX детали
+      Тон: шумный, телесный, игровой.
+      Цвета: зелёный/красный для угадывания и паса, нейтральный фон.
+      Снижение нагрузки: огромный текст, горизонтальная ориентация, минимум
+      второстепенных элементов.
+
+
+H. Техническая спецификация
+      Формат: teams / mime / realtime.
+      States: lobby, team-setup, active-mime, round-lock, result, leaderboard.
+      WS: motion_event, confirm_guess, pass_word; active_word, timer_sync, score_delta.
+      Данные: wordDeck, tiltEnabled, activeMimeId, usedWords.
+      Алгоритмы: debouncing tilt; motion threshold calibration; anti-repeat слов.
+      Edge cases: motion permission denied, false positive shake/tilt, phone rotated accidentally.
+
+
+I. Скоринг и лидерборды
+      +1 угаданное слово; 0 или -1 за пас по настройке.
+      Бонус за streak без пасов.
+      Статистика: words acted, average accuracy, tilt usage rate.
+
+
+J. Production Notes
+Сложность Medium. MVP — кнопки вместо акселерометра. v2 — tilt/gyro, haptics, custom
+decks. Риски низкие; основная задача — калибровка motion и удобство в руках.
+
+
+
+
+8. Heads Up
+
+ Быстрая                   Значение
+ спецификация
+
+ Жанр                      Guessing / motion party
+
+ Игроки                    min 2 / recommended 4–10 / max 12
+
+ Раунд / матч              60 сек / 5–8 раундов
+
+ Сложность                 Medium
+
+
+
+A. Концепт
+Игрок держит телефон у лба, остальные дают подсказки. Это очень «физическая» игра,
+которая хорошо работает в шумной компании и не требует Stage как обязательного
+элемента, но Stage усиливает ритм и счёт.
+
+
+B. Механика игры
+     Цель — угадать больше карточек за время.
+     Правила — активный игрок поднимает телефон, видит слово только Stage/остальные;
+     наклоняет вниз при успехе, вверх при пропуске; команда подсказывает вслух.
+     Победа — лучший раундовый или суммарный результат.
+     Поражение — меньше очков.
+
+
+C. Game Loop
+     Подготовка: выбор категории и активного игрока.
+     Активная фаза: card stream под таймером.
+     Разрешение: подсчёт верных/skip.
+     Переход: следующий игрок.
+

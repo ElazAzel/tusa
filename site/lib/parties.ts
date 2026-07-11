@@ -1,0 +1,1358 @@
+import { randomUUID } from "node:crypto";
+import { neon } from "@neondatabase/serverless";
+
+export const PROMO_STATUS = ["active", "paused"] as const;
+export type PromoStatus = (typeof PROMO_STATUS)[number];
+export type PartyRole = "owner" | "co_host" | "guest";
+export type RsvpStatus = "going" | "maybe" | "pass";
+export type PromoMode = "single" | "multi";
+export type PromoBenefitType = "beta_access" | "profile_cover" | "avatar_frame" | "chat_effect" | "name_color" | "badge" | "xp_multiplier" | "party_creation";
+export type PromoBenefit = { type: PromoBenefitType; value?: string | number };
+export type ProfileCosmetics = { cover: string; avatarFrame: string; chatEffect: string; nameColor: string; badge: string; xpMultiplier: number; betaAccess: boolean; unlocked: PromoBenefitType[] };
+
+export type UserProfile = {
+  id: string;
+  displayName: string;
+  handle: string;
+  city: string;
+  bio: string;
+  imageUrl: string;
+  cosmetics: ProfileCosmetics;
+  compashka: string;
+  xp: number;
+  hasPartyCreation: boolean;
+  updatedAt: string;
+};
+
+export type PromoRedemption = {
+  id: string;
+  promoCodeId: string;
+  code: string;
+  clerkUserId: string;
+  partyId: string | null;
+  benefits: PromoBenefit[];
+  redeemedAt: string;
+};
+
+export type FriendStatus = "pending" | "accepted" | "blocked";
+
+export type FriendConnection = {
+  requesterId: string;
+  targetId: string;
+  status: FriendStatus;
+  displayName: string;
+  imageUrl: string;
+  createdAt: string;
+};
+
+export type Party = {
+  id: string;
+  title: string;
+  slug: string;
+  inviteCode: string;
+  date: string;
+  time: string;
+  venue: string;
+  category: string;
+  description: string;
+  ownerId: string;
+  ownerName: string;
+  ownerImageUrl: string;
+  memberCount: number;
+  rsvpCounts: { going: number; maybe: number; pass: number };
+  myRsvp?: RsvpStatus;
+  role?: PartyRole;
+  createdAt: string;
+  adultOnly: boolean;
+};
+
+export type PromoCode = {
+  id: string;
+  code: string;
+  status: PromoStatus;
+  maxRedemptions: number | null;
+  usesCount: number;
+  mode: PromoMode;
+  expiresAt: string | null;
+  benefits: PromoBenefit[];
+  createdAt: string;
+};
+
+let sqlClient: ReturnType<typeof neon> | null = null;
+let schemaPromise: Promise<void> | null = null;
+
+function db() {
+  if (!sqlClient) {
+    if (!process.env.DATABASE_URL) throw new Error("Database is not configured.");
+    sqlClient = neon(process.env.DATABASE_URL);
+  }
+  return sqlClient;
+}
+
+const asNumber = (value: unknown) => Number(value ?? 0);
+const iso = (value: string | Date) => new Date(value).toISOString();
+
+function cleanHandle(value: string) {
+  const handle = value.toLowerCase().trim().replace(/[^a-z0-9_]/g, "").slice(0, 24);
+  return handle || `tusa${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function slug(value: string, suffix: string) {
+  const normalized = value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return `${normalized || "tusa"}-${suffix.slice(0, 6)}`;
+}
+
+function partyFromRow(row: Record<string, unknown>): Party {
+  return {
+    id: String(row.id),
+    title: String(row.title),
+    slug: String(row.slug),
+    inviteCode: String(row.invite_code),
+    date: String(row.date),
+    time: String(row.time),
+    venue: String(row.venue),
+    category: String(row.category),
+    description: String(row.description ?? ""),
+    ownerId: String(row.owner_id),
+    ownerName: String(row.owner_name ?? "Организатор"),
+    ownerImageUrl: String(row.owner_image_url ?? ""),
+    memberCount: asNumber(row.member_count),
+    rsvpCounts: { going: asNumber(row.going_count), maybe: asNumber(row.maybe_count), pass: asNumber(row.pass_count) },
+    myRsvp: row.my_rsvp === "going" || row.my_rsvp === "maybe" || row.my_rsvp === "pass" ? row.my_rsvp : undefined,
+    role: row.role === "owner" || row.role === "co_host" || row.role === "guest" ? row.role : undefined,
+    createdAt: iso(row.created_at as string | Date),
+    adultOnly: row.adult_only !== false,
+  };
+}
+
+function profileFromRow(row: Record<string, unknown>): UserProfile {
+  const defaults: ProfileCosmetics = { cover: "lime", avatarFrame: "none", chatEffect: "none", nameColor: "#000000", badge: "newcomer", xpMultiplier: 1, betaAccess: false, unlocked: [] };
+  const raw = row.cosmetics;
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  const cosmetics = parsed && typeof parsed === "object" ? { ...defaults, ...(parsed as Partial<ProfileCosmetics>) } : defaults;
+  return {
+    id: String(row.clerk_user_id),
+    displayName: String(row.display_name),
+    handle: String(row.handle),
+    city: String(row.city ?? ""),
+    bio: String(row.bio ?? ""),
+    imageUrl: String(row.image_url ?? ""),
+    compashka: String(row.compashka ?? ""),
+    cosmetics: { ...cosmetics, unlocked: Array.isArray(cosmetics.unlocked) ? cosmetics.unlocked : [] },
+    xp: asNumber(row.xp),
+    hasPartyCreation: row.has_party_creation === true,
+    updatedAt: iso(row.updated_at as string | Date),
+  };
+}
+
+function promoFromRow(row: Record<string, unknown>): PromoCode {
+  const rawBenefits = row.benefits;
+  const parsedBenefits = typeof rawBenefits === "string" ? JSON.parse(rawBenefits) : rawBenefits;
+  return {
+    id: String(row.id),
+    code: String(row.code),
+    status: row.status === "paused" ? "paused" : "active",
+    maxRedemptions: row.max_redemptions === null ? null : asNumber(row.max_redemptions),
+    usesCount: asNumber(row.uses_count),
+    mode: row.redemption_mode === "multi" ? "multi" : "single",
+    expiresAt: row.expires_at ? iso(row.expires_at as string | Date) : null,
+    benefits: Array.isArray(parsedBenefits) ? parsedBenefits as PromoBenefit[] : [],
+    createdAt: iso(row.created_at as string | Date),
+  };
+}
+
+export function ensurePartySchema() {
+  if (schemaPromise) return schemaPromise;
+  schemaPromise = (async () => {
+  const sql = db();
+  await sql`CREATE TABLE IF NOT EXISTS user_profiles (
+    clerk_user_id TEXT PRIMARY KEY,
+    display_name TEXT NOT NULL,
+    handle TEXT NOT NULL UNIQUE,
+    city TEXT NOT NULL DEFAULT '',
+    bio TEXT NOT NULL DEFAULT '',
+    image_url TEXT NOT NULL DEFAULT '',
+    cosmetics JSONB NOT NULL DEFAULT '{"cover":"lime","avatarFrame":"none","chatEffect":"none","nameColor":"#000000","badge":"newcomer","xpMultiplier":1,"betaAccess":false,"unlocked":[]}'::jsonb,
+    xp INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS promo_codes (
+    id UUID PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused')),
+    max_redemptions INTEGER CHECK (max_redemptions IS NULL OR max_redemptions > 0),
+    uses_count INTEGER NOT NULL DEFAULT 0 CHECK (uses_count >= 0),
+    redemption_mode TEXT NOT NULL DEFAULT 'single' CHECK (redemption_mode IN ('single', 'multi')),
+    expires_at TIMESTAMPTZ,
+    benefits JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS parties (
+    id UUID PRIMARY KEY,
+    owner_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    invite_code TEXT NOT NULL UNIQUE,
+    date TEXT NOT NULL,
+    time TEXT NOT NULL,
+    venue TEXT NOT NULL,
+    category TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    adult_only BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS party_members (
+    party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
+    clerk_user_id TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('owner', 'guest')),
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (party_id, clerk_user_id)
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS promo_redemptions (
+    id UUID PRIMARY KEY,
+    promo_code_id UUID NOT NULL REFERENCES promo_codes(id) ON DELETE RESTRICT,
+    clerk_user_id TEXT NOT NULL,
+    party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
+    redeemed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (promo_code_id, clerk_user_id),
+    UNIQUE (party_id)
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS profile_promo_redemptions (
+    id UUID PRIMARY KEY,
+    promo_code_id UUID NOT NULL REFERENCES promo_codes(id) ON DELETE RESTRICT,
+    clerk_user_id TEXT NOT NULL,
+    redeemed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (promo_code_id, clerk_user_id)
+  )`;
+  await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS cosmetics JSONB NOT NULL DEFAULT '{"cover":"lime","avatarFrame":"none","chatEffect":"none","nameColor":"#000000","badge":"newcomer","xpMultiplier":1,"betaAccess":false,"unlocked":[]}'::jsonb`;
+  await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS xp INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS compashka TEXT NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS redemption_mode TEXT NOT NULL DEFAULT 'single'`;
+  await sql`ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS benefits JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  await sql`ALTER TABLE promo_redemptions ALTER COLUMN party_id DROP NOT NULL`;
+  await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS adult_only BOOLEAN NOT NULL DEFAULT TRUE`;
+  await sql`ALTER TABLE party_members ADD COLUMN IF NOT EXISTS rsvp_status TEXT NOT NULL DEFAULT 'going' CHECK (rsvp_status IN ('going', 'maybe', 'pass'))`;
+  await sql`ALTER TABLE party_members DROP CONSTRAINT IF EXISTS party_members_role_check`;
+  await sql`ALTER TABLE party_members ADD CONSTRAINT party_members_role_check CHECK (role IN ('owner', 'co_host', 'guest'))`;
+  await sql`CREATE TABLE IF NOT EXISTS chat_messages (
+    id UUID PRIMARY KEY,
+    party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
+    clerk_user_id TEXT NOT NULL,
+    display_name TEXT NOT NULL DEFAULT '',
+    text TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'text' CHECK (type IN ('text', 'voice', 'sticker')),
+    voice_url TEXT NOT NULL DEFAULT '',
+    sticker_id TEXT NOT NULL DEFAULT '',
+    reactions JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE INDEX IF NOT EXISTS parties_owner_idx ON parties (owner_id, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS party_members_user_idx ON party_members (clerk_user_id, joined_at DESC)`;
+  await sql`CREATE TABLE IF NOT EXISTS party_shopping_items (
+    id UUID PRIMARY KEY,
+    party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
+    clerk_user_id TEXT NOT NULL,
+    display_name TEXT NOT NULL DEFAULT '',
+    text TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit TEXT NOT NULL DEFAULT 'шт.',
+    price INTEGER NOT NULL DEFAULT 0,
+    purchased BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS party_gallery_photos (
+    id UUID PRIMARY KEY,
+    party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
+    clerk_user_id TEXT NOT NULL,
+    display_name TEXT NOT NULL DEFAULT '',
+    name TEXT NOT NULL DEFAULT '',
+    src TEXT NOT NULL,
+    tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+    cover BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE INDEX IF NOT EXISTS party_gallery_party_idx ON party_gallery_photos (party_id, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS party_shopping_party_idx ON party_shopping_items (party_id, created_at ASC)`;
+  await sql`CREATE INDEX IF NOT EXISTS chat_messages_party_idx ON chat_messages (party_id, created_at ASC)`;
+  await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'text' CHECK (type IN ('text', 'voice', 'sticker'))`;
+  await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS voice_url TEXT NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS sticker_id TEXT NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reactions JSONB NOT NULL DEFAULT '{}'::jsonb`;
+  await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS koins_balance INTEGER NOT NULL DEFAULT 100`;
+  await sql`CREATE TABLE IF NOT EXISTS koins_transactions (
+    id UUID PRIMARY KEY,
+    clerk_user_id TEXT NOT NULL,
+    party_id UUID REFERENCES parties(id) ON DELETE SET NULL,
+    amount INTEGER NOT NULL,
+    label TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE INDEX IF NOT EXISTS koins_tx_user_idx ON koins_transactions (clerk_user_id, created_at DESC)`;
+  await sql`CREATE TABLE IF NOT EXISTS party_bets (
+    id UUID PRIMARY KEY,
+    party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
+    clerk_user_id TEXT NOT NULL,
+    text TEXT NOT NULL,
+    options JSONB NOT NULL DEFAULT '[]'::jsonb,
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'settled', 'cancelled')),
+    winner TEXT NOT NULL DEFAULT '',
+    entries JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE INDEX IF NOT EXISTS party_bets_party_idx ON party_bets (party_id, created_at DESC)`;
+  await sql`CREATE TABLE IF NOT EXISTS engagement_rewards (
+    id UUID PRIMARY KEY,
+    clerk_user_id TEXT NOT NULL,
+    activity TEXT NOT NULL,
+    party_id UUID REFERENCES parties(id) ON DELETE SET NULL,
+    amount INTEGER NOT NULL,
+    granted_at DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE INDEX IF NOT EXISTS engagement_rewards_idx ON engagement_rewards (clerk_user_id, activity, granted_at)`;
+  await sql`ALTER TABLE party_members ADD COLUMN IF NOT EXISTS custom_role TEXT NOT NULL DEFAULT ''`;
+  await sql`CREATE TABLE IF NOT EXISTS party_notes (
+    id UUID PRIMARY KEY,
+    party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
+    clerk_user_id TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'note' CHECK (type IN ('note', 'blast')),
+    text TEXT NOT NULL,
+    pinned BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE INDEX IF NOT EXISTS party_notes_party_idx ON party_notes (party_id, created_at DESC)`;
+  await sql`CREATE TABLE IF NOT EXISTS analytics_events (
+    id UUID PRIMARY KEY,
+    clerk_user_id TEXT NOT NULL DEFAULT '',
+    party_id TEXT NOT NULL DEFAULT '',
+    action TEXT NOT NULL,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE INDEX IF NOT EXISTS analytics_action_idx ON analytics_events (action, created_at DESC)`;
+  await sql`CREATE TABLE IF NOT EXISTS friend_connections (
+    requester_id TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'blocked')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (requester_id, target_id)
+  )`;
+  await sql`ALTER TABLE party_members ADD COLUMN IF NOT EXISTS paid_by TEXT NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE game_sessions ADD COLUMN IF NOT EXISTS participants JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  await sql`CREATE INDEX IF NOT EXISTS friend_connections_target_idx ON friend_connections (target_id, status)`;
+  await sql`CREATE TABLE IF NOT EXISTS game_sessions (
+    id UUID PRIMARY KEY,
+    party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
+    game TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'lobby' CHECK (status IN ('lobby', 'active', 'paused', 'completed', 'cancelled')),
+    config JSONB NOT NULL DEFAULT '{}'::jsonb,
+    state JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS game_scores (
+    id UUID PRIMARY KEY,
+    session_id UUID NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+    clerk_user_id TEXT NOT NULL,
+    score INTEGER NOT NULL DEFAULT 0,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  const earlyBenefits: PromoBenefit[] = [{ type: "beta_access" }, { type: "profile_cover", value: "beta" }, { type: "avatar_frame", value: "neon" }, { type: "chat_effect", value: "sparkle" }, { type: "badge", value: "beta" }, { type: "party_creation" }];
+  const earlyBenefitsJson = JSON.stringify(earlyBenefits);
+  for (const code of ["ELAZ", "JEDAI", "TUSA02"]) {
+    await sql`INSERT INTO promo_codes (id, code, max_redemptions, redemption_mode, benefits) VALUES (${randomUUID()}, ${code}, 1, 'single', ${earlyBenefitsJson}::jsonb) ON CONFLICT (code) DO NOTHING`;
+  }
+  await sql`UPDATE promo_codes SET benefits = ${earlyBenefitsJson}::jsonb WHERE code IN ('ELAZ', 'JEDAI', 'TUSA02') AND benefits = '[]'::jsonb`;
+  await sql`UPDATE user_profiles SET cosmetics = ${JSON.stringify(mergedCosmetics({ cover: "lime", avatarFrame: "none", chatEffect: "none", nameColor: "#000000", badge: "newcomer", xpMultiplier: 1, betaAccess: false, unlocked: [] }, earlyBenefits))}::jsonb, xp = GREATEST(xp, 120) WHERE clerk_user_id IN (SELECT clerk_user_id FROM promo_redemptions redemptions JOIN promo_codes promos ON promos.id = redemptions.promo_code_id WHERE promos.code IN ('ELAZ', 'JEDAI', 'TUSA02'))`;
+  })().catch((error) => {
+    schemaPromise = null;
+    throw error;
+  });
+  return schemaPromise;
+}
+
+export async function syncProfile(input: { id: string; displayName: string; imageUrl?: string }) {
+  await ensurePartySchema();
+  const sql = db();
+  const existing = await sql`SELECT up.*,
+    EXISTS(SELECT 1 FROM promo_redemptions pr JOIN promo_codes pc ON pc.id = pr.promo_code_id WHERE pr.clerk_user_id = ${input.id} AND pc.benefits @> '[{"type":"party_creation"}]'::jsonb) AS has_party_creation
+    FROM user_profiles up WHERE up.clerk_user_id = ${input.id} LIMIT 1` as unknown as Record<string, unknown>[];
+  if (existing[0]) return profileFromRow(existing[0]);
+  const baseHandle = cleanHandle(input.displayName).slice(0, 18);
+  const uniqueHandle = `${baseHandle}${input.id.replace(/[^a-z0-9]/gi, "").slice(-6).toLowerCase()}`.slice(0, 24);
+  const [row] = await sql`INSERT INTO user_profiles (clerk_user_id, display_name, handle, image_url)
+    VALUES (${input.id}, ${input.displayName.slice(0, 80) || "TUSA friend"}, ${uniqueHandle}, ${input.imageUrl ?? ""})
+    RETURNING *` as unknown as Record<string, unknown>[];
+  return profileFromRow({ ...row, has_party_creation: false });
+}
+
+export async function getProfile(userId: string) {
+  await ensurePartySchema();
+  const sql = db();
+  const rows = await sql`SELECT up.*,
+    EXISTS(SELECT 1 FROM promo_redemptions pr JOIN promo_codes pc ON pc.id = pr.promo_code_id WHERE pr.clerk_user_id = ${userId} AND pc.benefits @> '[{"type":"party_creation"}]'::jsonb) AS has_party_creation
+    FROM user_profiles up WHERE up.clerk_user_id = ${userId} LIMIT 1` as unknown as Record<string, unknown>[];
+  return rows[0] ? profileFromRow(rows[0]) : null;
+}
+
+export async function updateProfile(userId: string, input: { displayName: string; handle: string; city: string; bio: string; compashka?: string; cosmetics?: Partial<Pick<ProfileCosmetics, "cover" | "avatarFrame" | "chatEffect" | "nameColor" | "badge">> }) {
+  await ensurePartySchema();
+  const current = await getProfile(userId);
+  if (!current) throw new Error("Profile not found");
+  const cosmetics = { ...current.cosmetics, ...(input.cosmetics ?? {}) };
+  const permissions: Record<keyof NonNullable<typeof input.cosmetics>, PromoBenefitType> = { cover: "profile_cover", avatarFrame: "avatar_frame", chatEffect: "chat_effect", nameColor: "name_color", badge: "badge" };
+  for (const [key, benefit] of Object.entries(permissions) as [keyof typeof permissions, PromoBenefitType][]) {
+    if (input.cosmetics?.[key] !== undefined && !current.cosmetics.unlocked.includes(benefit)) throw new Error("Этот предмет пока не открыт.");
+  }
+  const compashka = input.compashka !== undefined ? input.compashka : current.compashka;
+  const [row] = await db()`UPDATE user_profiles SET display_name = ${input.displayName.slice(0, 80)}, handle = ${cleanHandle(input.handle)}, city = ${input.city.slice(0, 80)}, bio = ${input.bio.slice(0, 300)}, compashka = ${compashka.slice(0, 80)}, cosmetics = ${JSON.stringify(cosmetics)}::jsonb, updated_at = NOW()
+    WHERE clerk_user_id = ${userId} RETURNING *` as unknown as Record<string, unknown>[];
+  return profileFromRow(row);
+}
+
+export type KoinsTransaction = {
+  id: string;
+  userId: string;
+  partyId: string | null;
+  amount: number;
+  label: string;
+  createdAt: string;
+};
+
+export type PartyBet = {
+  id: string;
+  partyId: string;
+  userId: string;
+  text: string;
+  options: string[];
+  status: "open" | "settled" | "cancelled";
+  winner: string;
+  entries: Array<{ userId: string; option: string; stake: number }>;
+  createdAt: string;
+};
+
+export async function addKoinsTransaction(userId: string, partyId: string | null, amount: number, label: string) {
+  await ensurePartySchema();
+  const [row] = await db()`INSERT INTO koins_transactions (id, clerk_user_id, party_id, amount, label)
+    VALUES (${randomUUID()}, ${userId}, ${partyId}, ${amount}, ${label.slice(0, 200)})
+    RETURNING *` as unknown as Record<string, unknown>[];
+  await db()`UPDATE user_profiles SET koins_balance = GREATEST(0, koins_balance + ${amount}), updated_at = NOW() WHERE clerk_user_id = ${userId}`;
+  return {
+    id: String(row.id), userId: String(row.clerk_user_id), partyId: row.party_id ? String(row.party_id) : null,
+    amount: Number(row.amount), label: String(row.label), createdAt: new Date(row.created_at as string | Date).toISOString(),
+  } as KoinsTransaction;
+}
+
+export async function getKoinsBalance(userId: string) {
+  await ensurePartySchema();
+  const [row] = await db()`SELECT koins_balance FROM user_profiles WHERE clerk_user_id = ${userId} LIMIT 1` as unknown as { koins_balance: number }[];
+  return row ? Number(row.koins_balance) : 0;
+}
+
+export async function getKoinsTransactions(userId: string, limit = 50) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT * FROM koins_transactions WHERE clerk_user_id = ${userId} ORDER BY created_at DESC LIMIT ${limit}` as unknown as Record<string, unknown>[];
+  return rows.map((row) => ({
+    id: String(row.id), userId: String(row.clerk_user_id), partyId: row.party_id ? String(row.party_id) : null,
+    amount: Number(row.amount), label: String(row.label), createdAt: new Date(row.created_at as string | Date).toISOString(),
+  } as KoinsTransaction));
+}
+
+const ENGAGEMENT_LIMITS: Record<string, { daily: number; amount: number }> = {
+  photo: { daily: 5, amount: 5 },
+  chat: { daily: 20, amount: 1 },
+  game_play: { daily: 10, amount: 5 },
+  game_win: { daily: 5, amount: 10 },
+  streak: { daily: 1, amount: 15 },
+  friend_add: { daily: 3, amount: 10 },
+};
+
+export async function grantEngagementReward(userId: string, activity: string, partyId?: string) {
+  await ensurePartySchema();
+  const config = ENGAGEMENT_LIMITS[activity];
+  if (!config) return { granted: false, reason: "unknown activity" };
+
+  const today = new Date().toISOString().split("T")[0];
+  const [countRow] = await db()`SELECT COUNT(*)::int AS cnt FROM engagement_rewards WHERE clerk_user_id = ${userId} AND activity = ${activity} AND granted_at = ${today}` as unknown as { cnt: number }[];
+  const usedToday = countRow?.cnt ?? 0;
+  if (usedToday >= config.daily) return { granted: false, reason: "daily limit reached", usedToday, daily: config.daily };
+
+  await db()`INSERT INTO engagement_rewards (id, clerk_user_id, activity, party_id, amount, granted_at) VALUES (${randomUUID()}, ${userId}, ${activity}, ${partyId ?? null}, ${config.amount}, ${today})`;
+  await db()`UPDATE user_profiles SET koins_balance = GREATEST(0, koins_balance + ${config.amount}), xp = xp + ${config.amount}, updated_at = NOW() WHERE clerk_user_id = ${userId}`;
+  await addKoinsTransaction(userId, partyId ?? null, config.amount, `Reward: ${activity}`);
+  return { granted: true, amount: config.amount, activity, usedToday: usedToday + 1, daily: config.daily };
+}
+
+export async function getEngagementStats(userId: string) {
+  await ensurePartySchema();
+  const today = new Date().toISOString().split("T")[0];
+  const rows = await db()`SELECT activity, COUNT(*)::int AS cnt, SUM(amount)::int AS total FROM engagement_rewards WHERE clerk_user_id = ${userId} AND granted_at = ${today} GROUP BY activity` as unknown as Array<{ activity: string; cnt: number; total: number }>;
+  const stats: Record<string, { count: number; total: number; daily: number; amount: number }> = {};
+  for (const [key, config] of Object.entries(ENGAGEMENT_LIMITS)) {
+    const row = rows.find((r) => r.activity === key);
+    stats[key] = { count: row?.cnt ?? 0, total: row?.total ?? 0, daily: config.daily, amount: config.amount };
+  }
+  return stats;
+}
+
+export async function createBet(userId: string, partyId: string, input: { text: string; options: string[] }) {
+  await ensurePartySchema();
+  const member = await db()`SELECT clerk_user_id FROM party_members WHERE party_id = ${partyId} AND clerk_user_id = ${userId} LIMIT 1` as unknown as { clerk_user_id: string }[];
+  if (!member[0]) throw new Error("Not a party member");
+  const [row] = await db()`INSERT INTO party_bets (id, party_id, clerk_user_id, text, options, entries)
+    VALUES (${randomUUID()}, ${partyId}, ${userId}, ${input.text.slice(0, 300)}, ${JSON.stringify(input.options)}::jsonb, '[]'::jsonb)
+    RETURNING *` as unknown as Record<string, unknown>[];
+  return rowToBet(row);
+}
+
+export async function getBets(partyId: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT * FROM party_bets WHERE party_id = ${partyId} ORDER BY created_at DESC` as unknown as Record<string, unknown>[];
+  return rows.map(rowToBet);
+}
+
+export async function joinBet(userId: string, betId: string, option: string, stake: number) {
+  await ensurePartySchema();
+  const [balanceRow] = await db()`SELECT koins_balance FROM user_profiles WHERE clerk_user_id = ${userId} LIMIT 1` as unknown as { koins_balance: number }[];
+  const balance = balanceRow ? Number(balanceRow.koins_balance) : 0;
+  if (stake < 1 || stake > balance) throw new Error("Not enough KOINS");
+  const [betRow] = await db()`SELECT * FROM party_bets WHERE id = ${betId} AND status = 'open' LIMIT 1` as unknown as Record<string, unknown>[];
+  if (!betRow) throw new Error("Bet not found or not open");
+  const entries = (typeof betRow.entries === "string" ? JSON.parse(betRow.entries) : betRow.entries) as Array<{ userId: string; option: string; stake: number }>;
+  if (entries.some((e) => e.userId === userId)) throw new Error("Already bet on this");
+  entries.push({ userId, option, stake });
+  await db()`UPDATE party_bets SET entries = ${JSON.stringify(entries)}::jsonb, updated_at = NOW() WHERE id = ${betId}`;
+  await addKoinsTransaction(userId, String(betRow.party_id), -stake, `Bet: ${betRow.text} · ${option}`);
+  return rowToBet({ ...betRow, entries });
+}
+
+export async function settleBet(userId: string, betId: string, winner: string) {
+  await ensurePartySchema();
+  const [betRow] = await db()`SELECT * FROM party_bets WHERE id = ${betId} AND status = 'open' LIMIT 1` as unknown as Record<string, unknown>[];
+  if (!betRow) throw new Error("Bet not found or already settled");
+  const entries = (typeof betRow.entries === "string" ? JSON.parse(betRow.entries) : betRow.entries) as Array<{ userId: string; option: string; stake: number }>;
+  const total = entries.reduce((s, e) => s + e.stake, 0);
+  const winnerPool = entries.filter((e) => e.option === winner).reduce((s, e) => s + e.stake, 0);
+  await db()`UPDATE party_bets SET status = 'settled', winner = ${winner.slice(0, 100)}, updated_at = NOW() WHERE id = ${betId}`;
+  for (const entry of entries) {
+    if (entry.option === winner && winnerPool > 0) {
+      const payout = Math.round(entry.stake * (total / winnerPool));
+      await addKoinsTransaction(entry.userId, String(betRow.party_id), payout, `Win: ${betRow.text} · ${winner}`);
+    }
+  }
+  return rowToBet({ ...betRow, status: "settled", winner });
+}
+
+export async function cancelBet(userId: string, betId: string) {
+  await ensurePartySchema();
+  const [betRow] = await db()`SELECT * FROM party_bets WHERE id = ${betId} AND status = 'open' LIMIT 1` as unknown as Record<string, unknown>[];
+  if (!betRow) throw new Error("Bet not found or already settled");
+  const entries = (typeof betRow.entries === "string" ? JSON.parse(betRow.entries) : betRow.entries) as Array<{ userId: string; option: string; stake: number }>;
+  await db()`UPDATE party_bets SET status = 'cancelled', updated_at = NOW() WHERE id = ${betId}`;
+  for (const entry of entries) {
+    await addKoinsTransaction(entry.userId, String(betRow.party_id), entry.stake, `Refund: ${betRow.text}`);
+  }
+  return rowToBet({ ...betRow, status: "cancelled" });
+}
+
+function rowToBet(row: Record<string, unknown>): PartyBet {
+  const rawOptions = row.options;
+  const parsedOptions = typeof rawOptions === "string" ? JSON.parse(rawOptions) : rawOptions;
+  const rawEntries = row.entries;
+  const parsedEntries = typeof rawEntries === "string" ? JSON.parse(rawEntries) : rawEntries;
+  return {
+    id: String(row.id),
+    partyId: String(row.party_id),
+    userId: String(row.clerk_user_id),
+    text: String(row.text),
+    options: Array.isArray(parsedOptions) ? parsedOptions.map(String) : [],
+    status: (row.status === "settled" ? "settled" : row.status === "cancelled" ? "cancelled" : "open") as "open" | "settled" | "cancelled",
+    winner: String(row.winner ?? ""),
+    entries: Array.isArray(parsedEntries) ? parsedEntries as Array<{ userId: string; option: string; stake: number }> : [],
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
+  };
+}
+
+export type PartyNote = {
+  id: string;
+  partyId: string;
+  userId: string;
+  type: "note" | "blast";
+  text: string;
+  pinned: boolean;
+  createdAt: string;
+};
+
+export async function addNote(userId: string, partyId: string, text: string, type: "note" | "blast" = "note") {
+  await ensurePartySchema();
+  const member = await db()`SELECT clerk_user_id FROM party_members WHERE party_id = ${partyId} AND clerk_user_id = ${userId} LIMIT 1` as unknown as { clerk_user_id: string }[];
+  if (!member[0]) throw new Error("Not a party member");
+  const [row] = await db()`INSERT INTO party_notes (id, party_id, clerk_user_id, type, text)
+    VALUES (${randomUUID()}, ${partyId}, ${userId}, ${type}, ${text.slice(0, 500)})
+    RETURNING *` as unknown as Record<string, unknown>[];
+  return rowToNote(row);
+}
+
+export async function getNotes(partyId: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT * FROM party_notes WHERE party_id = ${partyId} ORDER BY pinned DESC, created_at DESC LIMIT 100` as unknown as Record<string, unknown>[];
+  return rows.map(rowToNote);
+}
+
+export async function updateNote(noteId: string, userId: string, updates: { pinned?: boolean; text?: string }) {
+  await ensurePartySchema();
+  const text = updates.text !== undefined ? updates.text.slice(0, 500) : undefined;
+  const [row] = await db()`UPDATE party_notes SET
+    pinned = COALESCE(${updates.pinned ?? null}, pinned),
+    text = COALESCE(${text ?? null}, text)
+    WHERE id = ${noteId} RETURNING *` as unknown as Record<string, unknown>[];
+  return row ? rowToNote(row) : null;
+}
+
+export async function deleteNote(noteId: string, userId: string) {
+  await ensurePartySchema();
+  const rows = await db()`DELETE FROM party_notes WHERE id = ${noteId} RETURNING id` as unknown as { id: string }[];
+  return rows.length > 0;
+}
+
+function rowToNote(row: Record<string, unknown>): PartyNote {
+  return {
+    id: String(row.id), partyId: String(row.party_id), userId: String(row.clerk_user_id),
+    type: row.type === "blast" ? "blast" : "note",
+    text: String(row.text), pinned: Boolean(row.pinned),
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
+  };
+}
+
+export async function setCustomRole(partyId: string, ownerId: string, targetUserId: string, customRole: string) {
+  await ensurePartySchema();
+  const partyRows = await db()`SELECT owner_id FROM parties WHERE id = ${partyId} LIMIT 1` as unknown as Record<string, unknown>[];
+  if (!partyRows[0] || String(partyRows[0].owner_id) !== ownerId) throw new Error("Only owner can change roles");
+  const [row] = await db()`UPDATE party_members SET custom_role = ${customRole.slice(0, 40)} WHERE party_id = ${partyId} AND clerk_user_id = ${targetUserId} RETURNING *` as unknown as Record<string, unknown>[];
+  return row ? { clerkUserId: String(row.clerk_user_id), customRole: String(row.custom_role) } : null;
+}
+
+export async function trackAnalytics(userId: string, action: string, metadata?: Record<string, unknown>) {
+  await ensurePartySchema();
+  await db()`INSERT INTO analytics_events (id, clerk_user_id, action, metadata)
+    VALUES (${randomUUID()}, ${userId}, ${action.slice(0, 100)}, ${JSON.stringify(metadata ?? {})}::jsonb)`;
+}
+
+export async function getAnalyticsSummary() {
+  await ensurePartySchema();
+  const rows = await db()`SELECT
+    COUNT(*)::int AS total_events,
+    (SELECT COUNT(*)::int FROM analytics_events WHERE created_at > NOW() - INTERVAL '24 hours') AS last_24h,
+    (SELECT action FROM analytics_events GROUP BY action ORDER BY COUNT(*) DESC LIMIT 1) AS top_action,
+    (SELECT COUNT(*)::int FROM analytics_events WHERE action = 'party_created') AS parties_created,
+    (SELECT COUNT(*)::int FROM analytics_events WHERE action = 'game_played') AS games_played,
+    (SELECT COUNT(*)::int FROM analytics_events WHERE action = 'photo_uploaded') AS photos_uploaded
+    FROM analytics_events` as unknown as Record<string, unknown>[];
+  return rows[0] ? {
+    totalEvents: Number(rows[0].total_events), last24h: Number(rows[0].last_24h),
+    topAction: String(rows[0].top_action ?? "—"), partiesCreated: Number(rows[0].parties_created),
+    gamesPlayed: Number(rows[0].games_played), photosUploaded: Number(rows[0].photos_uploaded),
+  } : null;
+}
+
+function mergedCosmetics(current: ProfileCosmetics, benefits: PromoBenefit[]) {
+  const next: ProfileCosmetics = { ...current, unlocked: [...current.unlocked] };
+  for (const benefit of benefits) {
+    if (!next.unlocked.includes(benefit.type)) next.unlocked.push(benefit.type);
+    if (benefit.type === "beta_access") next.betaAccess = true;
+    if (benefit.type === "profile_cover") next.cover = String(benefit.value ?? "beta");
+    if (benefit.type === "avatar_frame") next.avatarFrame = String(benefit.value ?? "neon");
+    if (benefit.type === "chat_effect") next.chatEffect = String(benefit.value ?? "sparkle");
+    if (benefit.type === "name_color") next.nameColor = String(benefit.value ?? "#c9ff05");
+    if (benefit.type === "badge") next.badge = String(benefit.value ?? "beta");
+    if (benefit.type === "xp_multiplier") next.xpMultiplier = Number(benefit.value ?? 1.25);
+  }
+  return next;
+}
+
+export async function redeemPromo(userId: string, codeInput: string) {
+  await ensurePartySchema();
+  const sql = db();
+  const code = codeInput.trim().toUpperCase();
+  const rows = await sql`SELECT * FROM promo_codes WHERE code = ${code} LIMIT 1` as unknown as Record<string, unknown>[];
+  const promo = rows[0] ? promoFromRow(rows[0]) : null;
+  if (!promo || promo.status !== "active" || (promo.expiresAt && new Date(promo.expiresAt).getTime() < Date.now())) return { kind: "invalid" as const };
+  const already = await sql`SELECT id FROM promo_redemptions WHERE promo_code_id = ${promo.id} AND clerk_user_id = ${userId} LIMIT 1` as unknown as { id: string }[];
+  if (already[0]) return { kind: "used" as const };
+  if (promo.maxRedemptions !== null && promo.usesCount >= promo.maxRedemptions) return { kind: "exhausted" as const };
+  const claimed = await sql`UPDATE promo_codes SET uses_count = uses_count + 1, updated_at = NOW() WHERE id = ${promo.id} AND status = 'active' AND (expires_at IS NULL OR expires_at > NOW()) AND (max_redemptions IS NULL OR uses_count < max_redemptions) RETURNING id` as unknown as { id: string }[];
+  if (!claimed[0]) return { kind: "exhausted" as const };
+  try {
+    const profile = await getProfile(userId);
+    if (!profile) throw new Error("Profile not found");
+    const cosmetics = mergedCosmetics(profile.cosmetics, promo.benefits);
+    const xp = profile.xp + (promo.benefits.some((benefit) => benefit.type === "beta_access") ? 120 : 30);
+    const [row] = await sql`UPDATE user_profiles SET cosmetics = ${JSON.stringify(cosmetics)}::jsonb, xp = ${xp}, updated_at = NOW() WHERE clerk_user_id = ${userId} RETURNING *` as unknown as Record<string, unknown>[];
+    const hasPC = promo.benefits.some((b) => b.type === "party_creation");
+    await sql`INSERT INTO promo_redemptions (id, promo_code_id, clerk_user_id, party_id) VALUES (${randomUUID()}, ${promo.id}, ${userId}, NULL)`;
+    return { kind: "redeemed" as const, profile: profileFromRow({ ...row, has_party_creation: hasPC }), promo };
+  } catch (error) {
+    await sql`UPDATE promo_codes SET uses_count = GREATEST(uses_count - 1, 0), updated_at = NOW() WHERE id = ${promo.id}`;
+    throw error;
+  }
+}
+
+export async function getUserRedemptions(userId: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT pr.*, pc.code, pc.benefits FROM promo_redemptions pr
+    JOIN promo_codes pc ON pc.id = pr.promo_code_id
+    WHERE pr.clerk_user_id = ${userId}
+    ORDER BY pr.redeemed_at DESC` as unknown as Record<string, unknown>[];
+  return rows.map((row) => {
+    const rawBenefits = row.benefits;
+    const parsedBenefits = typeof rawBenefits === "string" ? JSON.parse(rawBenefits) : rawBenefits;
+    return {
+      id: String(row.id),
+      promoCodeId: String(row.promo_code_id),
+      code: String(row.code),
+      clerkUserId: String(row.clerk_user_id),
+      partyId: row.party_id ? String(row.party_id) : null,
+      benefits: Array.isArray(parsedBenefits) ? parsedBenefits as PromoBenefit[] : [],
+      redeemedAt: new Date(row.redeemed_at as string | Date).toISOString(),
+    } as PromoRedemption;
+  });
+}
+
+export async function getDashboard(userId: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT p.*, pm.role, pm.rsvp_status AS my_rsvp, COALESCE(owner.display_name, 'Организатор') AS owner_name, COALESCE(owner.image_url, '') AS owner_image_url,
+    (SELECT COUNT(*)::int FROM party_members members WHERE members.party_id = p.id) AS member_count,
+    (SELECT COUNT(*)::int FROM party_members members WHERE members.party_id = p.id AND members.rsvp_status = 'going') AS going_count,
+    (SELECT COUNT(*)::int FROM party_members members WHERE members.party_id = p.id AND members.rsvp_status = 'maybe') AS maybe_count,
+    (SELECT COUNT(*)::int FROM party_members members WHERE members.party_id = p.id AND members.rsvp_status = 'pass') AS pass_count
+    FROM parties p JOIN party_members pm ON pm.party_id = p.id
+    LEFT JOIN user_profiles owner ON owner.clerk_user_id = p.owner_id
+    WHERE pm.clerk_user_id = ${userId} ORDER BY p.date ASC, p.time ASC` as unknown as Record<string, unknown>[];
+  return rows.map(partyFromRow);
+}
+
+export async function getPartyByInvite(inviteCode: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT p.*, COALESCE(owner.display_name, 'Организатор') AS owner_name, COALESCE(owner.image_url, '') AS owner_image_url,
+    (SELECT COUNT(*)::int FROM party_members members WHERE members.party_id = p.id) AS member_count,
+    (SELECT COUNT(*)::int FROM party_members members WHERE members.party_id = p.id AND members.rsvp_status = 'going') AS going_count,
+    (SELECT COUNT(*)::int FROM party_members members WHERE members.party_id = p.id AND members.rsvp_status = 'maybe') AS maybe_count,
+    (SELECT COUNT(*)::int FROM party_members members WHERE members.party_id = p.id AND members.rsvp_status = 'pass') AS pass_count
+    FROM parties p LEFT JOIN user_profiles owner ON owner.clerk_user_id = p.owner_id
+    WHERE p.invite_code = ${inviteCode.toUpperCase()} LIMIT 1` as unknown as Record<string, unknown>[];
+  return rows[0] ? partyFromRow(rows[0]) : null;
+}
+
+export async function createPartyWithPromo(ownerId: string, input: { title: string; date: string; time: string; venue: string; category: string; description: string; promoCode?: string; adultOnly: boolean }) {
+  await ensurePartySchema();
+  const sql = db();
+  const profile = await getProfile(ownerId);
+  if (!profile) return { kind: "invalid" as const };
+  const hasPromoCode = !!input.promoCode?.trim();
+  if (!hasPromoCode && !profile.hasPartyCreation) return { kind: "no_access" as const };
+  if (!hasPromoCode && profile.hasPartyCreation) {
+    const partyId = randomUUID();
+    const inviteCode = randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase();
+    const partySlug = slug(input.title, partyId.replaceAll("-", ""));
+    const [partyRow] = await sql`INSERT INTO parties (id, owner_id, title, slug, invite_code, date, time, venue, category, description, adult_only)
+      VALUES (${partyId}, ${ownerId}, ${input.title.slice(0, 100)}, ${partySlug}, ${inviteCode}, ${input.date}, ${input.time}, ${input.venue.slice(0, 120)}, ${input.category.slice(0, 80)}, ${input.description.slice(0, 500)}, ${input.adultOnly}) RETURNING *` as unknown as Record<string, unknown>[];
+    await sql`INSERT INTO party_members (party_id, clerk_user_id, role) VALUES (${partyId}, ${ownerId}, 'owner')`;
+    return { kind: "created" as const, party: partyFromRow({ ...partyRow, owner_name: profile.displayName ?? "Организатор", owner_image_url: profile.imageUrl ?? "", member_count: 1, role: "owner" }) };
+  }
+  const code = input.promoCode?.trim().toUpperCase() ?? "";
+  const promoRows = await sql`SELECT * FROM promo_codes WHERE code = ${code} LIMIT 1` as unknown as Record<string, unknown>[];
+  const promo = promoRows[0] ? promoFromRow(promoRows[0]) : null;
+  if (!promo || promo.status !== "active") return { kind: "invalid" as const };
+  const redemption = await sql`SELECT id FROM promo_redemptions WHERE promo_code_id = ${promo.id} AND clerk_user_id = ${ownerId} LIMIT 1` as unknown as { id: string }[];
+  if (redemption[0]) return { kind: "used" as const };
+  if (promo.maxRedemptions !== null && promo.usesCount >= promo.maxRedemptions) return { kind: "exhausted" as const };
+
+  const partyId = randomUUID();
+  const inviteCode = randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase();
+  const partySlug = slug(input.title, partyId.replaceAll("-", ""));
+  const updated = await sql`UPDATE promo_codes SET uses_count = uses_count + 1, updated_at = NOW()
+    WHERE id = ${promo.id} AND status = 'active' AND (max_redemptions IS NULL OR uses_count < max_redemptions)
+    RETURNING id` as unknown as { id: string }[];
+  if (!updated[0]) return { kind: "exhausted" as const };
+
+  try {
+    const [partyRow] = await sql`INSERT INTO parties (id, owner_id, title, slug, invite_code, date, time, venue, category, description, adult_only)
+      VALUES (${partyId}, ${ownerId}, ${input.title.slice(0, 100)}, ${partySlug}, ${inviteCode}, ${input.date}, ${input.time}, ${input.venue.slice(0, 120)}, ${input.category.slice(0, 80)}, ${input.description.slice(0, 500)}, ${input.adultOnly}) RETURNING *` as unknown as Record<string, unknown>[];
+    await sql`INSERT INTO party_members (party_id, clerk_user_id, role) VALUES (${partyId}, ${ownerId}, 'owner')`;
+    await sql`INSERT INTO promo_redemptions (id, promo_code_id, clerk_user_id, party_id) VALUES (${randomUUID()}, ${promo.id}, ${ownerId}, ${partyId})`;
+    const profile = await getProfile(ownerId);
+    const rewardedProfile = profile && promo.benefits.length ? (() => { const cosmetics = mergedCosmetics(profile.cosmetics, promo.benefits); return { cosmetics, xp: profile.xp + 50 }; })() : null;
+    if (rewardedProfile) await sql`UPDATE user_profiles SET cosmetics = ${JSON.stringify(rewardedProfile.cosmetics)}::jsonb, xp = ${rewardedProfile.xp}, updated_at = NOW() WHERE clerk_user_id = ${ownerId}`;
+    return { kind: "created" as const, party: partyFromRow({ ...partyRow, owner_name: profile?.displayName ?? "Организатор", owner_image_url: profile?.imageUrl ?? "", member_count: 1, role: "owner" }) };
+  } catch (error) {
+    await sql`UPDATE promo_codes SET uses_count = GREATEST(uses_count - 1, 0), updated_at = NOW() WHERE id = ${promo.id}`;
+    throw error;
+  }
+}
+
+export async function joinParty(userId: string, inviteCode: string, rsvp?: RsvpStatus) {
+  const party = await getPartyByInvite(inviteCode);
+  if (!party) return null;
+  const rsvpStatus = rsvp === "maybe" || rsvp === "pass" ? rsvp : "going";
+  await db()`INSERT INTO party_members (party_id, clerk_user_id, role, rsvp_status) VALUES (${party.id}, ${userId}, ${party.ownerId === userId ? "owner" : "guest"}, ${rsvpStatus}) ON CONFLICT (party_id, clerk_user_id) DO UPDATE SET rsvp_status = ${rsvpStatus}`;
+  return getPartyByInvite(inviteCode);
+}
+
+export async function updateParty(partyId: string, userId: string, input: { title?: string; date?: string; time?: string; venue?: string; category?: string; description?: string; adultOnly?: boolean }) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT * FROM parties WHERE id = ${partyId} LIMIT 1` as unknown as Record<string, unknown>[];
+  if (!rows[0]) return null;
+  const current = rows[0];
+  const isOwner = String(current.owner_id) === userId;
+  if (!isOwner) return null;
+  const [row] = await db()`UPDATE parties SET
+    title = COALESCE(${input.title ?? null}, title),
+    date = COALESCE(${input.date ?? null}, date),
+    time = COALESCE(${input.time ?? null}, time),
+    venue = COALESCE(${input.venue ?? null}, venue),
+    category = COALESCE(${input.category ?? null}, category),
+    description = COALESCE(${input.description ?? null}, description),
+    adult_only = COALESCE(${input.adultOnly ?? null}, adult_only),
+    updated_at = NOW()
+    WHERE id = ${partyId} RETURNING *` as unknown as Record<string, unknown>[];
+  return row ? partyFromRow(row) : null;
+}
+
+export async function deleteParty(partyId: string, userId: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT owner_id FROM parties WHERE id = ${partyId} LIMIT 1` as unknown as Record<string, unknown>[];
+  if (!rows[0] || String(rows[0].owner_id) !== userId) return false;
+  await db()`DELETE FROM parties WHERE id = ${partyId}`;
+  return true;
+}
+
+export async function getPartyMembers(partyId: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT pm.*, up.display_name, up.image_url
+    FROM party_members pm
+    LEFT JOIN user_profiles up ON up.clerk_user_id = pm.clerk_user_id
+    WHERE pm.party_id = ${partyId} ORDER BY pm.joined_at ASC` as unknown as Record<string, unknown>[];
+  return rows.map((row) => ({
+    clerkUserId: String(row.clerk_user_id),
+    displayName: String(row.display_name ?? row.clerk_user_id),
+    imageUrl: String(row.image_url ?? ""),
+    role: (row.role === "owner" || row.role === "co_host" ? row.role : "guest") as PartyRole,
+    rsvpStatus: (row.rsvp_status === "going" || row.rsvp_status === "maybe" || row.rsvp_status === "pass" ? row.rsvp_status : "going") as RsvpStatus,
+    joinedAt: new Date(row.joined_at as string | Date).toISOString(),
+  }));
+}
+
+export async function setMemberRole(partyId: string, ownerId: string, targetUserId: string, role: "co_host" | "guest") {
+  await ensurePartySchema();
+  const partyRows = await db()`SELECT owner_id FROM parties WHERE id = ${partyId} LIMIT 1` as unknown as Record<string, unknown>[];
+  if (!partyRows[0] || String(partyRows[0].owner_id) !== ownerId) throw new Error("Only owner can change roles");
+  if (targetUserId === ownerId) throw new Error("Cannot change owner role");
+  const [row] = await db()`UPDATE party_members SET role = ${role} WHERE party_id = ${partyId} AND clerk_user_id = ${targetUserId} RETURNING *` as unknown as Record<string, unknown>[];
+  return row ? { clerkUserId: String(row.clerk_user_id), role: row.role as PartyRole } : null;
+}
+
+export async function updateRsvp(partyId: string, userId: string, rsvp: RsvpStatus) {
+  await ensurePartySchema();
+  const [row] = await db()`UPDATE party_members SET rsvp_status = ${rsvp} WHERE party_id = ${partyId} AND clerk_user_id = ${userId} RETURNING rsvp_status` as unknown as { rsvp_status: string }[];
+  return row ? (row.rsvp_status as RsvpStatus) : null;
+}
+
+export async function listPromoCodes() {
+  await ensurePartySchema();
+  const rows = await db()`SELECT * FROM promo_codes ORDER BY created_at DESC` as unknown as Record<string, unknown>[];
+  return rows.map(promoFromRow);
+}
+
+export async function createPromoCode(input: { code: string; maxRedemptions: number | null; mode?: PromoMode; expiresAt?: string | null; benefits?: PromoBenefit[] }) {
+  await ensurePartySchema();
+  const code = input.code.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 32);
+  if (!code) throw new Error("Укажите код.");
+  const mode = input.mode === "multi" ? "multi" : "single";
+  const maxRedemptions = mode === "single" ? 1 : input.maxRedemptions;
+  const expiresAt = input.expiresAt ? new Date(input.expiresAt).toISOString() : null;
+  const [row] = await db()`INSERT INTO promo_codes (id, code, max_redemptions, redemption_mode, expires_at, benefits) VALUES (${randomUUID()}, ${code}, ${maxRedemptions}, ${mode}, ${expiresAt}, ${JSON.stringify(input.benefits ?? [])}::jsonb) RETURNING *` as unknown as Record<string, unknown>[];
+  return promoFromRow(row);
+}
+
+export async function updatePromoCode(id: string, input: { code?: string; status?: PromoStatus; maxRedemptions?: number | null; mode?: PromoMode; expiresAt?: string | null; benefits?: PromoBenefit[] }) {
+  const currentRows = await db()`SELECT * FROM promo_codes WHERE id = ${id} LIMIT 1` as unknown as Record<string, unknown>[];
+  if (!currentRows[0]) return null;
+  const current = promoFromRow(currentRows[0]);
+  const code = input.code ?? current.code;
+  const status = input.status ?? current.status;
+  const maxRedemptions = input.maxRedemptions === undefined ? current.maxRedemptions : input.maxRedemptions;
+  const mode = input.mode ?? current.mode;
+  const actualMax = mode === "single" ? 1 : maxRedemptions;
+  const expiresAt = input.expiresAt === undefined ? current.expiresAt : input.expiresAt;
+  const benefits = input.benefits ?? current.benefits;
+  const [row] = await db()`UPDATE promo_codes SET code = ${code}, status = ${status}, max_redemptions = ${actualMax}, redemption_mode = ${mode}, expires_at = ${expiresAt}, benefits = ${JSON.stringify(benefits)}::jsonb, updated_at = NOW() WHERE id = ${id} RETURNING *` as unknown as Record<string, unknown>[];
+  return promoFromRow(row);
+}
+
+export async function deletePromoCode(id: string) {
+  const rows = await db()`DELETE FROM promo_codes WHERE id = ${id} AND uses_count = 0 RETURNING id` as unknown as { id: string }[];
+  return rows.length > 0;
+}
+
+export type ChatMessage = {
+  id: string;
+  partyId: string;
+  userId: string;
+  displayName: string;
+  text: string;
+  type: "text" | "voice" | "sticker";
+  voiceUrl: string;
+  stickerId: string;
+  reactions: Record<string, string[]>;
+  createdAt: string;
+};
+
+export async function sendMessage(userId: string, partyId: string, text: string, extra?: { type?: string; voiceUrl?: string; stickerId?: string }) {
+  await ensurePartySchema();
+  const member = await db()`SELECT clerk_user_id FROM party_members WHERE party_id = ${partyId} AND clerk_user_id = ${userId} LIMIT 1` as unknown as { clerk_user_id: string }[];
+  if (!member[0]) throw new Error("Not a party member");
+  const profile = await getProfile(userId);
+  const type = extra?.type ?? "text";
+  const voiceUrl = extra?.voiceUrl ?? "";
+  const stickerId = extra?.stickerId ?? "";
+  const [row] = await db()`INSERT INTO chat_messages (id, party_id, clerk_user_id, display_name, text, type, voice_url, sticker_id)
+    VALUES (${randomUUID()}, ${partyId}, ${userId}, ${profile?.displayName ?? "TUSA friend"}, ${text.slice(0, 1000)}, ${type}, ${voiceUrl}, ${stickerId})
+    RETURNING *` as unknown as Record<string, unknown>[];
+  return {
+    id: String(row.id), partyId: String(row.party_id), userId: String(row.clerk_user_id),
+    displayName: String(row.display_name), text: String(row.text), type: String(row.type) as ChatMessage["type"],
+    voiceUrl: String(row.voice_url), stickerId: String(row.sticker_id),
+    reactions: (row.reactions ?? {}) as Record<string, string[]>,
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
+  } as ChatMessage;
+}
+
+export async function toggleReaction(messageId: string, userId: string, emoji: string) {
+  await ensurePartySchema();
+  const [row] = await db()`SELECT reactions FROM chat_messages WHERE id = ${messageId}` as unknown as { reactions: Record<string, string[]> }[];
+  if (!row) return null;
+  const reactions = row.reactions ?? {};
+  const users = reactions[emoji] ?? [];
+  if (users.includes(userId)) {
+    reactions[emoji] = users.filter((id) => id !== userId);
+    if (reactions[emoji].length === 0) delete reactions[emoji];
+  } else {
+    reactions[emoji] = [...users, userId];
+  }
+  await db()`UPDATE chat_messages SET reactions = ${JSON.stringify(reactions)}::jsonb WHERE id = ${messageId}`;
+  return reactions;
+}
+
+export async function getMessages(partyId: string, limit = 50, after?: string) {
+  await ensurePartySchema();
+  const rows = after
+    ? await db()`SELECT * FROM chat_messages WHERE party_id = ${partyId} AND created_at > ${after}::timestamptz
+        ORDER BY created_at ASC LIMIT ${limit}` as unknown as Record<string, unknown>[]
+    : await db()`SELECT * FROM chat_messages WHERE party_id = ${partyId}
+        ORDER BY created_at DESC LIMIT ${limit}` as unknown as Record<string, unknown>[];
+  const ordered = after ? rows : rows.reverse();
+  return ordered.map((row) => ({
+    id: String(row.id), partyId: String(row.party_id), userId: String(row.clerk_user_id),
+    displayName: String(row.display_name), text: String(row.text), type: String(row.type ?? "text") as ChatMessage["type"],
+    voiceUrl: String(row.voice_url ?? ""), stickerId: String(row.sticker_id ?? ""),
+    reactions: (row.reactions ?? {}) as Record<string, string[]>,
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
+  } as ChatMessage));
+}
+
+export type GameSession = {
+  id: string;
+  partyId: string;
+  game: string;
+  status: "lobby" | "active" | "paused" | "completed" | "cancelled";
+  config: Record<string, unknown>;
+  state: Record<string, unknown>;
+  participants?: string[];
+  createdAt: string;
+};
+
+export type ShoppingItem = {
+  id: string;
+  partyId: string;
+  text: string;
+  quantity: number;
+  unit: string;
+  buyerId: string;
+  buyerName: string;
+  price: number;
+  purchased: boolean;
+  createdAt: string;
+};
+
+export type GalleryPhoto = {
+  id: string;
+  partyId: string;
+  userId: string;
+  displayName: string;
+  name: string;
+  src: string;
+  tags: string[];
+  cover: boolean;
+  createdAt: string;
+};
+
+export type GameScore = {
+  id: string;
+  sessionId: string;
+  userId: string;
+  score: number;
+  metadata: Record<string, unknown>;
+};
+
+export async function createGameSession(partyId: string, game: string, config?: Record<string, unknown>) {
+  await ensurePartySchema();
+  const [row] = await db()`INSERT INTO game_sessions (id, party_id, game, config, state)
+    VALUES (${randomUUID()}, ${partyId}, ${game}, ${JSON.stringify(config ?? {})}::jsonb, '{}'::jsonb) RETURNING *` as unknown as Record<string, unknown>[];
+  return { id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession;
+}
+
+export async function getActiveGameSessions(partyId: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT * FROM game_sessions WHERE party_id = ${partyId} AND status IN ('lobby', 'active') ORDER BY created_at DESC` as unknown as Record<string, unknown>[];
+  return rows.map((row) => ({ id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, participants: (row.participants ?? []) as string[], createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession & { participants: string[] }));
+}
+
+export async function getGameSessionById(sessionId: string) {
+  await ensurePartySchema();
+  const [row] = await db()`SELECT * FROM game_sessions WHERE id = ${sessionId}` as unknown as Record<string, unknown>[];
+  if (!row) return null;
+  return { id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, participants: (row.participants ?? []) as string[], createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession & { participants: string[] };
+}
+
+export async function joinGameSession(sessionId: string, userId: string) {
+  await ensurePartySchema();
+  const [existing] = await db()`SELECT participants FROM game_sessions WHERE id = ${sessionId}` as unknown as { participants: string[] }[];
+  if (!existing) return null;
+  const current = Array.isArray(existing.participants) ? existing.participants : [];
+  if (!current.includes(userId)) {
+    current.push(userId);
+    await db()`UPDATE game_sessions SET participants = ${JSON.stringify(current)}::jsonb, updated_at = NOW() WHERE id = ${sessionId}`;
+  }
+  return getGameSessionById(sessionId);
+}
+
+export async function leaveGameSession(sessionId: string, userId: string) {
+  await ensurePartySchema();
+  const [existing] = await db()`SELECT participants FROM game_sessions WHERE id = ${sessionId}` as unknown as { participants: string[] }[];
+  if (!existing) return null;
+  const current = (Array.isArray(existing.participants) ? existing.participants : []).filter((id) => id !== userId);
+  await db()`UPDATE game_sessions SET participants = ${JSON.stringify(current)}::jsonb, updated_at = NOW() WHERE id = ${sessionId}`;
+  return getGameSessionById(sessionId);
+}
+
+export async function setPaymentAssignee(partyId: string, ownerId: string, targetUserId: string) {
+  await ensurePartySchema();
+  await db()`UPDATE party_members SET paid_by = ${targetUserId} WHERE party_id = ${partyId} AND clerk_user_id = ${ownerId}`;
+  return { partyId, ownerId, paidBy: targetUserId };
+}
+
+export async function getPaymentAssignee(partyId: string) {
+  await ensurePartySchema();
+  const [row] = await db()`SELECT pm.paid_by, up.display_name FROM party_members pm LEFT JOIN user_profiles up ON up.clerk_user_id = pm.paid_by WHERE pm.party_id = ${partyId} AND pm.role = 'owner'` as unknown as Record<string, unknown>[];
+  return row ? { paidBy: String(row.paid_by || ""), displayName: String(row.display_name || "") } : { paidBy: "", displayName: "" };
+}
+
+export async function updateGameSession(sessionId: string, updates: { status?: string; state?: Record<string, unknown> }) {
+  const status = updates.status;
+  const state = updates.state ? JSON.stringify(updates.state) : undefined;
+  const [row] = await db()`UPDATE game_sessions SET
+    ${status ? db()`status = ${status},` : db()``}
+    ${state ? db()`state = ${state}::jsonb,` : db()``}
+    updated_at = NOW()
+    WHERE id = ${sessionId} RETURNING *` as unknown as Record<string, unknown>[];
+  if (!row) return null;
+  return { id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession;
+}
+
+export async function addGameScore(sessionId: string, userId: string, score: number, metadata?: Record<string, unknown>) {
+  const [row] = await db()`INSERT INTO game_scores (id, session_id, clerk_user_id, score, metadata)
+    VALUES (${randomUUID()}, ${sessionId}, ${userId}, ${score}, ${JSON.stringify(metadata ?? {})}::jsonb) RETURNING *` as unknown as Record<string, unknown>[];
+  return { id: String(row.id), sessionId: String(row.session_id), userId: String(row.clerk_user_id), score: Number(row.score), metadata: row.metadata as Record<string, unknown> } as GameScore;
+}
+
+export async function addShoppingItem(userId: string, partyId: string, input: { text: string; quantity: number; unit: string }) {
+  await ensurePartySchema();
+  const member = await db()`SELECT clerk_user_id FROM party_members WHERE party_id = ${partyId} AND clerk_user_id = ${userId} LIMIT 1` as unknown as { clerk_user_id: string }[];
+  if (!member[0]) throw new Error("Not a party member");
+  const profile = await getProfile(userId);
+  const [row] = await db()`INSERT INTO party_shopping_items (id, party_id, clerk_user_id, display_name, text, quantity, unit)
+    VALUES (${randomUUID()}, ${partyId}, ${userId}, ${profile?.displayName ?? "TUSA friend"}, ${input.text.slice(0, 200)}, ${Math.max(1, input.quantity)}, ${input.unit.slice(0, 10)})
+    RETURNING *` as unknown as Record<string, unknown>[];
+  return rowToShoppingItem(row);
+}
+
+export async function getShoppingItems(partyId: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT * FROM party_shopping_items WHERE party_id = ${partyId} ORDER BY created_at ASC` as unknown as Record<string, unknown>[];
+  return rows.map(rowToShoppingItem);
+}
+
+export async function updateShoppingItem(itemId: string, _userId: string, updates: { text?: string; quantity?: number; unit?: string; price?: number; purchased?: boolean; buyerId?: string }) {
+  await ensurePartySchema();
+  const text = updates.text !== undefined ? updates.text.slice(0, 200) : undefined;
+  const quantity = updates.quantity !== undefined ? Math.max(1, updates.quantity) : undefined;
+  const unit = updates.unit !== undefined ? updates.unit.slice(0, 10) : undefined;
+  const price = updates.price !== undefined ? Math.max(0, updates.price) : undefined;
+  const purchased = updates.purchased;
+  const buyerId = updates.buyerId;
+  const [row] = await db()`UPDATE party_shopping_items SET
+    text = COALESCE(${text ?? null}, text),
+    quantity = COALESCE(${quantity ?? null}, quantity),
+    unit = COALESCE(${unit ?? null}, unit),
+    price = COALESCE(${price ?? null}, price),
+    purchased = COALESCE(${purchased ?? null}, purchased),
+    clerk_user_id = COALESCE(${buyerId ?? null}, clerk_user_id)
+    WHERE id = ${itemId} RETURNING *` as unknown as Record<string, unknown>[];
+  return row ? rowToShoppingItem(row) : null;
+}
+
+export async function deleteShoppingItem(itemId: string, userId: string) {
+  await ensurePartySchema();
+  const rows = await db()`DELETE FROM party_shopping_items WHERE id = ${itemId} RETURNING id` as unknown as { id: string }[];
+  return rows.length > 0;
+}
+
+function rowToShoppingItem(row: Record<string, unknown>): ShoppingItem {
+  return {
+    id: String(row.id),
+    partyId: String(row.party_id),
+    text: String(row.text),
+    quantity: Number(row.quantity),
+    unit: String(row.unit),
+    buyerId: String(row.clerk_user_id),
+    buyerName: String(row.display_name),
+    price: Number(row.price),
+    purchased: Boolean(row.purchased),
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
+  };
+}
+
+export async function addGalleryPhoto(userId: string, partyId: string, input: { name: string; src: string }) {
+  await ensurePartySchema();
+  const member = await db()`SELECT clerk_user_id FROM party_members WHERE party_id = ${partyId} AND clerk_user_id = ${userId} LIMIT 1` as unknown as { clerk_user_id: string }[];
+  if (!member[0]) throw new Error("Not a party member");
+  const profile = await getProfile(userId);
+  const existing = await db()`SELECT COUNT(*)::int AS cnt FROM party_gallery_photos WHERE party_id = ${partyId}` as unknown as { cnt: number }[];
+  const isFirst = existing[0].cnt === 0;
+  const [row] = await db()`INSERT INTO party_gallery_photos (id, party_id, clerk_user_id, display_name, name, src, cover)
+    VALUES (${randomUUID()}, ${partyId}, ${userId}, ${profile?.displayName ?? "TUSA friend"}, ${input.name.slice(0, 200)}, ${input.src}, ${isFirst})
+    RETURNING *` as unknown as Record<string, unknown>[];
+  return rowToGalleryPhoto(row);
+}
+
+export async function getGalleryPhotos(partyId: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT * FROM party_gallery_photos WHERE party_id = ${partyId} ORDER BY cover DESC, created_at DESC` as unknown as Record<string, unknown>[];
+  return rows.map(rowToGalleryPhoto);
+}
+
+export async function updateGalleryPhoto(photoId: string, userId: string, updates: { cover?: boolean; tags?: string[]; name?: string }) {
+  await ensurePartySchema();
+  const cover = updates.cover !== undefined ? updates.cover : undefined;
+  const tags = updates.tags !== undefined ? JSON.stringify(updates.tags) : undefined;
+  const name = updates.name !== undefined ? updates.name.slice(0, 200) : undefined;
+  const [row] = await db()`UPDATE party_gallery_photos SET
+    cover = COALESCE(${cover ?? null}, cover),
+    tags = COALESCE(${tags ?? null}::jsonb, tags),
+    name = COALESCE(${name ?? null}, name)
+    WHERE id = ${photoId} RETURNING *` as unknown as Record<string, unknown>[];
+  if (!row) return null;
+  if (updates.cover) {
+    await db()`UPDATE party_gallery_photos SET cover = FALSE WHERE id != ${photoId} AND party_id = ${String(row.party_id)}`;
+  }
+  return row ? rowToGalleryPhoto(row) : null;
+}
+
+export async function deleteGalleryPhoto(photoId: string, userId: string) {
+  await ensurePartySchema();
+  const rows = await db()`DELETE FROM party_gallery_photos WHERE id = ${photoId} RETURNING id` as unknown as { id: string }[];
+  return rows.length > 0;
+}
+
+function rowToGalleryPhoto(row: Record<string, unknown>): GalleryPhoto {
+  const rawTags = row.tags;
+  const parsedTags = typeof rawTags === "string" ? JSON.parse(rawTags) : rawTags;
+  return {
+    id: String(row.id),
+    partyId: String(row.party_id),
+    userId: String(row.clerk_user_id),
+    displayName: String(row.display_name),
+    name: String(row.name),
+    src: String(row.src),
+    tags: Array.isArray(parsedTags) ? parsedTags.map(String) : [],
+    cover: Boolean(row.cover),
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
+  };
+}
+
+export async function getGameScores(sessionId: string) {
+  const rows = await db()`SELECT * FROM game_scores WHERE session_id = ${sessionId} ORDER BY score DESC` as unknown as Record<string, unknown>[];
+  return rows.map((row) => ({ id: String(row.id), sessionId: String(row.session_id), userId: String(row.clerk_user_id), score: Number(row.score), metadata: row.metadata as Record<string, unknown> } as GameScore));
+}
+
+export async function getUserGameStats(userId: string) {
+  await ensurePartySchema();
+  const [row] = await db()`SELECT
+    COUNT(DISTINCT gs.id)::int AS games_played,
+    COALESCE(SUM(gs2.score), 0)::int AS total_score
+    FROM party_members pm
+    JOIN game_sessions gs ON gs.party_id = pm.party_id AND gs.status = 'completed'
+    LEFT JOIN game_scores gs2 ON gs2.session_id = gs.id AND gs2.clerk_user_id = ${userId}
+    WHERE pm.clerk_user_id = ${userId}` as unknown as Record<string, unknown>[];
+  return { gamesPlayed: Number(row.games_played), totalScore: Number(row.total_score) };
+}
+
+export async function getPromoRedemptions(promoCodeId?: string) {
+  await ensurePartySchema();
+  const sql = db();
+  if (promoCodeId) {
+    const rows = await sql`SELECT pr.*, pc.code, pc.benefits, up.display_name FROM promo_redemptions pr
+      JOIN promo_codes pc ON pc.id = pr.promo_code_id
+      LEFT JOIN user_profiles up ON up.clerk_user_id = pr.clerk_user_id
+      WHERE pr.promo_code_id = ${promoCodeId}
+      ORDER BY pr.redeemed_at DESC` as unknown as Record<string, unknown>[];
+    return rows.map((row) => ({
+      id: String(row.id), promoCodeId: String(row.promo_code_id), code: String(row.code),
+      clerkUserId: String(row.clerk_user_id), displayName: String(row.display_name ?? row.clerk_user_id),
+      partyId: row.party_id ? String(row.party_id) : null,
+      redeemedAt: new Date(row.redeemed_at as string | Date).toISOString(),
+    }));
+  }
+  const rows = await sql`SELECT pr.*, pc.code, pc.benefits, up.display_name FROM promo_redemptions pr
+    JOIN promo_codes pc ON pc.id = pr.promo_code_id
+    LEFT JOIN user_profiles up ON up.clerk_user_id = pr.clerk_user_id
+    ORDER BY pr.redeemed_at DESC LIMIT 50` as unknown as Record<string, unknown>[];
+  return rows.map((row) => ({
+    id: String(row.id), promoCodeId: String(row.promo_code_id), code: String(row.code),
+    clerkUserId: String(row.clerk_user_id), displayName: String(row.display_name ?? row.clerk_user_id),
+    partyId: row.party_id ? String(row.party_id) : null,
+    redeemedAt: new Date(row.redeemed_at as string | Date).toISOString(),
+  }));
+}
+
+export async function resolveHandleToUserId(handle: string): Promise<string | null> {
+  await ensurePartySchema();
+  const [row] = await db()`SELECT clerk_user_id FROM user_profiles WHERE handle = ${handle}` as unknown as Record<string, unknown>[];
+  return row ? String(row.clerk_user_id) : null;
+}
+
+export async function sendFriendRequest(requesterId: string, targetId: string) {
+  await ensurePartySchema();
+  if (requesterId === targetId) throw new Error("Cannot friend yourself");
+  await db()`INSERT INTO friend_connections (requester_id, target_id, status)
+    VALUES (${requesterId}, ${targetId}, 'pending')
+    ON CONFLICT (requester_id, target_id) DO UPDATE SET status = 'pending', updated_at = NOW()
+    WHERE friend_connections.status = 'blocked'`;
+  return { requesterId, targetId, status: "pending" as const };
+}
+
+export async function respondToFriendRequest(userId: string, requesterId: string, accept: boolean) {
+  await ensurePartySchema();
+  const [row] = await db()`UPDATE friend_connections SET status = ${accept ? "accepted" : "blocked"}, updated_at = NOW()
+    WHERE target_id = ${userId} AND requester_id = ${requesterId} AND status = 'pending'
+    RETURNING *` as unknown as Record<string, unknown>[];
+  return row ? { requesterId, targetId: userId, status: row.status as FriendStatus } : null;
+}
+
+export async function getFriends(userId: string) {
+  await ensurePartySchema();
+  const sql = db();
+  const sent = await sql`SELECT fc.*, up.display_name, up.image_url FROM friend_connections fc
+    LEFT JOIN user_profiles up ON up.clerk_user_id = fc.target_id
+    WHERE fc.requester_id = ${userId} AND fc.status = 'accepted'` as unknown as Record<string, unknown>[];
+  const received = await sql`SELECT fc.*, up.display_name, up.image_url FROM friend_connections fc
+    LEFT JOIN user_profiles up ON up.clerk_user_id = fc.requester_id
+    WHERE fc.target_id = ${userId} AND fc.status = 'accepted'` as unknown as Record<string, unknown>[];
+  const map = (row: Record<string, unknown>): FriendConnection => ({
+    requesterId: String(row.requester_id), targetId: String(row.target_id),
+    status: row.status as FriendStatus, displayName: String(row.display_name ?? row.target_id),
+    imageUrl: String(row.image_url ?? ""), createdAt: new Date(row.created_at as string | Date).toISOString(),
+  });
+  return [...sent.map(map), ...received.map(map)];
+}
+
+export async function getFriendRequests(userId: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT fc.*, up.display_name, up.image_url FROM friend_connections fc
+    LEFT JOIN user_profiles up ON up.clerk_user_id = fc.requester_id
+    WHERE fc.target_id = ${userId} AND fc.status = 'pending'
+    ORDER BY fc.created_at DESC` as unknown as Record<string, unknown>[];
+  return rows.map((row) => ({
+    requesterId: String(row.requester_id), targetId: String(row.target_id),
+    status: "pending" as const, displayName: String(row.display_name ?? row.requester_id),
+    imageUrl: String(row.image_url ?? ""), createdAt: new Date(row.created_at as string | Date).toISOString(),
+  }));
+}
+
+export async function removeFriend(userId: string, friendId: string) {
+  await ensurePartySchema();
+  await db()`DELETE FROM friend_connections WHERE (requester_id = ${userId} AND target_id = ${friendId}) OR (requester_id = ${friendId} AND target_id = ${userId})`;
+  return true;
+}
+
+export async function getGlobalLeaderboard(limit = 20) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT up.clerk_user_id, up.display_name, up.image_url, up.xp,
+    (SELECT COUNT(*)::int FROM game_scores gs WHERE gs.clerk_user_id = up.clerk_user_id) AS games_played
+    FROM user_profiles up ORDER BY up.xp DESC LIMIT ${limit}` as unknown as Record<string, unknown>[];
+  return rows.map((row) => ({
+    userId: String(row.clerk_user_id), displayName: String(row.display_name),
+    imageUrl: String(row.image_url ?? ""), xp: asNumber(row.xp), gamesPlayed: asNumber(row.games_played),
+  }));
+}
+
+export async function getAdminProductStats() {
+  await ensurePartySchema();
+  const [row] = await db()`SELECT
+    (SELECT COUNT(*)::int FROM user_profiles) AS users,
+    (SELECT COUNT(*)::int FROM parties) AS parties,
+    (SELECT COUNT(*)::int FROM party_members WHERE role = 'guest') AS joins,
+    (SELECT COUNT(*)::int FROM promo_redemptions) AS redemptions` as unknown as Record<string, unknown>[];
+  return { users: asNumber(row.users), parties: asNumber(row.parties), joins: asNumber(row.joins), redemptions: asNumber(row.redemptions) };
+}
+
+export async function getAdminUsers() {
+  await ensurePartySchema();
+  const rows = await db()`SELECT up.*,
+    (SELECT COUNT(*)::int FROM party_members pm WHERE pm.clerk_user_id = up.clerk_user_id) AS party_count
+    FROM user_profiles up ORDER BY up.updated_at DESC LIMIT 100` as unknown as Record<string, unknown>[];
+  return rows.map((row) => ({
+    id: String(row.clerk_user_id),
+    displayName: String(row.display_name),
+    handle: String(row.handle),
+    city: String(row.city),
+    xp: asNumber(row.xp),
+    partyCount: asNumber(row.party_count),
+    updatedAt: new Date(row.updated_at as string | Date).toISOString(),
+  }));
+}
+
+export async function getAdminParties() {
+  await ensurePartySchema();
+  const rows = await db()`SELECT p.*,
+    (SELECT COUNT(*)::int FROM party_members pm WHERE pm.party_id = p.id) AS member_count,
+    COALESCE(up.display_name, '—') AS owner_name
+    FROM parties p LEFT JOIN user_profiles up ON up.clerk_user_id = p.owner_id
+    ORDER BY p.created_at DESC LIMIT 100` as unknown as Record<string, unknown>[];
+  return rows.map((row) => ({
+    id: String(row.id),
+    title: String(row.title),
+    date: String(row.date),
+    venue: String(row.venue),
+    ownerName: String(row.owner_name),
+    memberCount: asNumber(row.member_count),
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
+  }));
+}

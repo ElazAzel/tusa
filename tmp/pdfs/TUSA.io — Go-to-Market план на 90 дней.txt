@@ -1,0 +1,880 @@
+ GTM DOCUMENT · KAZAKHSTAN · 90 DAYS
+
+
+ TUSA.io — Go-to-Market план на 90 дней
+ Практичный запуск PWA-платформы для дружеских ивентов в Алматы и Астане.
+ Логика плана простая: не “лить трафик в пустоту”, а сначала собрать плотное ядро
+ активных компаний друзей, превратить их в кейсы и только потом масштабировать за
+ счет партнерств, рефералки и B2B team building.
+
+   Цель: 500 активных компаний за 90 дней    Фокус: community-led launch, а не широкий paid blast
+
+
+   Тестовый бюджет: 3 000 000 ₸     Приоритетные города: Алматы → Астана
+
+
+
+
+NORTH STAR
+
+
+500
+активных компаний друзей, где “компания” = группа 5–20 человек, которая создала минимум 1
+ивент и вернулась в продукт в течение 30 дней.
+
+
+
+BUDGET
+
+
+3,0 млн ₸
+реалистичный 90-дневный бюджет для bootstrap/seed-stage теста с ручным онбордингом и
+умеренным paid.
+
+
+
+MONETIZATION
+
+
+3000 ₸
+простой ценовой якорь: платный event pack / Pro-слой для организатора без тяжёлой
+подписочной логики на старте.
+
+
+
+WHY NOW
+
+
+1 flow
+рынок уже живет в Telegram, Instagram и 2GIS, но единого flow “собрать тусу → согласовать →
+забронировать → прийти” по сути нет.
+1. Executive Summary
+TUSA.io — это PWA-платформа для организации дружеских ивентов: собрать людей, выбрать
+формат и место, быстро получить RSVP, закрыть координацию и не утонуть в десятках сообщений
+“я позже отвечу”. Продукт решает привычный хаос компаний друзей, где дата обсуждается в
+Telegram, место ищется в Instagram или 2GIS, бюджет уточняется в заметках, а итоговая явка
+остаётся загадкой до последнего часа.
+
+Цель GTM на первые 90 дней — 500 активных компаний. Здесь важно: речь не о юридических
+лицах, а о реальных дружеских группах и комьюнити по 5–20 человек — студенческие компании,
+коллеги, тусовочные круги, клубы по интересам, закрытые микро-сообщества.
+
+
+  Главная GTM-логика
+  Этап 1: вручную собрать и активировать узкие комьюнити.
+  Этап 2: добавить trust-каналы — бары, университеты, локальные медиа.
+  Этап 3: разогнать повторное использование через рефералку и weekly social proof.
+  Этап 4: открыть B2B team building как второй мотор роста, не ломая consumer-фокус.
+
+
+
+
+  Бюджет
+  Рекомендуемый тестовый бюджет: 3 000 000 ₸ на 90 дней.
+
+  Месяц 1: 850 000 ₸ — бета, контент-пак, первые партнерства.
+  Месяц 2: 1 250 000 ₸ — рост, перформанс, инфлюенсеры, активации.
+  Месяц 3: 900 000 ₸ — масштабирование, B2B пилоты, кейсы.
+
+
+
+
+  Ключевые метрики
+  MAU, конверсия signup → first event, 7/30-day retention, количество платных ивентов, referral
+  rate, cost per activated company.
+
+
+
+
+  Ключевой вывод: лучший старт для TUSA — community-led launch. Для такого продукта
+  широкий платный трафик в первую неделю — это не рост, а дорогой способ быстро увидеть
+  низкую активацию. Сначала ядро, потом охват.
+
+
+
+
+2. Target Audience Analysis
+Primary audience: компании друзей 5–20 человек, возраст 17–29, Алматы и Астана. Это люди,
+которым важны удобство, вайб, скорость, мемность и низкий порог входа. Они не любят
+бюрократию, длинные формы и “корпоративный” UX.
+Secondary audience: HR, office managers, team leads, которые хотят организовывать
+неформальный team building, quick hangouts или after-work outings без боли с согласованием.
+
+
+  Psychographics
+     ценят скорость и frictionless UX;
+     любят скидывать ссылку в чат, а не ставить приложение;
+     живут в FOMO и social proof;
+     реагируют на простой, веселый, не душный тон.
+
+
+
+
+  Pain points
+     хаос в Telegram/WhatsApp-чатах;
+     сложно согласовать дату, место и бюджет;
+     часть друзей “зависает” и не отвечает;
+     выбор места и сбор подтверждений происходят в разных сервисах.
+
+
+
+
+  Desired outcome
+     за 3–5 минут собрать рабочий ивент;
+     понимать, кто точно идёт;
+     иметь одну ссылку и один flow;
+     не быть “тем самым организатором”, который всем пишет отдельно.
+
+
+
+Микро-сегменты primary-аудитории
+
+ Сегмент           Мотивация               Барьеры              Триггеры               Подходящий канал
+                                                                активации
+
+
+ Студенты          Быстро собрать тусу,    Мало денег,          Первый бесплатный      Telegram-чаты, student
+ 17–22, AlmaU,     pre-party, день         короткий attention   ивент, промокод от     ambassadors,
+ NU-комьюнити,     рождения, совместный    span, не будут       бара, амбассадор из    Instagram Reels,
+ городские         выход, мероприятие      разбираться в        их среды, мемный       кампус-демо.
+ студклубы         клуба.                  сложной механике.    контент.
+
+
+ Early-career      After-work, пятничные   Не готовы долго      Кейс “организовали     Instagram,
+ специалисты       выходы, birthday        тестировать новый    пятницу за 5 минут”,   LinkedIn/Telegram-
+ 22–29, молодые    planning, без лишней    продукт, если        B2C+mini-B2B           сообщества, Astana
+ офисные           координации.            выгода не            сценарии, красивые     Hub, MOST network.
+ сотрудники,                               очевидна с           места-партнеры.
+ стартап-команды                           первого касания.
+
+
+ Event-active      Экономия времени,       Уже есть рабочие     Партнерские perks,     Bar partnerships,
+ friend groups     меньше                  привычки:            бар-бенефиты,          referral program,
+ Сегмент            Мотивация                   Барьеры                   Триггеры                Подходящий канал
+                                                                          активации
+
+ регулярно          организационного            “создали чат и            social proof от         nightlife creators,
+ выходят в бары,    стресса, бонусы от          пошло”, низкая            знакомых компаний,      городские Telegram-
+ на квизы, live     мест.                       мотивация менять          быстрый RSVP.           каналы.
+ music, rooftop                                 flow.
+
+
+
+
+  Где чаще всего сломается воронка: не на signup, а на шаге “создать первый ивент и
+  привести друзей по ссылке”. Поэтому TUSA нужно мерить не по скачиваниям или визитам,
+  а по числу компаний, которые реально провели первый coordinated event.
+
+
+
+
+3. Value Proposition
+
+  One-liner: «Твоя туса. В один клик. Без душноты.»
+
+
+TUSA продает не “ещё один social app”, а собранный в один flow процесс организации
+дружеского выхода. Пользовательская ценность строится на трёх вещах: всё в одном месте,
+низкий порог входа и понятная цена.
+
+
+  Key benefits
+     Все инструменты в одном месте: приглашение, выбор, RSVP, координация.
+     Понятный flow: без скачков между чатами, картами и заметками.
+     Простой прайс-якорь: 3000 ₸ за платный event pack / Pro-режим.
+     PWA без установки: открывается по ссылке, работает быстро, легко шарится.
+
+
+
+
+  Differentiation
+  На локальном рынке есть чаты, афиши, карты, брони и event pages, но нет продукта,
+  который собрал бы всё это в один user flow для компаний друзей. Конкурент TUSA — не
+  один app, а суммарный хаос из Telegram + Instagram + 2GIS + Notes + “кто-то забронит”.
+
+
+
+
+ Problem               Old behavior                     TUSA behavior                   Value unlocked
+
+
+ Непонятно, кто        20 сообщений в чате и            Один invite-link + RSVP в       Организатор быстрее принимает
+ реально идёт          половина без ответа              одном месте                     решение и бронирует увереннее
+
+
+ Выбор места           Кидают сторис, скрины,           Место/формат выбираются         Снижается когнитивная нагрузка и
+ размазан по           2GIS и голосовые                 внутри сценария ивента          время на согласование
+ сервисам
+ Problem                   Old behavior                   TUSA behavior                   Value unlocked
+
+
+ Нет простого              Либо всё вручную, либо         Лёгкий flow с понятным          Порог оплаты понятен, не требует
+ “стартового”              тяжёлые event-сервисы          3000 ₸ unlock                   объяснять сложную тарифную
+ продукта                                                                                 сетку
+
+
+ Участникам лень           “Потом скачаю” =               PWA по ссылке без App           Выше активация, проще шаринг в
+ ставить app               никогда                        Store/Google Play               чатах и сторис
+
+
+
+Why PWA matters in Kazakhstan
+
+
+  Не надо идти в App Store
+
+  Для молодёжного продукта любой дополнительный шаг убивает конверсию. Ссылка в
+  Telegram или Instagram DM работает лучше, чем “скачай и зарегайся”.
+
+
+
+
+  Экономия памяти и трафика
+
+  У многих пользователей устройство и память — реальное ограничение. PWA снижает трение и
+  не заставляет освобождать место ради одного сценария.
+
+
+
+
+  Легче шарить в чатах
+
+  В Казахстане организационная коммуникация часто живёт в Telegram и Instagram. PWA
+  органично встраивается в этот паттерн и не ломает привычки.
+
+
+
+
+4. 90-Day Launch Roadmap
+Ниже — рабочий недельный план с целью, конкретными действиями, owner и ожидаемым результатом. На
+ранней стадии один и тот же founder может совмещать несколько ролей, но ответственность всё равно должна
+быть обозначена.
+
+
+ Неделя        Цель                  Ключевые действия                        Owner               Expected output
+
+
+ Week 1        Собрать beta-pool     Список 50 потенциальных                  Founder +           20 согласившихся
+                                     компаний; warm outreach через            Growth              компаний, 10 интервью на
+                                     AlmaU, Astana Hub, друзей                                    входе, базовая воронка
+                                     фаундеров, student clubs; скрипт                             событий.
+                                     приглашения; setup аналитики.
+
+
+ Week 2        Провести бета и       Запуск beta with concierge               Product +           Подтверждённые JTBD,
+               исправить трение      onboarding; 2–3 продуктовые              Founder             список критичных багов, 3–
+                                     итерации; сбор скринкастов и                                 5 пользовательских
+                                     фидбека; создание первых 10 short-                           историй, 5 баров в работе.
+                                     form контент единиц; первый
+                                     outreach 15 барам.
+ Неделя   Цель                Ключевые действия                       Owner          Expected output
+
+
+ Week 3   Soft launch и       Открыть лендинг/waitlist; founder       Growth +       300 waitlist signups, 40
+          waitlist            post; публикации в университетских      Founder        активированных
+                              и стартап-каналах; ручной                              пользователей, 10
+                              онбординг первых ядровых                               компаний с первым
+                              компаний; 5 influencer shortlists.                     ивентом.
+
+
+ Week 4   Социальное          PR-питч в локальные медиа;              PR +           100 первых пользователей,
+          доказательство      тестовые интеграции с 2–3 микро-        Partnerships   2–3 медиа/комьюнити
+                              инфлюенсерами; подписание                              публикации, 3 бар-пилота.
+                              первых бар-пилотов; QR-стойки в
+                              продакшн.
+
+
+ Week 5   Включить growth     Реферальная программа; первые           Growth         150–200 users, базовые
+          loops               TikTok/Instagram ads small-budget                      CAC-показатели, referral
+                              tests; weekly social proof;                            activation baseline.
+                              office/community demos.
+
+
+ Week 6   Усилить retention   Фокус на повторы: шаблоны               Product +      7-day retention 50%+, 30–40
+                              ивентов, follow-up nudges, post-event   Growth         платных ивентов
+                              feedback; публикация user                              cumulatively.
+                              testimonials; оптимизация top-of-
+                              funnel creative.
+
+
+ Week     Выход на 500        Масштабировать эффективные              Founder +      500 пользователей,
+ 7–8      пользователей       каналы; партнёрские stories от          Growth +       реферальная доля 15%+,
+                              баров; ambassador cohort; второй        Partnerships   3+ активных бара-
+                              контент-спринт; доп. demos в                           партнёра.
+                              AlmaU/Astana Hub/MOST network.
+
+
+ Week     Открыть B2B-        Пакет для HR/team leads; пилоты со      B2B Lead /     3–5 B2B пилотов, 70–90
+ 9–10     пилоты              стартап-командами и небольшими          Founder        платных ивентов
+                              офисами; контент “после работы                         cumulatively.
+                              без хаоса”; первые мини-кейсы.
+
+
+ Week     Scale narrative     Собрать case studies, retention         Founder        1000+ пользователей, 150
+ 11–12                        slices, bar partner data; подготовить                  платных ивентов, data room
+                              GTM narrative для seed/Series A;                       GTM, 10+ органических
+                              отчет 90-day results; план wave 2 в                    упоминаний.
+                              Астану.
+
+
+
+
+  Что не делать: не уходить в “широкий Казахстан” и не запускать большой рекламный бюджет
+  до тех пор, пока не подтверждены signup → first event и повторное использование хотя бы на
+  узком ядре Алматы.
+
+
+
+
+5. Channel Strategy
+A. Digital Marketing
+ Канал       Цель                     Формат контента                 KPI                   Бюджетный подход
+
+
+ TikTok      Спросить рынок           Короткие видео: “как            CPV, CTR в bio/       Снимать нативно на
+             “узнаёт ли он            собрать тусу за 5 минут”,       ссылку, % signup,     телефон, 3–4 ролика в
+             проблему” и дать viral   “чат умер — TUSA ожил”,         сохранения,           неделю, промо только на
+             top-of-funnel            POV организатора, скетчи        shares                лучшие органические
+                                      про друзей, которые не                                ролики
+                                      отвечают
+
+
+ Instagram   Social proof и           Stories, Reels, мем-            Story taps, profile   Делать пачки контента из
+             визуальное доверие       креативы, user                  visits, DM replies,   реальных кейсов, а не
+                                      screenshots, bar collabs,       signup conversion     “рекламу продукта ради
+                                      микро-инфлюенсеры                                     рекламы”
+
+
+ Telegram    Конверсия из теплых      Посты в каналах AlmaU,          CTR, waitlist         Максимум ручного
+             комьюнити                Astana Hub, MOST,               signups, число        размещения, community
+                                      студенческие и городские        onboarding-           admins, кросс-посты от
+                                      чаты, founder notes             заявок, CAC           амбассадоров
+                                                                      почти к нулю
+
+
+ Meta +      Проверить                UGC-style видео, meme           CPC, signup cost,     Старт с малыми тестами
+ TikTok      масштабируемость         static, partner bar creative,   cost per activated    15 000–25 000 ₸ на
+ Ads         после первичного PMF-    “Friday plan” сценарии          company, cost per     креатив/аудиторию, не
+             сигнала                                                  paid event            масштабировать до
+                                                                                            подтверждения активации
+
+
+
+B. Bar Partnerships
+Бары для TUSA — это не только канал продаж. Это acquisition + trust channel. Если продукт
+“появляется” в реальном месте, куда уже ходит аудитория, у пользователя ниже скепсис и выше
+мотивация попробовать прямо сейчас.
+
+  QR-стойки с call-to-action: «Заведи TUSA здесь»;
+  партнёрские промокоды на первый бесплатный event pack или welcome perk;
+  сторис от бара = social proof, что продукт “не просто ссылка из интернета”;
+  лучше ранний CPA/фикс за подтвержденный ивент, чем сложная revenue share модель.
+
+
+C. University / Startup Network
+  AlmaU: кампус-пилоты, студенческие клубы, alumni and startup circles.
+  Astana Hub: резиденты, community каналы, founder-heavy аудитория для B2C и B2B мостика.
+  MOST network: стартап-сообщества, портфельные команды, founder-to-founder intro.
+  NURIS / NU-type среды: амбициозная молодая аудитория, склонная тестировать tech products.
+  Student ambassadors: не просто “размещение поста”, а мини-хозяева комьюнити, которые
+  заводят первые 5–10 компаний.
+
+
+D. PR & Content
+PR нужен не для vanity, а для доверия и narrative. Контент должен рассказывать не только “мы
+сделали продукт”, но и более широкую историю: как Gen Z в Казахстане организует встречи,
+почему чаты ломают coordination, и почему PWA-подход здесь особенно уместен.
+
+E. Referral Program
+   Пригласи 3 друзей — получи бесплатный ивент.
+   Создай ивент с 5+ людьми — получи Pro на месяц.
+   Ambassador program: у студенческих лидеров и community organizers — отдельный referral
+   code и leaderboard.
+
+Anti-abuse механика: реферальная награда засчитывается только если приглашенный
+пользователь завершил signup, присоединился к ивенту и проявил meaningful activity; дубликаты
+устройств/номеров/одноразовые регистрации исключаются; награды выдаются с небольшой
+задержкой после валидации.
+
+
+
+
+6. Bar Partnership Program
+Ниже — максимально практичная заготовка под реальный партнерский pipeline. Контакты указаны как каналы
+первого касания, без выдуманных email и имен.
+
+
+A. Target Bars — Алматы
+
+ Название        Почему подходит аудитории       Формат аудитории /         Канал первого          Приоритет
+                 TUSA                            вайб                       контакта
+
+
+ Pinta           Узнаваемый формат для           Пабы, спорт, casual        Управляющий через      High
+                 компаний друзей, простой        компании, after-work       сайт/2GIS +
+                 заход для групповых выходов                                Instagram DM
+
+
+ Chechil Pub     Часто выбирается для            Молодая городская          Instagram DM +         High
+                 неформальных групповых          аудитория, доступный       events manager
+                 встреч                          чек, живая атмосфера
+
+
+ Munchen         Хорош для компаний, которые     Pub / live music / group   2GIS/телефон           Medium
+                 любят live atmosphere и         dining                     заведения +
+                 понятный групповой формат                                  управляющий
+
+
+ HookahPlace     Популярен среди молодежных      Lounge / hookah / social   Instagram DM + front   Medium
+ Almaty          компаний, где ценится “сидеть   hangout                    desk intro
+                 вместе подольше”
+
+
+ French 42       Более “инстаграмный” и          Cocktail bar / date-to-    Instagram DM + owner   High
+                 premium-vibe формат для         group crossover            intro / bar manager
+                 контента и красивых кейсов
+
+
+ Bee's Knees     Подходит для early adopters и   Коктейльный бар,           Instagram DM +         High
+ Bar             визуально сильного              городская молодая          website contact
+                 партнёрского контента           аудитория
+ Название         Почему подходит аудитории           Формат аудитории /              Канал первого              Приоритет
+                  TUSA                                вайб                            контакта
+
+
+ Loop             Хорош для “Friday night with        Трендовый cocktail/night        Instagram DM +             Medium
+                  friends” кейсов и более модной      vibe                            events manager
+                  аудитории
+
+
+ Yellow Door      Подходит для легких social          Trendy city crowd /             Instagram DM               Medium
+                  gatherings и визуально strong       cocktails
+                  UGC
+
+
+ Story            Хорошая площадка для                Nightlife / cocktail / group-   Instagram DM + bar         Medium
+                  “planned through TUSA”              friendly                        manager
+                  storytelling
+
+
+ Barmaglot        Узнаваемое коктейльное место        Cocktail crowd / urban          Instagram DM + owner       Medium
+                  для более активной барной           social                          intro
+                  аудитории
+
+
+ Dacha Bar        Потенциально сильный fit для        Casual bar / city gathering     2GIS + Instagram DM        Medium
+                  relaxed group hangouts
+
+
+ Kumāno Bar       Alternative vibe, интересен для     Alternative / live music /      Instagram DM + event       Medium
+                  комьюнити и creator-среды           niche crowd                     manager
+
+
+
+Вторая волна — 5 пилотных точек в Астане
+
+ Точка         Почему в short-list                                                            Канал первого контакта
+
+
+ Pinta         Понятный массовый групповой формат, быстрый тест для after-work                Website / 2GIS /
+ Astana        сегмента                                                                       управляющий
+
+
+ Line Brew     Подходит для group dining и корпоративных мини-выходов                         2GIS / events manager
+
+
+ Bla Bla Bar   Nightlife and social vibe, релевантно для younger city crowd                   Instagram DM
+
+
+ Atomic Bar    Хорош для тусовочных сценариев и creator-integrations                          Instagram DM + бар-
+                                                                                              менеджер
+
+
+ Temple        Нужен как более статусный кейс для city lifestyle narrative                    Website contact / Instagram
+                                                                                              DM
+
+
+
+B. Partnership Terms
+
+
+ Что дает TUSA
+
+     QR-стойки и tabletop-материалы;
+     персональный промокод партнера;
+     карточку партнера внутри TUSA;
+     короткое обучение staff: как объяснить flow за 20 секунд;
+       еженедельный трекинг лидов и usage report.
+
+
+
+
+  Что дает бар
+
+       место для QR-стойки на входе/баре;
+       1–2 сторис или пост о partnership launch;
+       bonus/perk для TUSA users: welcome shot, скидка, reserved table window;
+       fast-lane для групповых бронирований в оговоренные слоты.
+
+
+
+Рекомендуемая ранняя модель: не классический revenue share, а CPA / фикс за
+подтвержденный ивент. Например, TUSA платит бару или, наоборот, бар предоставляет perk за
+каждого подтверждённого group booking, пришедшего через промокод/QR и состоявшегося
+офлайн. Это проще считать и легче продать на старте.
+
+
+  ПРИМЕР PILOT OFFER ДЛЯ ПЕРВЫХ 3 БАРОВ
+  Первые 60 дней: zero setup fee, TUSA ставит QR-стойки и приводит аудиторию; бар дает
+  welcome perk для групп 5+; за каждый подтвержденный и пришедший ивент бар получает
+  отчет по лидам, а TUSA — право использовать бар как case partner. После пилота можно
+  перейти на фикс 500–1000 ₸ за подтвержденный ивент или совместный пакет промо.
+
+
+
+C. Activation Plan
+
+ Срок      Задача                            Ожидаемый результат         KPI
+
+
+ Week      Собрать outreach list, 1-page     15–20 баров в pipeline      10 ответов, 5 встреч назначено
+ 1         deck, cold/warm script, QR
+           mockups
+
+
+ Week      Личные встречи, короткий пилот-   3 signed pilots             3 LOI / устных подтверждения, 2
+ 2–3       питч, выбор quick-win партнеров                               партнёрских story commitments
+
+
+ Week      Установка QR-стоек, onboarding    Партнеры активированы       100% материалов установлено, 100%
+ 4         staff, тест промокодов                                        staff briefed
+
+
+ Week      Weekly monitoring, coupon usage   Оптимизация работающих      QR scans, promo redemptions, cost per
+ 5+        review, creative refresh          точек и отключение слабых   confirmed event, repeat bookings
+
+
+
+
+7. PR Strategy
+A. Media List — Kazakhstan
+ Категория                Площадки                                              Что питчить
+
+
+ Tech / business          The Steppe, Digital Business, Astana Hub              Founder story, startup launch, цифры
+ media                    media/channels, Kapital.kz, Forbes Kazakhstan, The    раннего роста, consumer social product
+                          Astana Times                                          из Казахстана
+
+
+ Lifestyle / city         WEproject, Sxodim, городские Instagram/Telegram-      Как удобно собирать друзей на выход,
+ media                    афиши, lifestyle паблики Алматы и Астаны              подборки мест, партнёрские бар-истории
+
+
+ University /             AlmaU channels, студенческие медиа и клубы, Astana    Кампус-кейсы, студенческие
+ community                Hub community channels, MOST community,               организаторы, beta success stories
+ media                    NU/NURIS среды
+
+
+
+B. Press Angles
+   “Almaty startup launches party platform” — быстрый и простой вход для city/tech медиа.
+   “How Gen Z organizes events in 2026” — продукт как зеркало культурного сдвига, а не просто
+   сервис.
+   “From AlmaU ecosystem to scalable social product” — локальная экосистема, понятная
+   история происхождения.
+   “Why PWA beats app-download friction for social coordination” — полезный tech angle.
+   “Kazakhstan’s nightlife goes product-led” — угол для city/lifestyle медиа и bar collabs.
+   “The death of the group chat organizer” — запоминаемый user-problem angle.
+
+
+C. Content Calendar
+
+ Неделя         Asset type           Содержание                                   Goal
+
+
+ Week 1         Announcement         Founder launch note + проблема               Собрать первый интерес и beta
+                post                 координации тусовок                          signups
+
+
+ Week 2         Beta success         2–3 коротких кейса “как компания друзей      Дать social proof и конкретику
+                stories              собрала пятницу быстрее”
+
+
+ Week 4         Bar partnership      Stories/posts с первыми партнерами           Усилить trust и офлайн-легитимность
+                launch
+
+
+ Week 6         User testimonials    UGC, screenshots, мини-отзывы                Поднять activation и retention
+                                     организаторов
+
+
+ Week 8         B2B case study       After-work или team-building pilot story     Открыть второй growth narrative
+
+
+ Week           90-day results       Цифры, learnings, кейсы, roadmap next        PR wave, investor/founder credibility,
+ 12                                                                               recruitment of partners
+
+
+
+
+8. Influencer Marketing
+A. Micro-influencers (10k–100k followers)
+Кого искать: lifestyle bloggers, student creators, nightlife/event creators, creator-operators из Алматы и
+Астаны, которые реально ведут свою аудиторию в офлайн-активности, а не только гонят охваты.
+
+Критерии отбора:
+
+   локальная аудитория Казахстана не ниже 50%;
+   видимые комментарии и сторис-ответы, а не только просмотры;
+   контент, где естественно показать planning/use case, а не только “рекламный интеграшки”;
+   репутационный fit: не слишком luxury-only и не совсем random entertainment;
+   готовность делать нативный UGC-формат, а не полированный рекламный ролик.
+
+B. Campaigns
+
+ Кампания                  Deliverables                  Compensation model                KPI
+
+
+ Challenge: organize a     1 Reel/TikTok + 3–5 Stories   Barter + небольшой fee для        Link clicks, promo usage,
+ party in 5 minutes with   + ссылка/промокод             creator с сильной локальной       cost per activated
+ TUSA                                                    аудиторией                        company
+
+
+ Vlog: how we planned      1 long-form vlog/reel         Fee + партнерский perk от бара    Completion rate, saves,
+ Friday with TUSA          narrative + UGC                                                 first-event conversions
+                           photos/screens
+
+
+ Review: best party apps   Сравнительный обзор           Fee-only для более editorial      Qualified traffic, waitlist
+ / event flows 2026        сценария, а не голая          creators                          signups, comments
+                           реклама                                                         quality
+
+
+
+
+  Почему B2B не должен съесть consumer launch: team building принесёт более понятные
+  деньги, но если слишком рано сместить фокус в корпоративный сегмент, TUSA рискует
+  потерять главный consumer insight — скорость и лёгкость организации среди друзей. B2B
+  должен быть вторым двигателем, а не заменой основного продукта в первые 90 дней.
+
+
+
+
+9. Metrics & KPIs
+ Блок          Метрика       Определение                   Формула             Target 90   Owner            Cadence
+                                                                               days
+
+
+ Acquisition   Website       Уникальные посетители         Unique sessions     10 000      Growth           Weekly
+               visitors      лендинга / входной            за период
+                             страницы
+
+
+ Acquisition   Waitlist      Оставившие контакт или        Waitlist forms      1 000       Growth           Weekly
+               signups       прошедшие pre-signup          completed
+Блок          Метрика          Определение                 Формула             Target 90   Owner       Cadence
+                                                                               days
+
+
+Acquisition   Active users /   Пользователи и дружеские    Companies with      500         Founder +   Weekly
+              active           группы с meaningful event   ≥1 event + ≥3       активных    Product
+              companies        activity                    responses in 30     компаний
+                                                           days
+
+
+Activation    Signup to        Доля новых signup,          Users with first    40%         Product     Daily /
+              first event      дошедших до первого         event ÷ all                                 weekly
+                               созданного/запущенного      signups                                     review
+                               ивента
+
+
+Activation    Event            Доля активированных         Companies           30%         Product     Weekly
+              creation rate    компаний, создавших хотя    creating event ÷
+                               бы 1 ивент                  active
+                                                           companies
+
+
+Retention     7-day            Доля новых                  Retained at D7      60%         Product     Weekly
+              retention        пользователей/компаний,     ÷ acquired                                  cohort
+                               вернувшихся в течение 7     cohort                                      review
+                               дней
+
+
+Retention     30-day           Доля пользователей/         Retained at D30     40%         Founder +   Weekly
+              retention        компаний, вернувшихся в     ÷ acquired                      Product     cohort
+                               течение 30 дней             cohort                                      review
+
+
+Revenue       Paid events      Ивенты с платным unlock /   Confirmed paid      150         Revenue /   Weekly
+                               event pack по 3000 ₸        event count                     Founder
+
+
+Revenue       Revenue          Выручка от paid events и    Paid events ×       450 000 ₸   Founder     Weekly
+                               ранних Pro-пакетов          3000 ₸
+
+
+Referral      Viral            Среднее число новых         Invites sent ×      0.5         Growth      Weekly
+              coefficient      активированных              invite conversion
+                               пользователей, которое
+                               приводит один текущий
+                               пользователь
+
+
+Referral      Referral rate    Доля новых                  Referral signups    20%         Growth      Weekly
+                               пользователей, пришедших    ÷ all new
+                               по приглашению              signups
+
+
+
+
+ Daily dashboard
+ visitors, signups, invite clicks, first event conversion, bugs/blockers.
+
+
+
+
+ Weekly review
+ retention cohorts, CAC по каналам, performance баров, реферальный вклад, контент-
+ победители.
+  Decision rule
+  Если cost per activated company растет, а signup → first event ниже 25%, масштаб paid
+  останавливается до исправления продукта/онбординга.
+
+
+
+
+10. Budget Allocation
+Рекомендуемый бюджет на 90 дней: 3 000 000 ₸. Это реалистичный seed/bootstrap диапазон для
+основателя, который лично вовлечён в growth, контент и партнерства. Ниже — базовая разбивка.
+
+ Статья                 Доля   Сумма     Что входит
+
+
+ Digital ads            30%    900 000   TikTok + Meta tests, retargeting, boost лучших органических видео
+                               ₸
+
+
+ Influencer marketing   25%    750 000   8–12 микро-интеграций, barter + fees
+                               ₸
+
+
+ Bar partnerships       15%    450 000   QR-стойки, tabletop cards, promo material, простой дизайн/печать
+ (materials)                   ₸
+
+
+ PR & content           15%    450 000   съёмка short-form, редактура кейсов, распределение контента, мини-
+                               ₸         PR поддержка
+
+
+ Events & activations   10%    300 000   demo sessions, мини-встречи, кампус-активации, founder meetups
+                               ₸
+
+
+ Tools & software       5%     150 000   аналитика, CRM/light automation, design tools, link tracking
+                               ₸
+
+
+
+Где можно сэкономить без потери темпа
+  заменить часть paid ads на ambassador/community efforts в первые 30 дней;
+  делать UGC-style контент in-house вместо “студийной” продакшн-съемки;
+  переговариваться о barter с барами и микро-креаторами;
+  не распыляться на много городов и не тратить бюджет на дорогой PR до появления цифр.
+
+
+
+
+11. Risk Mitigation
+Риск                          Early signal                        Mitigation action
+
+
+Low adoption                  Много визитов и signup, но          Упростить onboarding, добавить founder-led
+                              низкий запуск первого ивента        concierge setup, усилить first-event templates;
+                                                                  параллельно тестировать B2B team building как
+                                                                  revenue assist.
+
+
+Bar partnerships fail         Низкий ответ на outreach,           Сместить фокус на университетские и community
+                              низкий usage QR-стоек               каналы; брать не “топовые” статусные места, а
+                                                                  более операционно гибкие бары с молодой
+                                                                  аудиторией.
+
+
+Competition / copycats        Появляются похожие фичи у           Давить скоростью запуска, плотным community
+                              event pages, booking продуктов      presence и целостным flow, а не отдельной фичой.
+                              или чат-ботов
+
+
+Technical issues              Падение конверсии на invite         Жесткий beta cycle, event-level bug tracking, fallback
+                              flow, жалобы на кривой mobile       flow через “light RSVP” если что-то ломается.
+                              UX
+
+
+Сезонность: экзамены /        Провалы в студенческой              Сдвигнуть messaging на after-work аудиторию и
+каникулы / летние             активности и короткие всплески      weekend city hangouts; летом — больше nightlife и
+разъезды                      вместо стабильного usage            rooftop narratives.
+
+
+Слабая реферальность          Пользователи пользуются сами,       Упростить invite-copy, сделать награду ближе к
+                              но мало приглашают других           моменту использования, давать бонус не “за
+                                                                  инвайт”, а за завершенный group action.
+
+
+Низкое качество первых        Люди создают событие, но не         Подготовить starter templates, curated partner places,
+ивентов                       доходят до реального офлайн-        clearer RSVP deadlines и простые nudges
+                              результата                          организатору.
+
+
+
+
+12. Success Criteria
+Метрика                                       Green                                            Yellow           Red
+
+
+Активные компании за 90 дней                  500+                                             300–499          <300
+
+
+Сatisfaction score / rating                   4.5+ / NPS-style strong positive                 4.0–4.4          <4.0
+
+
+30-day retention                              40%+                                             25–39%           <25%
+
+
+Paid events                                   150+                                             80–149           <80
+
+
+Активные bar partnerships                     3+                                               1–2              0
+
+
+Organic media mentions                        10+                                              5–9              <5
+     Итоговый критерий успеха: TUSA должен доказать, что люди в Алматы и Астане не
+     просто “понимают идею”, а действительно меняют свой способ организации встреч
+     и возвращаются в продукт повторно.
+
+
+
+
+13. Next 7 Days
+Если основатель TUSA хочет сдвинуть GTM с места уже сейчас, ближайшие 7 дней должны
+выглядеть не как “подготовка к запуску”, а как маленький запуск каждый день.
+
+ День     Что сделать                                                          Зачем
+
+
+ Day      Зафиксировать North Star, definition of active company, pricing at   Без единого определения успеха вся
+ 1        3000 ₸, базовую воронку аналитики и простой dashboard.               команда будет “расти” в разные
+                                                                               стороны.
+
+
+ Day      Собрать список 50 компаний друзей: AlmaU, друзья фаундеров,          Не ждать трафик, а вручную собрать
+ 2        Astana Hub, студклубы, office circles. Подготовить короткий          первое ядро.
+          outreach-скрипт.
+
+
+ Day      Провести минимум 8 быстрых интервью/демо-сессий и руками             Найти реальное трение быстрее, чем
+ 3        провести людей через первый ивент.                                   это покажет реклама.
+
+
+ Day
+ 4
+
