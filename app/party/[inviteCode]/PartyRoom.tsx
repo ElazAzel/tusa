@@ -273,33 +273,22 @@ export default function PartyRoom({ party }: { party: Party }) {
     {tab === "games" && (selectedGame ? renderGame() : <section className="party-room-panel">
       <div className="demo-panel-title"><div><span>{t("gamesCatalogue")}</span><h2>{t("gamesTitle")}</h2></div><span className="demo-chip">{t("gamesCatalogue").split(" ")[0]?.replace(/\D/g, "") || "8"}{t("gamesSessions")}</span></div>
 
-      {activeSessions.length > 0 && <div className="active-sessions-block">
-        <h3>{t("gameActiveSessions")}</h3>
-        {activeSessions.map((s) => {
-          const gameInfo = gameCatalogue.find((g) => g.id === s.game);
-          return <div key={s.id} className="active-session-card">
-            <span className="material-symbols-rounded">{gameInfo?.icon ?? "sports_esports"}</span>
-            <div>
-              <strong>{gameInfo?.title ?? s.game}</strong>
-              <span>{s.participants?.length ?? 0} {t("gameParticipants")} · {s.status}</span>
-            </div>
-            <button className="demo-action demo-action--lime" onClick={() => joinSession(s.id, s.game)} type="button">
-              <span className="material-symbols-rounded">login</span> {t("gameJoinSession")}
-            </button>
-          </div>;
-        })}
-      </div>}
-
       <div className="game-catalogue-grid">
-        {gameCatalogue.map((game) => (
-          <button className={`game-launch-card ${game.tone}`} key={game.id} onClick={() => launchGame(game.id)} type="button">
+        {gameCatalogue.map((game) => {
+          const existingSession = activeSessions.find((s) => s.game === game.id);
+          return <button className={`game-launch-card ${game.tone}`} key={game.id} type="button">
             <span className="material-symbols-rounded">{game.icon}</span>
             <span className="game-player-count">{game.players}</span>
             <h3>{game.title}</h3>
             <p>{t(game.descKey)}</p>
-            <strong>{t("gamesLaunch")} <span className="material-symbols-rounded">arrow_forward</span></strong>
-          </button>
-        ))}
+            <div className="game-card-actions">
+              <strong onClick={() => launchGame(game.id)}>{t("gamesLaunch")} <span className="material-symbols-rounded">arrow_forward</span></strong>
+              {existingSession && <button className="game-join-btn" onClick={() => joinSession(existingSession.id, game.id)} type="button">
+                <span className="material-symbols-rounded">login</span> {t("gameJoinSession")}
+              </button>}
+            </div>
+          </button>;
+        })}
       </div>
 
       {isOwner && <div className="payment-delegation-block">

@@ -11,10 +11,10 @@ export default function BrandLogo({ compact = false, className = "", priority = 
     return (
       <Image
         className={`brand-logo brand-logo--icon ${className}`.trim()}
-        src="/brand/tusa-game-icon.png"
+        src="/brand/tusa-icon.svg"
         alt="TUSA.game"
-        width={265}
-        height={277}
+        width={67}
+        height={67}
         priority={priority}
       />
     );
@@ -23,10 +23,10 @@ export default function BrandLogo({ compact = false, className = "", priority = 
   return (
     <Image
       className={`brand-logo brand-logo--long ${className}`.trim()}
-      src="/brand/tusa-game-logo.png"
+      src="/brand/tusa-logo.svg"
       alt="TUSA.game"
-      width={1207}
-      height={389}
+      width={292}
+      height={96}
       priority={priority}
     />
   );

@@ -3058,6 +3058,8 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   background: var(--cream); box-shadow: var(--shadow);
   cursor: pointer; text-align: left;
   transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  overflow: hidden;
+  min-width: 0;
 }
 .game-launch-card:hover {
   transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--black);
@@ -3066,6 +3068,8 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .game-launch-card h3 {
   font: 800 18px/1.2 var(--font-unbounded), sans-serif;
   letter-spacing: -.04em; margin: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 100%;
 }
 .game-launch-card p { margin: 0; font-size: 13px; color: #555; line-height: 1.4; }
 .game-launch-card strong {
@@ -3076,6 +3080,22 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .game-launch-card.pink { border-left: 4px solid var(--pink); }
 .game-launch-card.blue { border-left: 4px solid var(--blue); }
 .game-launch-card.cream { border-left: 4px solid var(--muted); }
+.game-card-actions {
+  margin-top: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  width: 100%;
+}
+.game-card-actions strong {
+  margin: 0;
+}
+.game-join-btn {
+  padding: 5px 10px; border: 2px solid var(--black); border-radius: 8px;
+  background: var(--lime); color: var(--black);
+  font: 800 11px var(--font-unbounded), sans-serif;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+.game-join-btn:hover { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--black); }
+.game-join-btn .material-symbols-rounded { font-size: 16px; }
 
 /* ===== BRAND BOOK: Active Game Head ===== */
 .active-game-head {
@@ -3113,21 +3133,24 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   text-transform: uppercase; letter-spacing: .08em; color: var(--lime);
 }
 .active-session-card {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
   padding: 12px; margin-bottom: 8px;
   border: 2px solid var(--black); border-radius: 12px;
   background: var(--white);
   box-shadow: 3px 3px 0 var(--black);
+  overflow: hidden;
 }
 .active-session-card > .material-symbols-rounded {
   width: 40px; height: 40px; display: grid; place-items: center;
   border-radius: 10px; background: var(--cream); font-size: 24px;
+  flex-shrink: 0;
 }
-.active-session-card > div { flex: 1; }
-.active-session-card > div > strong { display: block; font-size: 15px; }
+.active-session-card > div { flex: 1; min-width: 0; }
+.active-session-card > div > strong { display: block; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .active-session-card > div > span { font-size: 12px; color: var(--muted); }
 .active-session-card .demo-action {
-  padding: 6px 12px; font-size: 12px; white-space: nowrap;
+  padding: 6px 12px; font-size: 12px;
+  flex-shrink: 0;
 }
 
 /* ===== PAYMENT DELEGATION BLOCK ===== */
@@ -3448,6 +3471,15 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   .party-room-hero > div:last-child { gap: 6px; }
   .party-room-hero > div:last-child > button { min-height: 38px; padding: 0 10px; font-size: 12px; }
   .party-member-grid { grid-template-columns: repeat(2, 1fr); }
+  .game-catalogue-grid { grid-template-columns: 1fr; gap: 10px; }
+  .game-launch-card { padding: 14px; }
+  .game-launch-card h3 { font-size: 16px; }
+  .game-launch-card p { font-size: 11px; }
+  .active-session-card { padding: 10px; gap: 8px; }
+  .active-session-card > div > strong { font-size: 13px; }
+  .active-session-card .demo-action { padding: 5px 10px; font-size: 11px; }
+  .party-room-panel { overflow-x: hidden; }
+  .payment-assignee-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
 }
 @media (min-width: 601px) and (max-width: 900px) {
   .badge-grid { grid-template-columns: repeat(4, 1fr); }
