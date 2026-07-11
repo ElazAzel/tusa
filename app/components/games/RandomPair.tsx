@@ -72,10 +72,12 @@ function shuffle<T>(items: T[]) {
 
 type PairState = { players: string[]; pairs: Array<[string, string]>; challenge: string; hasMade: boolean; challengeIndex: number };
 
-export default function RandomPair({ partyId, sessionId, onSave }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void }) {
+export default function RandomPair({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale, t } = useLocale();
   const { state, setState } = useMultiplayerGame<PairState>(sessionId ?? null, () => ({ players: [""], pairs: [], challenge: challengesEn[0], hasMade: false, challengeIndex: 0 }));
   const shuffledChallenges = useMemo(() => shuffle(locale === "ru" ? challengesRu : challengesEn), [locale]);
+
+  if (role === "controller") return <div className="party-game-board"><h3>{t("controllerWaiting")}</h3></div>;
 
   function addPlayer() { setState((prev) => ({ ...prev, players: [...prev.players, ""] })); }
   function updatePlayer(idx: number, name: string) { setState((prev) => { const n = [...prev.players]; n[idx] = name; return { ...prev, players: n }; }); }

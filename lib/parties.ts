@@ -345,6 +345,7 @@ export function ensurePartySchema() {
   )`;
   await sql`ALTER TABLE party_members ADD COLUMN IF NOT EXISTS paid_by TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE game_sessions ADD COLUMN IF NOT EXISTS participants JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  await sql`ALTER TABLE game_sessions ADD COLUMN IF NOT EXISTS created_by TEXT NOT NULL DEFAULT ''`;
   await sql`CREATE INDEX IF NOT EXISTS friend_connections_target_idx ON friend_connections (target_id, status)`;
   await sql`CREATE TABLE IF NOT EXISTS game_sessions (
     id UUID PRIMARY KEY,
@@ -353,6 +354,7 @@ export function ensurePartySchema() {
     status TEXT NOT NULL DEFAULT 'lobby' CHECK (status IN ('lobby', 'active', 'paused', 'completed', 'cancelled')),
     config JSONB NOT NULL DEFAULT '{}'::jsonb,
     state JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_by TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
@@ -975,6 +977,7 @@ export type GameSession = {
   config: Record<string, unknown>;
   state: Record<string, unknown>;
   participants?: string[];
+  createdBy?: string;
   createdAt: string;
 };
 
@@ -1007,28 +1010,29 @@ export type GameScore = {
   id: string;
   sessionId: string;
   userId: string;
+  displayName?: string;
   score: number;
   metadata: Record<string, unknown>;
 };
 
-export async function createGameSession(partyId: string, game: string, config?: Record<string, unknown>) {
+export async function createGameSession(partyId: string, game: string, config?: Record<string, unknown>, createdBy?: string) {
   await ensurePartySchema();
-  const [row] = await db()`INSERT INTO game_sessions (id, party_id, game, config, state)
-    VALUES (${randomUUID()}, ${partyId}, ${game}, ${JSON.stringify(config ?? {})}::jsonb, '{}'::jsonb) RETURNING *` as unknown as Record<string, unknown>[];
-  return { id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession;
+  const [row] = await db()`INSERT INTO game_sessions (id, party_id, game, config, state, created_by)
+    VALUES (${randomUUID()}, ${partyId}, ${game}, ${JSON.stringify(config ?? {})}::jsonb, '{}'::jsonb, ${createdBy ?? ""}) RETURNING *` as unknown as Record<string, unknown>[];
+  return { id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, createdBy: String(row.created_by ?? ""), createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession;
 }
 
 export async function getActiveGameSessions(partyId: string) {
   await ensurePartySchema();
   const rows = await db()`SELECT * FROM game_sessions WHERE party_id = ${partyId} AND status IN ('lobby', 'active') ORDER BY created_at DESC` as unknown as Record<string, unknown>[];
-  return rows.map((row) => ({ id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, participants: (row.participants ?? []) as string[], createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession & { participants: string[] }));
+  return rows.map((row) => ({ id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, participants: (row.participants ?? []) as string[], createdBy: String(row.created_by ?? ""), createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession & { participants: string[] }));
 }
 
 export async function getGameSessionById(sessionId: string) {
   await ensurePartySchema();
   const [row] = await db()`SELECT * FROM game_sessions WHERE id = ${sessionId}` as unknown as Record<string, unknown>[];
   if (!row) return null;
-  return { id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, participants: (row.participants ?? []) as string[], createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession & { participants: string[] };
+  return { id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, participants: (row.participants ?? []) as string[], createdBy: String(row.created_by ?? ""), createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession & { participants: string[] };
 }
 
 export async function joinGameSession(sessionId: string, userId: string) {
@@ -1198,8 +1202,8 @@ function rowToGalleryPhoto(row: Record<string, unknown>): GalleryPhoto {
 }
 
 export async function getGameScores(sessionId: string) {
-  const rows = await db()`SELECT * FROM game_scores WHERE session_id = ${sessionId} ORDER BY score DESC` as unknown as Record<string, unknown>[];
-  return rows.map((row) => ({ id: String(row.id), sessionId: String(row.session_id), userId: String(row.clerk_user_id), score: Number(row.score), metadata: row.metadata as Record<string, unknown> } as GameScore));
+  const rows = await db()`SELECT gs.*, up.display_name FROM game_scores gs LEFT JOIN user_profiles up ON up.clerk_user_id = gs.clerk_user_id WHERE gs.session_id = ${sessionId} ORDER BY gs.score DESC` as unknown as Record<string, unknown>[];
+  return rows.map((row) => ({ id: String(row.id), sessionId: String(row.session_id), userId: String(row.clerk_user_id), displayName: String(row.display_name ?? ""), score: Number(row.score), metadata: row.metadata as Record<string, unknown> } as GameScore));
 }
 
 export async function getUserGameStats(userId: string) {

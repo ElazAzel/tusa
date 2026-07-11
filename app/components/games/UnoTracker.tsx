@@ -110,13 +110,17 @@ function takeCards(count: number, pile: UnoCard[], discarded: UnoCard[]) {
 export default function UnoTracker({
   onSave,
   sessionId,
+  role,
 }: {
   partyId: string;
   sessionId?: string | null;
   onSave: (score: number) => void;
+  role?: "stage" | "controller";
 }) {
   const { locale, t } = useLocale();
   const ru = locale === "ru";
+  if (role === "controller") return <div className="party-game-board"><h3>{t("controllerWaiting")}</h3></div>;
+
   const copy = {
     player: ru ? "Игрок" : "Player",
     add: ru ? "Добавить игрока" : "Add player",

@@ -14,9 +14,11 @@ function shuffle<T>(items: T[]) {
 
 type MafiaState = { players: string[]; roles: Array<{ name: string; role: string }>; index: number; reveal: boolean };
 
-export default function MafiaGame({ partyId, sessionId, onSave }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void }) {
+export default function MafiaGame({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale, t } = useLocale();
   const { state, setState } = useMultiplayerGame<MafiaState>(sessionId ?? null, () => ({ players: [""], roles: [], index: 0, reveal: false }));
+
+  if (role === "controller") return <div className="party-game-board"><h3>{t("controllerWaiting")}</h3></div>;
 
   function addPlayer() { setState((prev) => ({ ...prev, players: [...prev.players, ""] })); }
   function updatePlayer(idx: number, name: string) { setState((prev) => { const n = [...prev.players]; n[idx] = name; return { ...prev, players: n }; }); }

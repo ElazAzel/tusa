@@ -61,7 +61,7 @@ function shuffle<T>(items: T[]) {
 
 type AliasState = { running: boolean; seconds: number; wordIndex: number; score: number; round: number };
 
-export default function AliasGame({ partyId, sessionId, onSave }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void }) {
+export default function AliasGame({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale, t } = useLocale();
   const shuffled = useMemo(() => shuffle(locale === "ru" ? wordsRu : wordsEn), [locale]);
   const { state, setState } = useMultiplayerGame<AliasState>(sessionId ?? null, () => ({ running: false, seconds: 60, wordIndex: 0, score: 0, round: 1 }));
@@ -74,6 +74,8 @@ export default function AliasGame({ partyId, sessionId, onSave }: { partyId: str
     }, 1000);
     return () => clearTimeout(timer);
   }, [running, seconds, sessionId, setState]);
+
+  if (role === "controller") return <div className="party-game-board"><h3>{t("controllerWaiting")}</h3></div>;
 
   function answer(guessed: boolean) {
     if (!running) return;

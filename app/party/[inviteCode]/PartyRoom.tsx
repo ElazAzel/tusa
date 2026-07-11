@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Party, PartyRole, RsvpStatus, GameSession, ChatMessage } from "@/lib/parties";
+import { useUser } from "@clerk/nextjs";
+import type { Party, PartyRole, RsvpStatus, GameSession, ChatMessage, GameScore } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleToggle from "@/app/components/LocaleToggle";
 import { useLiveStream } from "@/app/components/useLiveStream";
+import { useGameRole } from "@/app/components/useGameRole";
 import AliasGame from "@/app/components/games/AliasGame";
 import MafiaGame from "@/app/components/games/MafiaGame";
 import TruthOrDare from "@/app/components/games/TruthOrDare";
@@ -56,12 +58,16 @@ export default function PartyRoom({ party }: { party: Party }) {
   const [showVoice, setShowVoice] = useState(false);
   const [reactionTarget, setReactionTarget] = useState<string | null>(null);
   const [rsvpFilter, setRsvpFilter] = useState<"all" | RsvpStatus>("all");
+  const [gameResults, setGameResults] = useState<{ scores: GameScore[]; gameTitle: string } | null>(null);
+  const { user } = useUser();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatStreamRef = useRef<HTMLDivElement>(null);
   const { locale, t } = useLocale();
   const isOwner = party.role === "owner";
   const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/join/${party.inviteCode}` : "";
   const filteredMembers = rsvpFilter === "all" ? members : members.filter((m) => m.rsvpStatus === rsvpFilter);
+  const activeSession = activeSessions.find((s) => s.id === gameSession);
+  const gameRole = activeSession ? useGameRole(activeSession.participants ?? [], user?.id) : "stage";
 
   const liveChat = useLiveStream<Record<string, unknown>>(`chat:${party.id}`);
 
@@ -161,7 +167,15 @@ export default function PartyRoom({ party }: { party: Party }) {
 
   function saveGameScore(score: number) {
     if (!gameSession || !selectedGame) return;
-    fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "score", sessionId: gameSession, score, metadata: { game: selectedGame } }) });
+    const game = gameCatalogue.find((g) => g.id === selectedGame);
+    fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "score", sessionId: gameSession, score, metadata: { game: selectedGame } }) })
+      .then((r) => r.json()).then((data) => {
+        if (data.scores) setGameResults({ scores: data.scores as GameScore[], gameTitle: game?.title ?? "" });
+      }).catch(() => undefined);
+  }
+
+  function closeGameResults() {
+    setGameResults(null);
     setGameSession(null);
     setSelectedGame(null);
   }
@@ -198,7 +212,7 @@ export default function PartyRoom({ party }: { party: Party }) {
 
   function renderGame() {
     const game = gameCatalogue.find((g) => g.id === selectedGame);
-    const props = { partyId: party.id, sessionId: gameSession, onSave: saveGameScore };
+    const props = { partyId: party.id, sessionId: gameSession, onSave: saveGameScore, role: gameRole };
     const board = selectedGame === "alias" ? <AliasGame {...props} /> :
       selectedGame === "mafia" ? <MafiaGame {...props} /> :
       selectedGame === "truth" ? <TruthOrDare {...props} /> :
@@ -304,6 +318,7 @@ export default function PartyRoom({ party }: { party: Party }) {
         </div>
       </div>}
     </section>)}
+    {gameResults && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) closeGameResults(); }}><section aria-modal="true" className="demo-modal game-results-modal" role="dialog"><span className="demo-kicker">{t("gamesResults")}</span><h2>{gameResults.gameTitle}</h2><div className="game-results-list">{gameResults.scores.map((s, i) => <div className={`game-result-row ${s.userId === user?.id ? "is-me" : ""}`} key={s.userId}><span className="game-result-rank">#{i + 1}</span><strong>{s.displayName || s.userId.slice(0, 8)}</strong><span className="game-result-score">{s.score}</span></div>)}</div><button className="demo-action demo-action--lime" onClick={closeGameResults} type="button">{t("gamesBack")}</button></section></div>}
     {tab === "shop" && <ShoppingList partyId={party.id} />}
     {tab === "gallery" && <Gallery partyId={party.id} />}
     {tab === "koins" && <Koins partyId={party.id} />}

@@ -10,7 +10,7 @@ export async function POST(request: Request) {
 
   if (body.action === "create") {
     if (!body.partyId || !body.game) return NextResponse.json({ error: "Укажите partyId и game." }, { status: 400 });
-    const session = await createGameSession(body.partyId, body.game, body.config);
+    const session = await createGameSession(body.partyId, body.game, body.config, userId);
     await joinGameSession(session.id, userId);
     const updated = await getGameSessionById(session.id);
     publish(`game:${session.id}`, { type: "session:created", session: updated });
@@ -59,6 +59,12 @@ export async function POST(request: Request) {
     grantEngagementReward(userId, "game_play", session?.partyId).catch(() => undefined);
     if ((body.score ?? 0) > 0) grantEngagementReward(userId, "game_win", session?.partyId).catch(() => undefined);
     return NextResponse.json({ score, scores });
+  }
+
+  if (body.action === "playerAction") {
+    if (!body.sessionId || !body.actionType) return NextResponse.json({ error: "Укажите sessionId и actionType." }, { status: 400 });
+    publish(`game:${body.sessionId}`, { type: "player:action", sessionId: body.sessionId, userId, actionType: body.actionType, payload: body.payload ?? {} });
+    return NextResponse.json({ ok: true });
   }
 
   return NextResponse.json({ error: "Неверный action." }, { status: 400 });

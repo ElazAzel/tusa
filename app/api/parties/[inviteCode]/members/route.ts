@@ -20,7 +20,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ invi
   const party = await getPartyByInvite(inviteCode);
   if (!party) return Response.json({ error: "Not found" }, { status: 404 });
   const body = await request.json();
-  const result = await setMemberRole(party.id, userId, body.targetUserId, body.role);
-  if (!result) return Response.json({ error: "Cannot update role" }, { status: 400 });
-  return Response.json({ member: result });
+  try {
+    const result = await setMemberRole(party.id, userId, body.targetUserId, body.role);
+    if (!result) return Response.json({ error: "Cannot update role" }, { status: 400 });
+    return Response.json({ member: result });
+  } catch (e) {
+    return Response.json({ error: e instanceof Error ? e.message : "Cannot update role" }, { status: 400 });
+  }
 }

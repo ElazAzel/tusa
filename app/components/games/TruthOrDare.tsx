@@ -252,12 +252,17 @@ function shuffle<T>(items: T[]) {
 
 type TruthDareState = { mode: "truth" | "dare"; truthIndex: number; dareIndex: number; count: number };
 
-export default function TruthOrDare({ partyId, sessionId, onSave }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void }) {
+export default function TruthOrDare({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale, t } = useLocale();
   const { state, setState } = useMultiplayerGame<TruthDareState>(sessionId ?? null, () => ({ mode: "truth", truthIndex: 0, dareIndex: 0, count: 0 }));
   const { mode, truthIndex, dareIndex, count } = state;
   const shuffledTruths = useMemo(() => shuffle(locale === "ru" ? truthsRu : truths), [locale]);
   const shuffledDares = useMemo(() => shuffle(locale === "ru" ? daresRu : dares), [locale]);
+
+  if (role === "controller") {
+    return <div className="party-game-board"><h3>{t("controllerWaiting")}</h3></div>;
+  }
+
   function next() {
     soundTap();
     if (mode === "truth") setState((prev) => ({ ...prev, truthIndex: prev.truthIndex + 1 }));
