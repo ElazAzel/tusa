@@ -16,6 +16,7 @@ const gratitudeApi = readFileSync(new URL("../app/api/gratitude/route.ts", impor
 const partiesSource = readFileSync(new URL("../lib/parties.ts", import.meta.url), "utf8");
 const commandClient = readFileSync(new URL("../app/components/sendGameCommand.ts", import.meta.url), "utf8");
 const commandMigration = readFileSync(new URL("../drizzle/0001_game_command_idempotency.sql", import.meta.url), "utf8");
+const commandRegistry = readFileSync(new URL("../lib/games/commands.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -74,4 +75,11 @@ test("multiplayer commands are idempotent across retries and reconnects", () => 
   assert.match(commandClient, /attempt < 3/);
   assert.match(partiesSource, /ON CONFLICT \(session_id, clerk_user_id, client_mutation_id\)/);
   assert.match(commandMigration, /CREATE UNIQUE INDEX IF NOT EXISTS game_actions_command_unique/);
+});
+
+test("every accepted multiplayer command is game-scoped and payload-validated", () => {
+  assert.match(gamesApi, /parseGameCommand\(current\.game/);
+  assert.match(commandRegistry, /stroke: z\.object/);
+  assert.match(commandRegistry, /nightAction: z\.object/);
+  assert.doesNotMatch(commandRegistry, /z\.unknown/);
 });
