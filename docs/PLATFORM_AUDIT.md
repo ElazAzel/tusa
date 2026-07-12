@@ -73,14 +73,48 @@ Source of truth: `tusa-style-guide-v1.4.html`, product PRD and the 28-mode game 
 15. **GuessSong touch target** — Increased input padding for 44px target.
 16. **ensurePartySchema()** — Added `information_schema.tables` check; skips 48 DDL statements on warm starts.
 
+## Infrastructure fixes applied
+
+17. **SSE reconnect** — All hooks (`useStageGame`, `useControllerGame`, `useMultiplayerGame`, `useLiveStream`) now reconnect on SSE error with 3s retry.
+18. **BOLA/IDOR auth guards** — `requirePartyMember()` / `requireOwner()` patched in 13 vulnerable functions.
+19. **Version locking** — `version` column on `game_sessions`. Server rejects stale state updates with 409 Conflict.
+20. **Rate limiting** — In-memory throttle wired to all 25 API routes (POST 5-30 req/min, GET 60 req/min).
+21. **Idempotency** — `client_mutation_id` column + unique constraint on `chat_messages` and `game_scores`. `ON CONFLICT DO NOTHING`.
+22. **RSVP counts update** — `updateRsvp()` now processes API response; `rsvpCounts` local state refreshes immediately.
+23. **Party SSE channel** — PartyRoom subscribes to `party:<id>` channel. Games API publishes session events to it. All members see Join button in real-time.
+24. **State restoration on mount** — All three game hooks fetch current session state from DB on mount. Controllers joining mid-game get correct state.
+25. **Hardcoded promo codes removed** — `ensurePartySchema()` no longer inserts `ELAZ`, `JEDAI`, `TUSA02` promo codes.
+26. **White text on lime fixed** — Nav tab buttons in party cover changed from `color: var(--white)` to `color: var(--black)`.
+
+## SEO/GEO/AEO pages deployed
+
+| Page | Schema | Purpose |
+|---|---|---|
+| `/` | WebApplication + Organization | Landing with hreflang, OG, Twitter |
+| `/games` | CollectionPage | 28-game catalogue grid with i18n |
+| `/faq` | FAQPage (7 Q&A) | Expandable FAQ with JSON-LD |
+| `/about` | Organization | Mission, story, features, tech |
+| `/use-cases/online-parties` | WebPage | "Online party games" SEO landing |
+| `/use-cases/remote-teams` | WebPage | "Virtual team building" SEO landing |
+| `/use-cases/in-person-parties` | WebPage | "Group party games" SEO landing |
+| `/robots.txt` | — | AI-bot permissions (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot) |
+| `/sitemap.xml` | — | 11 entries with priorities |
+
+## TUSA Growth Operating System
+
+Full 18-section strategic document at `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` (~2500 lines):
+
+Product Vision, Information Architecture, SEO (page-by-page matrix), GEO (ChatGPT/Gemini/Claude/Perplexity), AEO (question clusters, snippets), Knowledge Graph, Semantic SEO, Topic Authority (150+ page plan), Programmatic SEO, EEAT, Technical SEO, Performance, International SEO, AI Crawlers, Social SEO, Growth Engine, Analytics, Backlog.
+
 ## Known remaining issues
 
-- UnoTracker still uses local `useState` instead of `useMultiplayerGame` (527 lines, deferred).
+- UnoTracker still uses local `useState` instead of `useMultiplayerGame` (pass-the-device game, intentional).
 - Party room mobile tabs need horizontal scroll on small screens (6 tabs in fixed bottom bar).
 - Neon Postgres cold start latency improved but still ~100ms for schema check.
 - Stripe payment integration pending (needs Stripe account).
 - Push notifications pending (needs VAPID keys).
-- Self-serve ad platform deferred to v3+.
+- Custom domain DNS setup pending.
+- Redis/KV layer needed for cross-instance SSE pub/sub.
 
 ## Definition of done for a game
 

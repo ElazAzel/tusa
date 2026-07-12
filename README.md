@@ -2,25 +2,29 @@
 
 Твоя туса. Твои правила: одна ссылка для гостей, игр, покупок, фотографий, чата и KOINS.
 
+https://tusa.game
+
 ## Что готово
 
-- адаптивный лендинг в визуальной системе TUSA.game (Unbounded + Inter + JetBrains Mono);
-- официальные длинный и компактный логотипы (`public/brand/`);
-- local-first платформа встречи на `/demo` с несколькими ивентами;
-- Event Hub: создание, редактирование, дублирование, удаление, RSVP, роли, заметки, QR и Blast;
 - **28 multiplayer-игр** с архитектурой Stage+Controller (хост = stage, игроки = controllers);
+- адаптивный лендинг в визуальной системе TUSA.game;
+- официальные логотипы (`public/brand/`);
+- Event Hub: создание, редактирование, дублирование, удаление, RSVP, роли, заметки, QR;
 - покупки с защитой от дублей, назначением покупателя, ценами и расчётом сплита;
 - чат с тредами, реакциями, закрепами, удалением, голосовыми сообщениями и стикерами;
 - KOINS с пулами, odds, ставками, расчётом исхода и журналом транзакций;
 - галерея с bulk upload, сжатием, тегами, обложкой, FlashBack и recap;
 - профиль с VibeScore, streak, лигами, 60 типами бейджей, рамкой и экспортом данных;
-- приглашение через Web Share, копирование ссылки и синхронизация между вкладками;
 - **i18n** — полная локализация RU/EN для всех компонентов и игр;
 - **SSE real-time** для multiplayer-сессий (совместимо с Vercel serverless);
-- **аудио/визуальные эффекты** — Web Audio API синтезатор звуков + Canvas confetti;
+- **Web Audio API** синтезатор звуков + Canvas confetti;
 - PWA-манифест, service worker и offline-экран;
-- SEO/Open Graph metadata, 404 и мобильная навигация;
-- **бренд-бук** (`tusa-style-guide-v1.4.html`): 3px black border, shadow offset, translate on hover.
+- **SEO/GEO/AEO** — `/games`, `/faq` (FAQPage JSON-LD), `/about`, 3 use-case landing pages;
+- **AI-боты** — robots.txt разрешает GPTBot, ClaudeBot, PerplexityBot, Google-Extended;
+- **Безопасность** — BOLA/IDOR guards, rate limiting (25 API routes), версионирование сессий, идемпотентность;
+- **Stage+Controller** — `useStageGame`, `useControllerGame`, `useMultiplayerGame` generic hooks;
+- **RAG-система** — BM25/TF-IDF поиск по кодовой базе (527 chunks, 10k terms);
+- **TUSA Growth OS** — `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` (2500 строк, 18 разделов).
 
 ## 28 игровых режимов
 
@@ -53,7 +57,7 @@
 | 25 | Beer Pong | Score tracker |
 | 26 | Random Pair | Random partner generator |
 | 27 | Uno Tracker | Card score tracker |
-| 28 | Quiz Battle | Multiplayer quiz (was Quiz component) |
+| 28 | Quiz Battle | Multiplayer quiz |
 
 ## Архитектура
 
@@ -64,9 +68,14 @@
 - **Neon Postgres** — БД через `@neondatabase/serverless`
 - **SSE** через `/api/live` — real-time для multiplayer
 - **Stage+Controller** — `useStageGame`, `useControllerGame`, `useMultiplayerGame` generic hooks
+- **Version locking** — optimistic concurrency через `version` column + 409 Conflict
+- **Idempotency** — `client_mutation_id` unique constraint на `chat_messages` + `game_scores`
+- **Rate limiting** — in-memory throttle на всех 25 API endpoints
+- **Auth guards** — `requirePartyMember()` / `requireOwner()` в 13 уязвимых функциях
+- **SSE reconnect** — все hooks переподключаются через 3s при ошибке
 - **Web Audio API** — синтезированные звуки (без внешних файлов)
 - **Canvas 2D** — confetti без зависимостей
-- **localStorage** + `storage` events для local-first состояния и синхронизации вкладок
+- **RAG** — локальный BM25/TF-IDF поиск по кодовой базе
 - **Vercel** для production hosting (elazazels-projects/tusagame)
 
 ## Запуск
@@ -81,7 +90,6 @@ npm run dev
 Проверки перед публикацией:
 
 ```bash
-npm run lint
 npm run build
 ```
 
@@ -94,18 +102,17 @@ vercel --prod
 GitHub: `https://github.com/ElazAzel/tusa` — branch `main` only.
 Production: `https://tusa.game`
 
-## Аккаунты и промодоступ
+## Документация
 
-- `/sign-in` и `/sign-up` — авторизация через Clerk;
-- `/app` — серверный профиль пользователя, созданные и добавленные тусы;
-- `/app/new` — создание тусы через промокод. Предзагружены коды `ELAZ`, `JEDAI`, `TUSA02`;
-- `/join/[inviteCode]` — защищённое присоединение к тусе;
-- `/admin/promos` — защищённая админ-консоль промокодов.
+- `AGENTS.md` — контекст для AI-ассистентов (архитектура, паттерны, common issues)
+- `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` — стратегия роста (18 разделов, 2500 строк)
+- `docs/PLATFORM_AUDIT.md` — аудит 28 игр и платформы
+- `tusa-style-guide-v1.4.html` — бренд-бук
 
 ## Текущие ограничения
 
 - Stripe оплата — нужен Stripe account + webhook endpoint;
 - Push notifications — нужны VAPID keys + service worker handler;
-- Self-serve рекламная платформа — нужна команда модерации (v3+);
-- Neon cold starts — `ensurePartySchema()` оптимизирован (1 SELECT вместо 48 DDL при warm start);
-- UnoTracker — локальный useState вместо `useMultiplayerGame`.
+- Redis/KV layer — для cross-instance pub/sub (пока in-memory SSE);
+- Custom domain — `tusa.game` требует DNS настройки для Vercel;
+- UnoTracker — локальный useState (pass-the-device, не multiplayer).
