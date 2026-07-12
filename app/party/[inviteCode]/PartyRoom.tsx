@@ -242,15 +242,16 @@ export default function PartyRoom({ party, actorId }: { party: Party; actorId: s
       }).catch(() => undefined);
   }
 
-  function saveGameScore(score: number) {
+  function saveGameScore(_clientScore: number) {
     if (!gameSession || !selectedGame) return;
     const game = gameCatalogue.find((g) => g.id === selectedGame);
-    fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "score", sessionId: gameSession, score, metadata: { game: selectedGame } }) })
+    fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "score", sessionId: gameSession, metadata: { game: selectedGame } }) })
       .then((r) => r.json()).then((data) => {
         if (data.scores) setGameResults({ scores: data.scores as GameScore[], gameTitle: game ? t(game.titleKey) : "" });
-        if (score > 0) {
-          fetch("/api/highlights", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partyId: party.id, sessionId: gameSession, type: "score", data: { score, game: selectedGame }, thumbnail: "" }) }).catch(() => {});
-          fetch("/api/pass", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "addXp", amount: Math.min(score, 50) }) }).catch(() => {});
+        const verifiedScore = Number(data.score?.score ?? 0);
+        if (verifiedScore > 0) {
+          fetch("/api/highlights", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partyId: party.id, sessionId: gameSession, type: "score", data: { score: verifiedScore, game: selectedGame }, thumbnail: "" }) }).catch(() => {});
+          fetch("/api/pass", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "addXp", amount: Math.min(verifiedScore, 50) }) }).catch(() => {});
           fetch("/api/quests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "track", questId: "playgames", partyId: party.id }) }).catch(() => {});
         }
       }).catch(() => undefined);

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
+import { dailyQuestionIds, scoreDailyAnswers } from "@/lib/games/daily-trivia";
 
 export const PROMO_STATUS = ["active", "paused"] as const;
 export type PromoStatus = (typeof PROMO_STATUS)[number];
@@ -1547,13 +1548,18 @@ export async function getOrCreateDailyChallenge(game: string) {
   const today = new Date().toISOString().split("T")[0];
   let [row] = await db()`SELECT * FROM daily_challenges WHERE game = ${game} AND date = ${today} LIMIT 1` as unknown as Record<string, unknown>[];
   if (!row) {
-    const config = { wordCount: 10, timeLimit: 60 };
+    const config = { questionIds: dailyQuestionIds(today), timeLimit: 60 };
     [row] = await db()`INSERT INTO daily_challenges (id, game, date, config) VALUES (${randomUUID()}, ${game}, ${today}, ${JSON.stringify(config)}::jsonb) RETURNING *` as unknown as Record<string, unknown>[];
   }
   return row ? { id: String(row.id), game: String(row.game), date: String(row.date), config: row.config as Record<string, unknown>, active: row.active !== false } as DailyChallenge : null;
 }
-export async function submitDailyScore(challengeId: string, userId: string, score: number) {
+export async function submitDailyAnswers(challengeId: string, userId: string, answers: Array<{ questionId: string; answer: number }>) {
   await ensurePartySchema();
+  const [challenge] = await db()`SELECT date, config FROM daily_challenges WHERE id = ${challengeId} AND active = TRUE LIMIT 1` as unknown as Record<string, unknown>[];
+  if (!challenge) return null;
+  const config = (challenge.config ?? {}) as Record<string, unknown>;
+  const ids = Array.isArray(config.questionIds) ? config.questionIds.map(String) : dailyQuestionIds(String(challenge.date));
+  const score = scoreDailyAnswers(ids, answers);
   const [row] = await db()`INSERT INTO daily_challenge_scores (id, challenge_id, clerk_user_id, score) VALUES (${randomUUID()}, ${challengeId}, ${userId}, ${score}) ON CONFLICT (challenge_id, clerk_user_id) DO UPDATE SET score = GREATEST(daily_challenge_scores.score, ${score}) RETURNING *` as unknown as Record<string, unknown>[];
   return row ? { id: String(row.id), challengeId: String(row.challenge_id), userId: String(row.clerk_user_id), score: asNumber(row.score), playedAt: new Date(row.played_at as string | Date).toISOString() } as DailyScore : null;
 }

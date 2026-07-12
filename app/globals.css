@@ -3770,6 +3770,23 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 
 @media (prefers-reduced-motion: reduce) { .auth-loading-mark { animation: none; } }
 
+/* ===== Daily challenge: real server-scored quiz ===== */
+.daily-quiz { max-width: 760px; margin-inline: auto; }
+.daily-quiz-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.daily-quiz-head > strong { font: 900 13px var(--font-mono), monospace; }
+.daily-quiz-progress { height: 14px; overflow: hidden; margin: 18px 0 28px; border: 2px solid var(--black); border-radius: 999px; background: var(--white); }
+.daily-quiz-progress > span { display: block; height: 100%; background: var(--lime); transition: width 180ms var(--ease); }
+.daily-quiz h3 { margin: 0 0 24px; font: 800 clamp(24px,5vw,44px)/1.12 var(--font-unbounded), sans-serif; letter-spacing: -.015em; }
+.daily-quiz-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.daily-quiz-options button { min-height: 76px; display: grid; grid-template-columns: 36px 1fr; align-items: center; gap: 10px; padding: 12px; border: var(--line); border-radius: 14px; background: var(--white); box-shadow: var(--shadow); color: var(--black); cursor: pointer; text-align: left; font-weight: 850; }
+.daily-quiz-options button:active { transform: translate(3px,3px); box-shadow: none; }
+.daily-quiz-options b { width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid var(--black); border-radius: 9px; background: var(--lime); font-family: var(--font-mono), monospace; }
+.daily-quiz-result { display: grid; justify-items: center; gap: 10px; padding: 36px 20px; border: var(--line); border-radius: 18px; background: var(--lime); box-shadow: var(--shadow); color: var(--black); text-align: center; }
+.daily-quiz-result .material-symbols-rounded { font-size: 54px; }.daily-quiz-result h3 { margin: 0; }.daily-quiz-result strong { font: 900 30px var(--font-mono), monospace; }
+.daily-leaderboard { display: grid; gap: 7px; margin-top: 26px; }.daily-leaderboard h4 { margin: 0 0 5px; font: 850 16px var(--font-unbounded), sans-serif; }.daily-leaderboard > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 12px; border: 2px solid var(--black); border-radius: 10px; background: var(--cream); font-size: 13px; font-weight: 800; }
+.daily-quiz-skeleton { min-height: 260px; border-radius: 16px; background: linear-gradient(90deg,var(--cream),var(--white),var(--cream)); background-size: 200% 100%; animation: skeleton 1.2s linear infinite; }
+@media (max-width: 560px) { .daily-quiz-options { grid-template-columns: 1fr; }.daily-quiz-options button { min-height: 64px; }.daily-quiz h3 { font-size: 25px; line-height: 1.2; } }
+
 @media (max-width: 680px) {
   .hero h1, .user-app-hero h1, .party-room-hero h1, .partners-hero h1, .create-copy h1, .profile-editor-card h1, .join-party-card h1 { letter-spacing: -.015em; line-height: 1.03; }
   .party-room-panel h2, .profile-hero h2, .promo-redeem-card h2 { letter-spacing: -.01em; line-height: 1.08; }
