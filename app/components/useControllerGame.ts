@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { sendGameCommand } from "./sendGameCommand";
 
 export function useControllerGame<T extends Record<string, unknown>>(
   sessionId: string | null,
@@ -63,11 +64,7 @@ export function useControllerGame<T extends Record<string, unknown>>(
 
   const sendAction = useCallback((actionType: string, payload?: unknown) => {
     if (!sessionId) return;
-    fetch("/api/games", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "playerAction", sessionId, actionType, payload }),
-    }).catch(() => undefined);
+    void sendGameCommand(sessionId, actionType, payload).catch(() => undefined);
   }, [sessionId]);
 
   return { state, sendAction, connected };

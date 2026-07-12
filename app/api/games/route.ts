@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import {
@@ -127,7 +128,8 @@ export async function POST(request: Request) {
     if (body.action === "playerAction") {
       if (!body.actionType) return apiError("actionType is required.", 400);
       if (current.status !== "lobby" && current.status !== "active" && current.status !== "paused") return apiError("The session is not accepting actions.", 409);
-      const gameAction = await addGameAction(body.sessionId, userId, body.actionType, body.payload ?? {});
+      const commandId = body.clientMutationId ?? randomUUID();
+      const gameAction = await addGameAction(body.sessionId, userId, body.actionType, body.payload ?? {}, commandId);
       publish(`game:${body.sessionId}`, {
         type: "player:action",
         id: gameAction.id,
@@ -135,8 +137,9 @@ export async function POST(request: Request) {
         userId,
         actionType: gameAction.actionType,
         payload: gameAction.payload,
+        commandId,
       });
-      return NextResponse.json({ ok: true, action: gameAction });
+      return NextResponse.json({ ok: true, commandId, action: gameAction });
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Game request failed.";
