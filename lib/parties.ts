@@ -1570,11 +1570,23 @@ export async function getDailyLeaderboard(challengeId: string, limit = 20) {
 }
 export async function sendGratitudeTip(input: { partyId: string; fromUser: string; toUser: string; amount: number; message?: string }) {
   await ensurePartySchema();
-  const [balance] = await db()`SELECT koins_balance FROM user_profiles WHERE clerk_user_id = ${input.fromUser} LIMIT 1` as unknown as { koins_balance: number }[];
-  if (!balance || Number(balance.koins_balance) < input.amount) throw new Error("Not enough KOINS");
-  await db()`INSERT INTO gratitude_tips (id, party_id, from_user, to_user, amount, message) VALUES (${randomUUID()}, ${input.partyId}, ${input.fromUser}, ${input.toUser}, ${input.amount}, ${input.message ?? ""})`;
-  await db()`UPDATE user_profiles SET koins_balance = koins_balance - ${input.amount} WHERE clerk_user_id = ${input.fromUser}`;
-  await db()`UPDATE user_profiles SET koins_balance = koins_balance + ${input.amount} WHERE clerk_user_id = ${input.toUser}`;
+  if (input.fromUser === input.toUser) throw new Error("Cannot send KOINS to yourself");
+  await Promise.all([requirePartyMember(input.partyId, input.fromUser), requirePartyMember(input.partyId, input.toUser)]);
+  const [row] = await db()`WITH debit AS (
+      UPDATE user_profiles SET koins_balance = koins_balance - ${input.amount}
+      WHERE clerk_user_id = ${input.fromUser} AND koins_balance >= ${input.amount}
+        AND EXISTS (SELECT 1 FROM user_profiles target WHERE target.clerk_user_id = ${input.toUser})
+      RETURNING clerk_user_id
+    ), credit AS (
+      UPDATE user_profiles SET koins_balance = koins_balance + ${input.amount}
+      WHERE clerk_user_id = ${input.toUser} AND EXISTS (SELECT 1 FROM debit)
+      RETURNING clerk_user_id
+    )
+    INSERT INTO gratitude_tips (id, party_id, from_user, to_user, amount, message)
+    SELECT ${randomUUID()}, ${input.partyId}, ${input.fromUser}, ${input.toUser}, ${input.amount}, ${input.message ?? ""}
+    WHERE EXISTS (SELECT 1 FROM debit) AND EXISTS (SELECT 1 FROM credit)
+    RETURNING id` as unknown as Record<string, unknown>[];
+  if (!row) throw new Error("Not enough KOINS");
   return true;
 }
 export async function getGratitudeTips(partyId: string, limit = 50) {

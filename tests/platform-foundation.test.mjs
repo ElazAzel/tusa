@@ -10,6 +10,10 @@ const sitemap = readFileSync(new URL("../app/sitemap.ts", import.meta.url), "utf
 const scoring = readFileSync(new URL("../lib/games/scoring.ts", import.meta.url), "utf8");
 const dailyApi = readFileSync(new URL("../app/api/daily/route.ts", import.meta.url), "utf8");
 const dailyUi = readFileSync(new URL("../app/components/DailyChallenge.tsx", import.meta.url), "utf8");
+const passApi = readFileSync(new URL("../app/api/pass/route.ts", import.meta.url), "utf8");
+const questsApi = readFileSync(new URL("../app/api/quests/route.ts", import.meta.url), "utf8");
+const gratitudeApi = readFileSync(new URL("../app/api/gratitude/route.ts", import.meta.url), "utf8");
+const partiesSource = readFileSync(new URL("../lib/parties.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -46,4 +50,19 @@ test("daily challenge is server-scored and never uses a random client score", ()
   assert.doesNotMatch(dailyApi, /Access-Control-Allow-Origin.*\*/);
   assert.doesNotMatch(dailyUi, /Math\.random/);
   assert.match(dailyUi, /answers: nextAnswers/);
+});
+
+test("XP and quest progress cannot be directly incremented by a client", () => {
+  assert.doesNotMatch(passApi, /export async function POST/);
+  assert.doesNotMatch(questsApi, /trackQuestProgress/);
+  assert.match(gamesApi, /addPassXp\(userId/);
+  assert.match(gamesApi, /trackQuestProgress\("playgames"/);
+});
+
+test("KOINS gratitude transfers are validated and executed atomically", () => {
+  assert.match(gratitudeApi, /tipSchema\.safeParse/);
+  assert.match(gratitudeApi, /distributedRateLimit/);
+  assert.doesNotMatch(gratitudeApi, /Access-Control-Allow-Origin/);
+  assert.match(partiesSource, /WITH debit AS \(/);
+  assert.match(partiesSource, /Cannot send KOINS to yourself/);
 });

@@ -5,6 +5,7 @@ import {
   addGameAction, addGameScore, createGameSession, getActiveGameSessions, getGameScores,
   getGameSessionById, getPartyMembers, getPendingGameActions, joinGameSession,
   leaveGameSession, requirePartyMember, updateGameSession, trackAnalytics, grantEngagementReward,
+  addPassXp, trackQuestProgress,
 } from "@/lib/parties";
 import { isGameId } from "@/lib/games/manifest";
 import { publish } from "@/lib/live";
@@ -118,6 +119,8 @@ export async function POST(request: Request) {
       void trackAnalytics(userId, "game_played", { sessionId: body.sessionId, game: current.game, score: score.score });
       void grantEngagementReward(userId, "game_play", current.partyId).catch(() => undefined);
       if (score.score > 0) void grantEngagementReward(userId, "game_win", current.partyId).catch(() => undefined);
+      void addPassXp(userId, Math.min(score.score, 50)).catch(() => undefined);
+      void trackQuestProgress("playgames", current.partyId, userId).catch(() => undefined);
       return NextResponse.json({ score, scores });
     }
 
