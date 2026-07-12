@@ -7,6 +7,9 @@ const room = readFileSync(new URL("../app/party/[inviteCode]/PartyRoom.tsx", imp
 const gamesApi = readFileSync(new URL("../app/api/games/route.ts", import.meta.url), "utf8");
 const liveApi = readFileSync(new URL("../app/api/live/route.ts", import.meta.url), "utf8");
 const sitemap = readFileSync(new URL("../app/sitemap.ts", import.meta.url), "utf8");
+const scoring = readFileSync(new URL("../lib/games/scoring.ts", import.meta.url), "utf8");
+const dailyApi = readFileSync(new URL("../app/api/daily/route.ts", import.meta.url), "utf8");
+const dailyUi = readFileSync(new URL("../app/components/DailyChallenge.tsx", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -27,9 +30,20 @@ test("game endpoints validate input and authorize party access", () => {
   assert.match(gamesApi, /requirePartyMember/);
   assert.match(gamesApi, /current\.createdBy !== userId/);
   assert.match(liveApi, /Publishing directly to live channels is not allowed/);
+  assert.match(gamesApi, /deriveVerifiedScore\(current\.state\)/);
+  assert.doesNotMatch(gamesApi, /body\.score/);
+  assert.match(scoring, /persisted server snapshot/i);
 });
 
 test("sitemap and AI discovery are manifest driven", () => {
   assert.match(sitemap, /GAME_MANIFEST/);
   assert.match(readFileSync(new URL("../app/llms.txt/route.ts", import.meta.url), "utf8"), /GAME_MANIFEST/);
+});
+
+test("daily challenge is server-scored and never uses a random client score", () => {
+  assert.match(dailyApi, /submitDailyAnswers/);
+  assert.match(dailyApi, /submissionSchema\.safeParse/);
+  assert.doesNotMatch(dailyApi, /Access-Control-Allow-Origin.*\*/);
+  assert.doesNotMatch(dailyUi, /Math\.random/);
+  assert.match(dailyUi, /answers: nextAnswers/);
 });

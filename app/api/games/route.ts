@@ -9,6 +9,7 @@ import {
 import { isGameId } from "@/lib/games/manifest";
 import { publish } from "@/lib/live";
 import { resolveActor } from "@/lib/guest-session";
+import { deriveVerifiedScore } from "@/lib/games/scoring";
 
 const gameRequestSchema = z.object({
   action: z.enum(["create", "join", "start", "leave", "update", "complete", "score", "playerAction"]),
@@ -19,7 +20,6 @@ const gameRequestSchema = z.object({
   status: z.enum(["active", "paused"]).optional(),
   state: z.record(z.string(), z.unknown()).optional(),
   version: z.number().int().positive().optional(),
-  score: z.number().finite().int().min(0).max(100000).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
   clientMutationId: z.string().min(8).max(64).optional(),
   actionType: z.string().min(1).max(80).regex(/^[a-zA-Z0-9:_-]+$/).optional(),
@@ -109,10 +109,10 @@ export async function POST(request: Request) {
 
     if (body.action === "score") {
       if (current.createdBy !== userId) return apiError("Only the game creator can submit the verified result.", 403);
-      if (body.score === undefined) return apiError("A verified score is required.", 400);
       if (body.metadata?.game && body.metadata.game !== current.game) return apiError("Game metadata does not match the session.", 400);
-      const metadata = { game: current.game, clientMutationId: body.clientMutationId || `${userId}_${body.sessionId}_${current.version}` };
-      const score = await addGameScore(body.sessionId, userId, body.score, metadata);
+      const verifiedScore = deriveVerifiedScore(current.state);
+      const metadata = { game: current.game, scoring: "server-snapshot-v1", clientMutationId: body.clientMutationId || `${userId}_${body.sessionId}_${current.version}` };
+      const score = await addGameScore(body.sessionId, userId, verifiedScore, metadata);
       const scores = await getGameScores(body.sessionId);
       publish(`game:${body.sessionId}`, { type: "score:added", sessionId: body.sessionId, score, scores });
       void trackAnalytics(userId, "game_played", { sessionId: body.sessionId, game: current.game, score: score.score });
