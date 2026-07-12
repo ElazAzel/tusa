@@ -18,7 +18,7 @@ export default function Bunker({ partyId, sessionId, onSave, role }: { partyId: 
   const { locale } = useLocale();
   const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
   const traits = useMemo(() => shuffle(locale === "ru" ? TRAITS_RU : TRAITS_EN), [locale]);
-  const spots = useMemo(() => SPOTS[Math.floor(Math.random() * SPOTS.length)], []);
+  const [spots] = useState(() => SPOTS[Math.floor(Math.random() * SPOTS.length)]);
   const isHost = role === "stage";
 
   const stageHook = useStageGame<GameState>(isHost ? (sessionId ?? null) : null, () => ({ round: 0, phase: "reveal", traits: [], votes: {}, eliminated: [], bunkerSpots: spots, timer: 0, revealedIndex: 0 }));

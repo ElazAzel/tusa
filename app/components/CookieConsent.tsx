@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale } from "./LocaleProvider";
 
 export default function CookieConsent() {
-  const [visible, setVisible] = useState(() => typeof document !== "undefined" && !document.cookie.includes("tusa_consent="));
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setVisible(!document.cookie.includes("tusa_consent="));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   const { t } = useLocale();
 
   function accept() {

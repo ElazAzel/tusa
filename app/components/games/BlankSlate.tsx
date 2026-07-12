@@ -64,12 +64,12 @@ export default function BlankSlate({ partyId, sessionId, onSave, role }: { party
 
   const reveal = useCallback(() => { if (!isHost) return; setState?.((p) => ({ ...p, phase: "reveal" })); }, [isHost, setState]);
 
-  const nextRound = useCallback(() => {
+  function nextRound() {
     if (!isHost) return;
     const nextIdx = state.round + 1;
     if (nextIdx >= Math.min(words.length, 6)) { complete?.(); onSave(state.totalMatches); return; }
     setState?.((p) => ({ ...p, round: nextIdx, phase: "write", word: words[nextIdx % words.length], submissions: {}, totalMatches: p.totalMatches + roundMatchCount }));
-  }, [state.round, state.totalMatches, words, isHost, setState, complete, onSave, roundMatchCount]);
+  }
 
   return <div className="party-game-board game-board-enter">
     <span className="game-step">{t("round")} {state.round + 1}/6</span>

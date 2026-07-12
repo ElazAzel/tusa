@@ -1,0 +1,38 @@
+import type { Locale } from "@/lib/i18n";
+
+export const gamePageCopy = {
+  ru: {
+    back: "← Все игры",
+    kicker: "Игра TUSA.game",
+    players: "Игроки",
+    duration: "Длительность",
+    minutes: "минут",
+    age: "Возраст",
+    equipment: "Что понадобится",
+    phones: "Телефоны участников",
+    phonesAndStage: "Телефоны участников и общий экран",
+    howTitle: "Как проходит игра",
+    howSteps: ["Создайте тусу и отправьте друзьям одну ссылку.", "Дождитесь участников в лобби и запустите раунд.", "Каждый игрок выполняет своё действие на телефоне.", "Общий экран показывает ход раунда и результат."],
+    beta: "Режим проходит открытую multiplayer-сертификацию. Состояние сохраняется между переподключениями.",
+    cta: "Создать тусу",
+    faqTitle: "Коротко о режиме",
+    safe: "Для детской тусы взрослые задания автоматически заменяются безопасными.",
+  },
+  en: {
+    back: "← All games",
+    kicker: "A TUSA.game mode",
+    players: "Players",
+    duration: "Duration",
+    minutes: "minutes",
+    age: "Age",
+    equipment: "What you need",
+    phones: "Players' phones",
+    phonesAndStage: "Players' phones and a shared screen",
+    howTitle: "How a game works",
+    howSteps: ["Create a party and send friends one link.", "Wait for everyone in the lobby and start the round.", "Every player takes part from their own phone.", "The shared stage shows the round and the result."],
+    beta: "This mode is in open multiplayer certification. Its session state is restored after reconnecting.",
+    cta: "Create a party",
+    faqTitle: "Mode facts",
+    safe: "For a kids party, adult prompts are automatically replaced with safe content.",
+  },
+} as const satisfies Record<Locale, Record<string, unknown>>;

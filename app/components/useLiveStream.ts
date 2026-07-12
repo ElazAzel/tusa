@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useLiveStream<T = unknown>(channel: string | null) {
   const [events, setEvents] = useState<T[]>([]);
+  const [connected, setConnected] = useState(false);
+  const [connectionEpoch, setConnectionEpoch] = useState(0);
   const listenerRef = useRef<((event: T) => void) | undefined>(undefined);
 
   const addEvent = useCallback((event: T) => {
@@ -13,19 +15,39 @@ export function useLiveStream<T = unknown>(channel: string | null) {
 
   useEffect(() => {
     if (!channel) return;
+    let disposed = false;
+    let attempts = 0;
     let reconnectTimer: ReturnType<typeof setTimeout>;
+    let es: EventSource | null = null;
     const connect = () => {
-      const es = new EventSource(`/api/live?channel=${encodeURIComponent(channel)}`);
+      if (disposed) return;
+      es = new EventSource(`/api/live?channel=${encodeURIComponent(channel)}`);
+      es.onopen = () => {
+        attempts = 0;
+        setConnected(true);
+        setConnectionEpoch((value) => value + 1);
+      };
       es.onmessage = (msg) => {
         try { addEvent(JSON.parse(msg.data) as T); } catch { /* ignore pings */ }
       };
-      es.onerror = () => { es.close(); reconnectTimer = setTimeout(connect, 3000); };
+      es.onerror = () => {
+        setConnected(false);
+        es?.close();
+        attempts += 1;
+        const delay = Math.min(30_000, 1_000 * 2 ** Math.min(attempts, 5)) + Math.floor(Math.random() * 500);
+        reconnectTimer = setTimeout(connect, delay);
+      };
     };
     connect();
-    return () => { clearTimeout(reconnectTimer); };
+    return () => {
+      disposed = true;
+      clearTimeout(reconnectTimer);
+      es?.close();
+      setConnected(false);
+    };
   }, [channel, addEvent]);
 
   const onEvent = useCallback((handler: (event: T) => void) => { listenerRef.current = handler; }, []);
 
-  return { events, onEvent, clear: useCallback(() => setEvents([]), []) };
+  return { events, connected, connectionEpoch, onEvent, clear: useCallback(() => setEvents([]), []) };
 }

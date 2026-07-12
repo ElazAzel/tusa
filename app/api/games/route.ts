@@ -1,126 +1,192 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
-import { addGameAction, addGameScore, createGameSession, getActiveGameSessions, getGameScores, getGameSessionById, getPartyMembers, getPendingGameActions, joinGameSession, leaveGameSession, updateGameSession, trackAnalytics, grantEngagementReward } from "@/lib/parties";
+import { z } from "zod";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
+import {
+  addGameAction, addGameScore, createGameSession, getActiveGameSessions, getGameScores,
+  getGameSessionById, getPartyMembers, getPendingGameActions, joinGameSession,
+  leaveGameSession, requirePartyMember, updateGameSession, trackAnalytics, grantEngagementReward,
+} from "@/lib/parties";
+import { isGameId } from "@/lib/games/manifest";
 import { publish } from "@/lib/live";
+import { resolveActor } from "@/lib/guest-session";
+
+const gameRequestSchema = z.object({
+  action: z.enum(["create", "join", "start", "leave", "update", "complete", "score", "playerAction"]),
+  partyId: z.string().uuid().optional(),
+  sessionId: z.string().uuid().optional(),
+  game: z.string().max(64).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
+  status: z.enum(["active", "paused"]).optional(),
+  state: z.record(z.string(), z.unknown()).optional(),
+  version: z.number().int().positive().optional(),
+  score: z.number().finite().int().min(0).max(100000).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  clientMutationId: z.string().min(8).max(64).optional(),
+  actionType: z.string().min(1).max(80).regex(/^[a-zA-Z0-9:_-]+$/).optional(),
+  payload: z.unknown().optional(),
+}).strict();
+
+function apiError(message: string, status: number, details?: unknown) {
+  return NextResponse.json({ error: message, ...(details ? { details } : {}) }, { status });
+}
 
 export async function POST(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:games`, 30, 60000);
-  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
-  const body = await request.json().catch(() => ({}));
+  const actor = await resolveActor();
+  if (!actor) return apiError("Authentication required.", 401);
+  const userId = actor.id;
+  const ip = getClientIp(request.headers);
+  const rl = await distributedRateLimit(`games:write:${userId}:${ip}`, 45, 60_000);
+  if (!rl.allowed) return apiError("Too many game requests. Try again shortly.", 429);
 
-  if (body.action === "create") {
-    if (!body.partyId || !body.game) return NextResponse.json({ error: "Укажите partyId и game." }, { status: 400 });
-    const session = await createGameSession(body.partyId, body.game, body.config, userId);
-    await joinGameSession(session.id, userId);
-    const updated = await getGameSessionById(session.id);
-    publish(`game:${session.id}`, { type: "session:created", session: updated });
-    publish(`party:${body.partyId}`, { type: "session:created", session: updated });
-    return NextResponse.json({ session: updated }, { status: 201 });
-  }
+  const parsed = gameRequestSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return apiError("Invalid game request.", 400, parsed.error.flatten());
+  const body = parsed.data;
 
-  if (body.action === "join") {
+  try {
+    if (body.action === "create") {
+      if (!body.partyId || !body.game || !isGameId(body.game)) return apiError("A valid partyId and game are required.", 400);
+      await requirePartyMember(body.partyId, userId);
+      const session = await createGameSession(body.partyId, body.game, body.config, userId);
+      await joinGameSession(session.id, userId);
+      const updated = await getGameSessionById(session.id);
+      publish(`game:${session.id}`, { type: "session:created", session: updated });
+      publish(`party:${body.partyId}`, { type: "session:created", session: updated });
+      return NextResponse.json({ session: updated }, { status: 201 });
+    }
+
+    if (!body.sessionId) return apiError("sessionId is required.", 400);
     const current = await getGameSessionById(body.sessionId);
-    if (!current) return NextResponse.json({ error: "Session not found." }, { status: 404 });
-    if (current.status !== "lobby" && !current.participants.includes(userId)) return NextResponse.json({ session: current, spectator: true });
-    if (!body.sessionId) return NextResponse.json({ error: "Укажите sessionId." }, { status: 400 });
-    const session = await joinGameSession(body.sessionId, userId);
-    if (!session) return NextResponse.json({ error: "Сессия не найдена." }, { status: 404 });
-    publish(`game:${body.sessionId}`, { type: "player:joined", sessionId: body.sessionId, userId, participants: session.participants });
-    publish(`party:${session.partyId}`, { type: "session:updated", session });
-    return NextResponse.json({ session });
+    if (!current) return apiError("Session not found.", 404);
+    await requirePartyMember(current.partyId, userId);
+
+    if (body.action === "join") {
+      if (current.status !== "lobby" && !current.participants.includes(userId)) return NextResponse.json({ session: sanitizeControllerSession(current, userId), spectator: true });
+      const session = await joinGameSession(body.sessionId, userId);
+      if (!session) return apiError("Session not found.", 404);
+      publish(`game:${body.sessionId}`, { type: "player:joined", sessionId: body.sessionId, userId, participants: session.participants });
+      publish(`party:${session.partyId}`, { type: "session:updated", session });
+      return NextResponse.json({ session });
+    }
+
+    if (body.action === "start") {
+      if (current.createdBy !== userId) return apiError("Only the game creator can start.", 403);
+      if (current.status !== "lobby") return apiError("Only a lobby can be started.", 409);
+      if (current.participants.length < 2) return apiError("At least two players are required.", 400);
+      const session = await updateGameSession(body.sessionId, userId, { status: "active", expectedVersion: current.version });
+      if (!session) return apiError("Session version changed. Refresh and retry.", 409);
+      const responseSession = { ...session, participants: current.participants, createdBy: current.createdBy };
+      publish(`game:${body.sessionId}`, { type: "session:started", session: responseSession });
+      publish(`party:${session.partyId}`, { type: "session:updated", session: responseSession });
+      return NextResponse.json({ session: responseSession });
+    }
+
+    if (body.action === "leave") {
+      const session = await leaveGameSession(body.sessionId, userId);
+      if (!session) return apiError("Session not found.", 404);
+      publish(`game:${body.sessionId}`, { type: "player:left", sessionId: body.sessionId, userId, participants: session.participants });
+      publish(`party:${session.partyId}`, { type: "session:updated", session });
+      return NextResponse.json({ session });
+    }
+
+    if (body.action === "update") {
+      if (current.createdBy !== userId) return apiError("Only the game creator can update shared state.", 403);
+      if (current.status === "completed" || current.status === "cancelled") return apiError("The session is closed.", 409);
+      if (!body.state && !body.status) return apiError("No state or status update was provided.", 400);
+      const session = await updateGameSession(body.sessionId, userId, { status: body.status, state: body.state, expectedVersion: body.version });
+      if (!session) return apiError("Session version changed. Restore the latest snapshot.", 409, { retry: true });
+      publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, version: session.version });
+      return NextResponse.json({ session });
+    }
+
+    if (body.action === "complete") {
+      if (current.createdBy !== userId) return apiError("Only the game creator can complete the session.", 403);
+      const session = await updateGameSession(body.sessionId, userId, { status: "completed", expectedVersion: body.version ?? current.version });
+      if (!session) return apiError("Session version changed. Refresh and retry.", 409);
+      publish(`game:${body.sessionId}`, { type: "session:completed", sessionId: body.sessionId });
+      publish(`party:${session.partyId}`, { type: "session:completed", sessionId: body.sessionId });
+      return NextResponse.json({ session });
+    }
+
+    if (body.action === "score") {
+      if (current.createdBy !== userId) return apiError("Only the game creator can submit the verified result.", 403);
+      if (body.score === undefined) return apiError("A verified score is required.", 400);
+      if (body.metadata?.game && body.metadata.game !== current.game) return apiError("Game metadata does not match the session.", 400);
+      const metadata = { game: current.game, clientMutationId: body.clientMutationId || `${userId}_${body.sessionId}_${current.version}` };
+      const score = await addGameScore(body.sessionId, userId, body.score, metadata);
+      const scores = await getGameScores(body.sessionId);
+      publish(`game:${body.sessionId}`, { type: "score:added", sessionId: body.sessionId, score, scores });
+      void trackAnalytics(userId, "game_played", { sessionId: body.sessionId, game: current.game, score: score.score });
+      void grantEngagementReward(userId, "game_play", current.partyId).catch(() => undefined);
+      if (score.score > 0) void grantEngagementReward(userId, "game_win", current.partyId).catch(() => undefined);
+      return NextResponse.json({ score, scores });
+    }
+
+    if (body.action === "playerAction") {
+      if (!body.actionType) return apiError("actionType is required.", 400);
+      if (current.status !== "lobby" && current.status !== "active" && current.status !== "paused") return apiError("The session is not accepting actions.", 409);
+      const gameAction = await addGameAction(body.sessionId, userId, body.actionType, body.payload ?? {});
+      publish(`game:${body.sessionId}`, {
+        type: "player:action",
+        id: gameAction.id,
+        sessionId: body.sessionId,
+        userId,
+        actionType: gameAction.actionType,
+        payload: gameAction.payload,
+      });
+      return NextResponse.json({ ok: true, action: gameAction });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Game request failed.";
+    if (/member|creator|player/i.test(message)) return apiError(message, 403);
+    return apiError("Game request failed.", 500);
   }
 
-  if (body.action === "start") {
-    const current = await getGameSessionById(body.sessionId);
-    if (!current) return NextResponse.json({ error: "Session not found." }, { status: 404 });
-    if (current.createdBy !== userId) return NextResponse.json({ error: "Only the game creator can start." }, { status: 403 });
-    if (current.participants.length < 2) return NextResponse.json({ error: "At least two players are required." }, { status: 400 });
-    const session = await updateGameSession(body.sessionId, userId, { status: "active" });
-    if (!session) return NextResponse.json({ error: "Session could not start." }, { status: 409 });
-    publish(`party:${session.partyId}`, { type: "session:updated", session: { ...session, participants: current.participants, createdBy: current.createdBy } });
-    return NextResponse.json({ session: { ...session, participants: current.participants, createdBy: current.createdBy } });
-  }
-
-  if (body.action === "leave") {
-    if (!body.sessionId) return NextResponse.json({ error: "Укажите sessionId." }, { status: 400 });
-    const session = await leaveGameSession(body.sessionId, userId);
-    if (!session) return NextResponse.json({ error: "Сессия не найдена." }, { status: 404 });
-    publish(`game:${body.sessionId}`, { type: "player:left", sessionId: body.sessionId, userId, participants: session.participants });
-    publish(`party:${session.partyId}`, { type: "session:updated", session });
-    return NextResponse.json({ session });
-  }
-
-  if (body.action === "update") {
-    if (!body.sessionId) return NextResponse.json({ error: "Укажите sessionId." }, { status: 400 });
-    const session = await updateGameSession(body.sessionId, userId, { status: body.status, state: body.state, expectedVersion: body.version });
-    if (!session) return NextResponse.json({ error: "Конфликт версии — обновите страницу.", retry: true }, { status: 409 });
-    return NextResponse.json({ session });
-  }
-
-  if (body.action === "complete") {
-    if (!body.sessionId) return NextResponse.json({ error: "Укажите sessionId." }, { status: 400 });
-    const session = await updateGameSession(body.sessionId, userId, { status: "completed" });
-    if (!session) return NextResponse.json({ error: "Сессия не найдена." }, { status: 404 });
-    publish(`game:${body.sessionId}`, { type: "session:completed", sessionId: body.sessionId });
-    publish(`party:${session.partyId}`, { type: "session:completed", sessionId: body.sessionId });
-    return NextResponse.json({ session });
-  }
-
-  if (body.action === "score") {
-    if (!body.sessionId) return NextResponse.json({ error: "Укажите sessionId." }, { status: 400 });
-    const session = await getGameSessionById(body.sessionId);
-    const metadata = { ...(body.metadata ?? {}), clientMutationId: body.clientMutationId || `${userId}_${Date.now()}` };
-    const score = await addGameScore(body.sessionId, userId, body.score ?? 0, metadata);
-    const scores = await getGameScores(body.sessionId);
-    publish(`game:${body.sessionId}`, { type: "score:added", sessionId: body.sessionId, score, scores });
-    trackAnalytics(userId, "game_played", { sessionId: body.sessionId, game: body.metadata?.game, score: body.score });
-    grantEngagementReward(userId, "game_play", session?.partyId).catch(() => undefined);
-    if ((body.score ?? 0) > 0) grantEngagementReward(userId, "game_win", session?.partyId).catch(() => undefined);
-    return NextResponse.json({ score, scores });
-  }
-
-  if (body.action === "playerAction") {
-    if (!body.sessionId || !body.actionType) return NextResponse.json({ error: "Укажите sessionId и actionType." }, { status: 400 });
-    const gameAction = await addGameAction(body.sessionId, userId, String(body.actionType), body.payload ?? {});
-    return NextResponse.json({ ok: true, action: gameAction });
-  }
-
-  return NextResponse.json({ error: "Неверный action." }, { status: 400 });
+  return apiError("Unsupported action.", 400);
 }
 
 export async function GET(request: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:games`, 60, 60000);
-  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
-  const url = new URL(request.url);
-  const sessionId = url.searchParams.get("sessionId");
-  const partyId = url.searchParams.get("partyId");
+  const actor = await resolveActor();
+  if (!actor) return apiError("Authentication required.", 401);
+  const userId = actor.id;
+  const ip = getClientIp(request.headers);
+  const rl = await distributedRateLimit(`games:read:${userId}:${ip}`, 90, 60_000);
+  if (!rl.allowed) return apiError("Too many game requests. Try again shortly.", 429);
+  const sessionId = request.nextUrl.searchParams.get("sessionId");
+  const partyId = request.nextUrl.searchParams.get("partyId");
 
-  if (sessionId) {
-    const [scores, session] = await Promise.all([getGameScores(sessionId), getGameSessionById(sessionId)]);
-    const actions = session?.createdBy === userId ? await getPendingGameActions(sessionId) : [];
-    if (!session) return NextResponse.json({ error: "Session not found." }, { status: 404 });
-    const isParticipant = session.participants.includes(userId);
-    if (!isParticipant) {
-      const members = await getPartyMembers(session.partyId);
-      if (!members.some((member) => member.clerkUserId === userId)) return NextResponse.json({ error: "Not a party member." }, { status: 403 });
+  try {
+    if (sessionId) {
+      if (!z.string().uuid().safeParse(sessionId).success) return apiError("Invalid sessionId.", 400);
+      const session = await getGameSessionById(sessionId);
+      if (!session) return apiError("Session not found.", 404);
+      await requirePartyMember(session.partyId, userId);
+      const isParticipant = session.participants.includes(userId);
+      const [scores, actions] = await Promise.all([
+        getGameScores(sessionId),
+        session.createdBy === userId ? getPendingGameActions(sessionId) : Promise.resolve([]),
+      ]);
+      const safeSession = session.createdBy === userId ? session : sanitizeControllerSession(session, userId);
+      return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant });
     }
-    const safeSession = session.createdBy === userId ? session : { ...session, state: sanitizeControllerState(session.game, session.state, userId) };
-    return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant });
+
+    if (partyId) {
+      if (!z.string().uuid().safeParse(partyId).success) return apiError("Invalid partyId.", 400);
+      const sessions = await getActiveGameSessions(partyId, userId);
+      return NextResponse.json({ sessions: sessions.map((session) => session.createdBy === userId ? session : sanitizeControllerSession(session, userId)) });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Game request failed.";
+    if (/member/i.test(message)) return apiError("Not a party member.", 403);
+    return apiError("Game request failed.", 500);
   }
 
-  if (partyId) {
-    const sessions = await getActiveGameSessions(partyId);
-    return NextResponse.json({ sessions });
-  }
+  return apiError("sessionId or partyId is required.", 400);
+}
 
-  return NextResponse.json({ error: "Укажите sessionId или partyId." }, { status: 400 });
+type SessionView = NonNullable<Awaited<ReturnType<typeof getGameSessionById>>>;
+
+function sanitizeControllerSession(session: SessionView, userId: string) {
+  return { ...session, state: sanitizeControllerState(session.game, session.state, userId) };
 }
 
 function sanitizeControllerState(game: string, rawState: Record<string, unknown>, userId: string) {

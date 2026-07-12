@@ -44,21 +44,25 @@ export function useStageGame<T extends Record<string, unknown>>(
         if (fresh.length) setPlayerActions((prev) => [...prev, ...fresh]);
     };
 
-    fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
-    const poll = setInterval(() => {
-      fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
-    }, 1200);
+    let disposed = false;
+    let attempts = 0;
+    const syncSnapshot = () => fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
+    void syncSnapshot();
 
     let reconnectTimer: ReturnType<typeof setTimeout>;
     const connect = () => {
+      if (disposed) return;
       const es = new EventSource(`/api/live?channel=${encodeURIComponent(`game:${sessionId}`)}`);
       esRef.current = es;
+      es.onopen = () => { attempts = 0; void syncSnapshot(); };
       es.onmessage = (msg) => {
         try {
           const event = JSON.parse(msg.data) as { type: string; id?: string; state?: Partial<T>; version?: number; userId?: string; actionType?: string; payload?: unknown };
           if (event.type === "state:updated" && event.state) {
             if (event.version) versionRef.current = event.version;
             _setState((prev) => ({ ...prev, ...event.state }));
+          } else if (event.type === "state:updated" && (!event.version || event.version > versionRef.current)) {
+            void syncSnapshot();
           }
           if (event.type === "player:action" && event.userId && event.actionType) {
             if (event.id && seenActionsRef.current.has(event.id)) return;
@@ -69,11 +73,13 @@ export function useStageGame<T extends Record<string, unknown>>(
       };
       es.onerror = () => {
         es.close();
-        reconnectTimer = setTimeout(connect, 3000);
+        attempts += 1;
+        const delay = Math.min(30_000, 1_000 * 2 ** Math.min(attempts, 5)) + Math.floor(Math.random() * 500);
+        reconnectTimer = setTimeout(connect, delay);
       };
     };
     connect();
-    return () => { clearInterval(poll); clearTimeout(reconnectTimer); esRef.current?.close(); };
+    return () => { disposed = true; clearTimeout(reconnectTimer); esRef.current?.close(); };
   }, [sessionId]);
 
   const setState = useCallback((updater: T | ((prev: T) => T)) => {

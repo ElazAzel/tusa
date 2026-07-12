@@ -24,7 +24,7 @@ lib/
   live.ts             — SSE event bus (in-memory, needs Redis for multi-instance)
   rate-limit.ts       — In-memory throttle (wired to all 25 API routes)
   parties.ts          — All DB functions + ensurePartySchema() + idempotent mutations
-  i18n.ts             — 28 games × title/desc keys + game UI strings (RU/EN), ~2090 lines
+  i18n.ts             — 32 modes × title/desc keys + game UI strings (RU/EN)
   audio.ts            — Web Audio API sound effects
   confetti.ts         — Canvas confetti
   rag/                — RAG indexing + search system (527 chunks, 10k terms)
@@ -41,7 +41,7 @@ app/
     useLiveStream.ts  — SSE hook with reconnect (3s retry)
     games/            — 28 game components
   party/[inviteCode]/
-    PartyRoom.tsx     — Main room: 28-game catalogue, game routing, chat, party SSE channel
+    PartyRoom.tsx     — Main room: manifest-driven 32-mode catalogue, game routing, chat, party realtime channel
 app/globals.css       — ~3600 lines: brand CSS, game boards, mobile responsive, .games-grid, .faq-*
 ```
 
@@ -165,7 +165,7 @@ Fixed: All hooks (`useLiveStream`, `useStageGame`, `useControllerGame`, `useMult
 | Page | Purpose |
 |---|---|
 | `/` | Landing — WebApplication + Organization JSON-LD, hreflang |
-| `/games` | 28-game catalogue — CollectionPage schema |
+| `/games` | 32-mode catalogue — CollectionPage schema |
 | `/games/[slug]` (future) | Individual game pages — Game schema |
 | `/faq` | 7 Q&As — FAQPage JSON-LD |
 | `/about` | Mission/story — Organization schema |

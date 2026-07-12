@@ -2,14 +2,18 @@ import type { NextConfig } from "next";
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://clerk.tusa.game https://challenges.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.tusa.game https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https://img.clerk.com https://*.clerk.accounts.dev",
-  "connect-src 'self' https://*.clerk.accounts.dev https://clerk.tusa.game wss://*.tusa.game",
+  "connect-src 'self' https://*.clerk.accounts.dev wss://*.clerk.accounts.dev https://*.clerk.com wss://*.clerk.com https://clerk-telemetry.com https://*.vercel-insights.com https://vitals.vercel-insights.com https://clerk.tusa.game wss://clerk.tusa.game wss://*.tusa.game",
   "worker-src 'self' blob:",
-  "frame-src 'self' https://*.clerk.accounts.dev https://clerk.tusa.game https://challenges.cloudflare.com",
+  "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.tusa.game https://challenges.cloudflare.com",
   "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.tusa.game",
+  "frame-ancestors 'none'",
 ];
 
 const nextConfig: NextConfig = {
@@ -22,6 +26,14 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      {
+        source: "/sw.js",
+        headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }],
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }],
+      },
       {
         source: "/(.*)",
         headers: [

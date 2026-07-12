@@ -14,6 +14,12 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "ru",
     icons: [
       {
+        src: "/brand/tusa-icon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+      {
         src: "/brand/tusa-game-icon.png",
         sizes: "265x277",
         type: "image/png",

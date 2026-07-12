@@ -26,7 +26,7 @@ https://tusa.game
 - **RAG-система** — BM25/TF-IDF поиск по кодовой базе (527 chunks, 10k terms);
 - **TUSA Growth OS** — `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` (2500 строк, 18 разделов).
 
-## 28 игровых режимов
+## 32 игровых режима
 
 | # | Режим | Механика |
 |---:|---|---|
@@ -106,7 +106,7 @@ Production: `https://tusa.game`
 
 - `AGENTS.md` — контекст для AI-ассистентов (архитектура, паттерны, common issues)
 - `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` — стратегия роста (18 разделов, 2500 строк)
-- `docs/PLATFORM_AUDIT.md` — аудит 28 игр и платформы
+- `docs/PLATFORM_AUDIT.md` — аудит каталога игр и платформы
 - `tusa-style-guide-v1.4.html` — бренд-бук
 
 ## Текущие ограничения

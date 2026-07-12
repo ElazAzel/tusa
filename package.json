@@ -11,18 +11,27 @@
     "start": "next start",
     "test": "node --test tests/*.test.mjs",
     "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:check": "drizzle-kit check",
     "rag:build": "tsx scripts/rag-build.ts",
     "rag:search": "tsx scripts/rag-search.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.17",
     "@neondatabase/serverless": "^1.1.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
+    "ably": "^2.24.0",
+    "drizzle-orm": "^0.45.2",
     "material-symbols": "^0.45.7",
     "next": "^16.2.10",
     "qrcode": "^1.5.4",
     "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react-dom": "19.2.6",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
@@ -31,6 +40,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "drizzle-kit": "^0.31.10",
     "eslint": "9.39.4",
     "eslint-config-next": "^16.2.10",
     "tailwindcss": "4.2.1",

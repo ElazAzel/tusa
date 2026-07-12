@@ -8,15 +8,16 @@ import MotionObserver from "./MotionObserver";
 import CookieConsent from "./components/CookieConsent";
 import { LocaleProvider } from "./components/LocaleProvider";
 import { detectLocale, normalizeLocale, copy } from "@/lib/i18n";
+import { SITE_ORIGIN } from "@/lib/site";
 import "./globals.css";
 
 const jsonLdOrg = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "TUSA.game",
-  url: "https://tusa.game",
+  url: SITE_ORIGIN,
   description: "Browser-based social gaming platform for real-life game nights.",
-  logo: "https://tusa.game/brand/tusa-game-icon.png",
+  logo: `${SITE_ORIGIN}/brand/tusa-logo.svg`,
   sameAs: [
     "https://github.com/ElazAzel/tusa",
   ],
@@ -26,11 +27,11 @@ const jsonLdApp = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   name: "TUSA.game",
-  url: "https://tusa.game",
+  url: SITE_ORIGIN,
   applicationCategory: "GameApplication",
   operatingSystem: "Any",
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-  description: "Платформа для организации тусовок с 28 играми, чатом, фото и покупками.",
+  description: "Browser-first party platform with 32 game modes, chat, photos and shared planning.",
   inLanguage: ["ru", "en"],
 };
 
@@ -50,34 +51,30 @@ const mono = JetBrains_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "tusa.game";
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
-  const origin = `${protocol}://${host}`;
-  const socialImage = `${origin}/og.png`;
+  const socialImage = `${SITE_ORIGIN}/og.png`;
   const store = await cookies();
   const locale = normalizeLocale(store.get("tusa_locale")?.value);
 
   return {
-    metadataBase: new URL(origin),
+    metadataBase: new URL(SITE_ORIGIN),
     title: copy(locale, "landingTitle"),
     description: copy(locale, "landingDesc"),
     icons: {
-      icon: "/favicon.svg",
-      shortcut: "/favicon.svg",
+      icon: "/brand/tusa-icon.svg",
+      shortcut: "/brand/tusa-icon.svg",
       apple: "/brand/tusa-game-icon.png",
     },
     applicationName: "TUSA.game",
     manifest: "/manifest.webmanifest",
     alternates: {
-      languages: { "ru": origin, "en": origin, "x-default": origin },
+      canonical: SITE_ORIGIN,
     },
     openGraph: {
       title: copy(locale, "ogTitle"),
       description: copy(locale, "ogDesc"),
       type: "website",
       locale: locale === "ru" ? "ru_KZ" : "en_US",
-      url: origin,
+      url: SITE_ORIGIN,
       siteName: "TUSA.game",
       images: [{ url: socialImage, width: 1730, height: 909, alt: copy(locale, "ogTitleAlt") }],
     },
@@ -86,9 +83,6 @@ export async function generateMetadata(): Promise<Metadata> {
       title: copy(locale, "ogTitle"),
       description: copy(locale, "ogDesc"),
       images: [socialImage],
-    },
-    other: {
-      "application/ld+json": JSON.stringify([jsonLdOrg, jsonLdApp]),
     },
   };
 }
@@ -99,9 +93,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const requestHeaders = await headers();
   const browserLocale = detectLocale(requestHeaders.get("accept-language"));
   const locale = normalizeLocale(cookieLocale ?? browserLocale);
+  const structuredData = JSON.stringify([
+    jsonLdOrg,
+    { ...jsonLdApp, description: copy(locale, "landingDesc"), inLanguage: locale },
+  ]).replace(/</g, "\\u003c");
   return (
     <html lang={locale}>
       <body className={`${inter.variable} ${unbounded.variable} ${mono.variable}`}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
         <ClerkProvider>
           <LocaleProvider initialLocale={locale}>
             {children}

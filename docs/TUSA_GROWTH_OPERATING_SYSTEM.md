@@ -122,7 +122,7 @@ tusa.game/
 ├── /sign-in                 # Clerk hosted UI
 ├── /sign-up                 # Clerk hosted UI
 │
-├── /games                   # Game catalogue (28 games, filterable, searchable)
+├── /games                   # Mode catalogue (32 modes, filterable, searchable)
 ├── /games/[slug]            # Individual game landing page (rules, player count, i18n)
 ├── /games/for-[n]-players   # Programmatic: games by player count
 ├── /games/for-[category]    # Programmatic: games by category (family, teams, college, etc.)
@@ -290,10 +290,10 @@ Related Pages  | Yes      | 4–6        | Footer or sidebar "Related" section
 
 | Field | Value (EN) | Value (RU) |
 |---|---|---|
-| **Title** | Free Party Games Online — No Install, Multiplayer · TUSA.game | Бесплатные игры для вечеринок — 28 режимов, мультиплеер · TUSA.game |
+| **Title** | Free Party Games Online — No Install, Multiplayer · TUSA.game | Бесплатные игры для вечеринок — 32 режима, мультиплеер · TUSA.game |
 | **Description** | Turn any gathering into a game night. 28+ free browser-based party games for groups. No install, mobile-friendly, real-time multiplayer. | 28+ бесплатных игр для компании. Без установки. Мобильные, мультиплеер, реальное время. |
 | **H1** | The Party Platform for Real Life | Платформа для живых вечеринок |
-| **H2** | 28 Game Modes · No Install Required · Real-Time Multiplayer · Mobile First · Built for Groups · Free Forever | |
+| **H2** | 32 Game Modes · No Install Required · Real-Time Multiplayer · Mobile First · Built for Groups · Free Forever | |
 | **Slug** | `/` | |
 | **Canonical** | `https://tusa.game` | |
 | **OG Title** | TUSA — Free Multiplayer Party Games | TUSA — Бесплатные игры для компаний |
@@ -316,7 +316,7 @@ Related Pages  | Yes      | 4–6        | Footer or sidebar "Related" section
 
 ### 3.1.3 Individual Game Page — `/games/[slug]`
 
-Template for all 28 games. Example: `/games/alias`
+Template for all 32 modes. Example: `/games/word-blast`
 
 | Field | Value |
 |---|---|
@@ -387,7 +387,7 @@ Home (hub)
 │   ├── Alias (spoke)
 │   ├── Trivia (spoke)
 │   ├── Codenames (spoke)
-│   ├── … (28 games)
+│   ├── … (32 modes)
 │   └── Games for N Players (hub-spoke)
 │       ├── Games for 4 (spoke)
 │       ├── Games for 5 (spoke)
@@ -877,7 +877,7 @@ Google uses cross-references to confirm entity relationships. Target:
 
 ```
 TUSA
-├── hasPart → [each of 28 games as separate entities]
+├── hasPart → [each of 32 modes as separate entities]
 │   ├── Alias (Game)
 │   ├── Werewolf (Game)
 │   ├── Codenames (Game)
@@ -1003,7 +1003,7 @@ PLATFORM FEATURES
 
 | Page Type | URL | Content Type |
 |---|---|---|
-| Pillar | `/games` | Catalogue (28 games) |
+| Pillar | `/games` | Catalogue (32 modes) |
 | Cluster | `/games/alias` | Individual game (in-depth) |
 | Cluster | `/games/werewolf` | Individual game |
 | Cluster | `/games/codenames` | Individual game |
@@ -1088,7 +1088,7 @@ Level 5: External citations (third-party validation)
 
 | Category | Page Count | Content Type |
 |---|---|---|
-| Game pages (28 games × 2 languages) | 56 | Core product pages |
+| Mode pages (32 modes × 2 languages) | 64 | Core product pages |
 | Use-case pages | 10 | Programmatic + editorial |
 | Blog articles | 40 | Guides, tips, comparisons |
 | Resource pages | 10 | In-depth guides, templates |
@@ -1126,7 +1126,7 @@ Total: ~156 pages
 | Advantage | Content Opportunity |
 |---|---|
 | Open source codebase | Publish engineering blog posts ("How we built real-time multiplayer") |
-| 28 games in one platform | Comparison content ("Which TUSA game should you play?") |
+| 32 modes in one platform | Comparison content ("Which TUSA mode should you play?") |
 | Mobile-first architecture | Mobile gaming guides ("Best browser games for Android") |
 | No install | No-install angle as differentiator ("Play without downloading") |
 | Free | Free vs paid comparison content |
@@ -1397,7 +1397,7 @@ Covers: `/`, `/games`, `/faq`, `/about`, `/demo`, `/privacy`, `/terms`, 3 use-ca
 /games/bunker
 /games/uno
 /games/alias (RU)
-... (28 games × 2 languages = 56 entries)
+... (32 modes × 2 languages = 64 entries)
 
 /blog
 /blog/[slug] (as published)
@@ -2557,7 +2557,7 @@ Before every deployment:
 | partiful.com | 34 | "party invite", "evite alternative" | Clean UX, low content |
 | scattergories.online | 24 | "scattergories online" | Single game, weak SEO |
 
-**TUSA's advantage:** Only platform combining 28 games + party management + free + no install + open source.
+**TUSA's advantage:** One platform combining 32 party modes, party management, browser-first access, and multiplayer play.
 
 ### D. Weekly SEO Maintenance Routine
 

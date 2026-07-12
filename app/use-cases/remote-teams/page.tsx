@@ -37,7 +37,7 @@ export default async function RemoteTeamsPage() {
             When your team is scattered across time zones, casual water-cooler
             conversation disappears. Structured icebreaker games fill that gap:
             they warm up meetings, surface personality, and build trust — all
-            through a browser. TUSA.game gives you 28 games designed to get
+            through a browser. TUSA.game gives you 32 game modes designed to get
             people talking without awkward silence.
           </p>
         </section>
@@ -111,7 +111,7 @@ export default async function RemoteTeamsPage() {
         <section>
           <h2>Run Your First Remote Icebreaker</h2>
           <p>
-            Open the demo to see the flow, then explore all 28 games to find
+            Open the demo to see the flow, then explore all 32 modes to find
             your team&apos;s favourites.
           </p>
           <p>

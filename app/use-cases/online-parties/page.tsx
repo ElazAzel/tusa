@@ -36,7 +36,7 @@ export default async function OnlinePartiesPage() {
             Online party games are browser-based multiplayer games you play with
             friends over video call, chat, or a shared link. No downloads, no
             installs — everyone joins from their phone or laptop in seconds.
-            TUSA.game packs 28 games into one party link so you never run out of
+            TUSA.game packs 32 game modes into one party link so you never run out of
             things to play.
           </p>
         </section>
@@ -116,7 +116,7 @@ export default async function OnlinePartiesPage() {
         <section>
           <h2>Ready to Host Your Online Party?</h2>
           <p>
-            Open the demo to see how it works, then browse all 28 games and pick
+            Open the demo to see how it works, then browse all 32 modes and pick
             your favourites.
           </p>
           <p>
