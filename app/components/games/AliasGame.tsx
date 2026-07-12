@@ -64,53 +64,52 @@ type AliasState = { running: boolean; seconds: number; wordIndex: number; score:
 export default function AliasGame({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale, t } = useLocale();
   const shuffled = useMemo(() => shuffle(locale === "ru" ? wordsRu : wordsEn), [locale]);
+  const isHost = role === "stage";
   const { state, setState } = useMultiplayerGame<AliasState>(sessionId ?? null, () => ({ running: false, seconds: 60, wordIndex: 0, score: 0, round: 1 }));
   const { running, seconds, wordIndex, score, round } = state;
   const scoreRef = useRef(score);
   scoreRef.current = score;
 
   useEffect(() => {
-    if (!running || !sessionId) return;
+    if (!running || !sessionId || !isHost) return;
     const timer = setTimeout(() => {
-      if (seconds <= 1) { setState((prev) => ({ ...prev, running: false, seconds: 60 })); } else { setState((prev) => ({ ...prev, seconds: prev.seconds - 1 })); }
+      if (seconds <= 1) { setState?.((prev) => ({ ...prev, running: false, seconds: 60 })); } else { setState?.((prev) => ({ ...prev, seconds: prev.seconds - 1 })); }
     }, 1000);
     return () => clearTimeout(timer);
-  }, [running, seconds, sessionId, setState]);
-
-  if (role === "controller") return <div className="party-game-board"><h3>{t("controllerWaiting")}</h3></div>;
+  }, [running, seconds, sessionId, isHost, setState]);
 
   function answer(guessed: boolean) {
-    if (!running) return;
+    if (!running || !isHost) return;
     if (guessed) soundCorrect(); else soundPass();
-    setState((prev) => ({
+    setState?.((prev) => ({
       ...prev,
       score: guessed ? prev.score + 1 : prev.score,
       wordIndex: (prev.wordIndex + 1) % shuffled.length,
     }));
   }
 
-  function finish() { soundWin(); confetti(); onSave(scoreRef.current); setState({ running: false, seconds: 60, wordIndex: 0, score: 0, round: round + 1 }); }
-
-  function start() { setState({ running: true, seconds: 60, wordIndex: 0, score: 0, round }); }
+  function finish() { if (!isHost) return; soundWin(); confetti(); onSave(scoreRef.current); setState?.({ running: false, seconds: 60, wordIndex: 0, score: 0, round: round + 1 }); }
+  function start() { if (!isHost) return; setState?.({ running: true, seconds: 60, wordIndex: 0, score: 0, round }); }
 
   return <div className={`party-game-board alias-board game-board-enter ${running ? "is-running" : ""}`}>
     <span className="game-step">{t("aliasExplain")}</span>
     <div className="alias-timer" aria-label={`${seconds} sec`}>{seconds}<small>{locale === "ru" ? "сек" : "sec"}</small></div>
-    <strong className="game-word-pop" key={`word-${wordIndex}`}>{shuffled[wordIndex]}</strong>
+    {isHost && <strong className="game-word-pop" key={`word-${wordIndex}`}>{shuffled[wordIndex]}</strong>}
+    {!isHost && <p style={{ fontWeight: 700, opacity: 0.6 }}>{running ? (locale === "ru" ? "Твоя команда угадывает" : "Your team is guessing") : (locale === "ru" ? "Ожидание" : "Waiting")}</p>}
     <div className="alias-score" key={`score-${score}`}>{t("aliasScore")}{score}</div>
-    <div className="alias-actions">
+    {isHost && <div className="alias-actions">
       <button className="demo-action demo-action--white" disabled={!running} onClick={() => answer(false)} type="button"><span className="material-symbols-rounded">close</span> {t("aliasSkip")}</button>
       <button className="demo-action demo-action--lime" disabled={!running} onClick={() => answer(true)} type="button"><span className="material-symbols-rounded">check</span> {t("aliasGuessed")}</button>
-    </div>
-    <div className="game-primary-actions">
-      <button className="demo-action demo-action--lime" onClick={running ? () => setState((prev) => ({ ...prev, running: false })) : start} type="button">
+    </div>}
+    {isHost && <div className="game-primary-actions">
+      <button className="demo-action demo-action--lime" onClick={running ? () => setState?.((prev) => ({ ...prev, running: false })) : start} type="button">
         <span className="material-symbols-rounded">{running ? "pause" : "play_arrow"}</span>
         {running ? t("aliasPause") : score ? t("aliasContinue") : t("aliasStart")}
       </button>
       <button className="demo-action demo-action--white" disabled={!score} onClick={finish} type="button">
         <span className="material-symbols-rounded">save</span> {t("aliasSave")}
       </button>
-    </div>
+    </div>}
     {sessionId && <span className="multiplayer-badge">LIVE</span>}
   </div>;
 }

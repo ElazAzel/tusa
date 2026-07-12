@@ -254,16 +254,14 @@ type TruthDareState = { mode: "truth" | "dare"; truthIndex: number; dareIndex: n
 
 export default function TruthOrDare({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale, t } = useLocale();
+  const isHost = role === "stage";
   const { state, setState } = useMultiplayerGame<TruthDareState>(sessionId ?? null, () => ({ mode: "truth", truthIndex: 0, dareIndex: 0, count: 0 }));
   const { mode, truthIndex, dareIndex, count } = state;
   const shuffledTruths = useMemo(() => shuffle(locale === "ru" ? truthsRu : truths), [locale]);
   const shuffledDares = useMemo(() => shuffle(locale === "ru" ? daresRu : dares), [locale]);
 
-  if (role === "controller") {
-    return <div className="party-game-board"><h3>{t("controllerWaiting")}</h3></div>;
-  }
-
   function next() {
+    if (!isHost) return;
     soundTap();
     setState((prev) => ({
       ...prev,
@@ -275,5 +273,17 @@ export default function TruthOrDare({ partyId, sessionId, onSave, role }: { part
   const currentPool = mode === "truth" ? shuffledTruths : shuffledDares;
   const currentIndex = mode === "truth" ? truthIndex : dareIndex;
 
-  return <div className="party-game-board game-board-enter"><div className="mode-switch"><button className={mode === "truth" ? "active" : ""} onClick={() => setState((prev) => ({ ...prev, mode: "truth" }))} type="button">{t("truthTitle")}</button><button className={mode === "dare" ? "active" : ""} onClick={() => setState((prev) => ({ ...prev, mode: "dare" }))} type="button">{t("truthDare")}</button></div><span className="game-step">{mode === "truth" ? t("truthHonest") : t("truthNoBail")}</span><h3 className="game-prompt-swap" key={`${mode}-${currentIndex}`}>{currentPool[currentIndex % currentPool.length]}</h3><div className="game-primary-actions"><button className="demo-action demo-action--lime" onClick={next} type="button">{t("truthNext")} <span className="material-symbols-rounded">refresh</span></button><button className="demo-action demo-action--white" onClick={() => onSave(count)} type="button">{t("truthFinish")}</button></div>{sessionId && <span className="multiplayer-badge">LIVE</span>}</div>;
+  return <div className="party-game-board game-board-enter">
+    <div className="mode-switch">
+      <button className={mode === "truth" ? "active" : ""} onClick={() => isHost && setState((prev) => ({ ...prev, mode: "truth" }))} type="button">{t("truthTitle")}</button>
+      <button className={mode === "dare" ? "active" : ""} onClick={() => isHost && setState((prev) => ({ ...prev, mode: "dare" }))} type="button">{t("truthDare")}</button>
+    </div>
+    <span className="game-step">{mode === "truth" ? t("truthHonest") : t("truthNoBail")}</span>
+    <h3 className="game-prompt-swap" key={`${mode}-${currentIndex}`}>{currentPool[currentIndex % currentPool.length]}</h3>
+    {isHost && <div className="game-primary-actions">
+      <button className="demo-action demo-action--lime" onClick={next} type="button">{t("truthNext")} <span className="material-symbols-rounded">refresh</span></button>
+      <button className="demo-action demo-action--white" onClick={() => onSave(count)} type="button">{t("truthFinish")}</button>
+    </div>}
+    {sessionId && <span className="multiplayer-badge">LIVE</span>}
+  </div>;
 }

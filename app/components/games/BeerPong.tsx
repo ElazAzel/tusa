@@ -9,8 +9,6 @@ export default function BeerPong({ partyId, sessionId, onSave, role }: { partyId
   const { t } = useLocale();
   const { state, setState } = useMultiplayerGame<BeerState>(sessionId ?? null, () => ({ scores: [10, 10] as [number, number] }));
 
-  if (role === "controller") return <div className="party-game-board"><h3>{t("controllerWaiting")}</h3></div>;
-
   function hit(team: 0 | 1) { setState((prev) => ({ ...prev, scores: team === 0 ? [Math.max(0, prev.scores[0] - 1), prev.scores[1]] as [number, number] : [prev.scores[0], Math.max(0, prev.scores[1] - 1)] as [number, number] })); }
   function ret(team: 0 | 1) { setState((prev) => ({ ...prev, scores: team === 0 ? [Math.min(10, prev.scores[0] + 1), prev.scores[1]] as [number, number] : [prev.scores[0], Math.min(10, prev.scores[1] + 1)] as [number, number] })); }
 

@@ -74,23 +74,23 @@ type PairState = { players: string[]; pairs: Array<[string, string]>; challenge:
 
 export default function RandomPair({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale, t } = useLocale();
+  const isHost = role === "stage";
   const { state, setState } = useMultiplayerGame<PairState>(sessionId ?? null, () => ({ players: [""], pairs: [], challenge: challengesEn[0], hasMade: false, challengeIndex: 0 }));
   const shuffledChallenges = useMemo(() => shuffle(locale === "ru" ? challengesRu : challengesEn), [locale]);
 
-  if (role === "controller") return <div className="party-game-board"><h3>{t("controllerWaiting")}</h3></div>;
-
-  function addPlayer() { setState((prev) => ({ ...prev, players: [...prev.players, ""] })); }
-  function updatePlayer(idx: number, name: string) { setState((prev) => { const n = [...prev.players]; n[idx] = name; return { ...prev, players: n }; }); }
-  function removePlayer(idx: number) { setState((prev) => ({ ...prev, players: prev.players.filter((_, i) => i !== idx) })); }
+  function addPlayer() { if (!isHost) return; setState((prev) => ({ ...prev, players: [...prev.players, ""] })); }
+  function updatePlayer(idx: number, name: string) { if (!isHost) return; setState((prev) => { const n = [...prev.players]; n[idx] = name; return { ...prev, players: n }; }); }
+  function removePlayer(idx: number) { if (!isHost) return; setState((prev) => ({ ...prev, players: prev.players.filter((_, i) => i !== idx) })); }
 
   function make() {
+    if (!isHost) return;
     const names = shuffle(state.players.map((p) => p.trim()).filter(Boolean));
     const nextPairs: Array<[string, string]> = [];
     for (let i = 0; i < names.length; i += 2) nextPairs.push([names[i], names[i + 1] ?? (locale === "ru" ? "Без пары" : "Free agent")]);
     setState((prev) => ({ ...prev, pairs: nextPairs, challenge: shuffledChallenges[prev.challengeIndex % shuffledChallenges.length], challengeIndex: prev.challengeIndex + 1, hasMade: true }));
   }
 
-  if (!state.hasMade) return <div className="party-game-board game-board-enter"><span className="game-step">{t("pairsTitle")}</span><p>{t("pairsDesc")}</p><div className="mafia-players">{state.players.map((name, idx) => <div key={idx} className="mafia-player-row"><input value={name} onChange={(e) => updatePlayer(idx, e.target.value)} placeholder={`${locale === "ru" ? "Игрок" : "Player"} ${idx + 1}`} />{state.players.length > 1 && <button onClick={() => removePlayer(idx)} type="button">×</button>}</div>)}</div><div className="game-primary-actions"><button className="demo-action demo-action--white" onClick={addPlayer} type="button">+ {locale === "ru" ? "Игрок" : "Player"}</button><button className="demo-action demo-action--lime" disabled={state.players.filter((p) => p.trim()).length < 2} onClick={make} type="button">{t("pairsMake")} <span className="material-symbols-rounded">shuffle</span></button></div>{sessionId && <span className="multiplayer-badge">LIVE</span>}</div>;
+  if (!state.hasMade) return <div className="party-game-board game-board-enter"><span className="game-step">{t("pairsTitle")}</span><p>{t("pairsDesc")}</p>{isHost && <><div className="mafia-players">{state.players.map((name, idx) => <div key={idx} className="mafia-player-row"><input value={name} onChange={(e) => updatePlayer(idx, e.target.value)} placeholder={`${locale === "ru" ? "Игрок" : "Player"} ${idx + 1}`} />{state.players.length > 1 && <button onClick={() => removePlayer(idx)} type="button">×</button>}</div>)}</div><div className="game-primary-actions"><button className="demo-action demo-action--white" onClick={addPlayer} type="button">+ {locale === "ru" ? "Игрок" : "Player"}</button><button className="demo-action demo-action--lime" disabled={state.players.filter((p) => p.trim()).length < 2} onClick={make} type="button">{t("pairsMake")} <span className="material-symbols-rounded">shuffle</span></button></div></>}{!isHost && <p style={{ opacity: 0.6 }}>{t("controllerWaiting")}</p>}{sessionId && <span className="multiplayer-badge">LIVE</span>}</div>;
 
-  return <div className="party-game-board game-board-enter"><span className="game-step">{t("pairsTitle")}</span><h3 className="game-prompt-swap" key={state.challenge}>{state.challenge}</h3><div className="pairs-grid">{state.pairs.map(([first, second], idx) => <article key={`${first}-${second}`} className="pair-card-pop" style={{"--pair-delay": `${idx * 70}ms`} as React.CSSProperties}><strong>{first}</strong><span className="material-symbols-rounded">handshake</span><strong>{second}</strong></article>)}</div><div className="game-primary-actions"><button className="demo-action demo-action--lime" onClick={make} type="button"><span className="material-symbols-rounded">shuffle</span> {t("pairsShuffle")}</button><button className="demo-action demo-action--white" onClick={() => onSave(state.pairs.length)} type="button">{t("pairsSave")}</button></div>{sessionId && <span className="multiplayer-badge">LIVE</span>}</div>;
+  return <div className="party-game-board game-board-enter"><span className="game-step">{t("pairsTitle")}</span><h3 className="game-prompt-swap" key={state.challenge}>{state.challenge}</h3><div className="pairs-grid">{state.pairs.map(([first, second], idx) => <article key={`${first}-${second}`} className="pair-card-pop" style={{"--pair-delay": `${idx * 70}ms`} as React.CSSProperties}><strong>{first}</strong><span className="material-symbols-rounded">handshake</span><strong>{second}</strong></article>)}</div>{isHost && <div className="game-primary-actions"><button className="demo-action demo-action--lime" onClick={make} type="button"><span className="material-symbols-rounded">shuffle</span> {t("pairsShuffle")}</button><button className="demo-action demo-action--white" onClick={() => onSave(state.pairs.length)} type="button">{t("pairsSave")}</button></div>}{sessionId && <span className="multiplayer-badge">LIVE</span>}</div>;
 }

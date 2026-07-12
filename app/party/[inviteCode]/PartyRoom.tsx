@@ -37,9 +37,19 @@ import CharadesGame from "@/app/components/games/Charades";
 import CrocodilGame from "@/app/components/games/Crocodil";
 import WerewolfGame from "@/app/components/games/Werewolf";
 import BunkerGame from "@/app/components/games/Bunker";
+import PictionaryGame from "@/app/components/games/Pictionary";
+import GarticPhoneGame from "@/app/components/games/GarticPhone";
+import CardsOfChaosGame from "@/app/components/games/CardsOfChaos";
+import MusicQuizGame from "@/app/components/games/MusicQuiz";
 import ShoppingList from "@/app/components/ShoppingList";
 import Gallery from "@/app/components/Gallery";
 import Koins from "@/app/components/Koins";
+import PartyPass from "@/app/components/PartyPass";
+import SocialQuests from "@/app/components/SocialQuests";
+import Highlights from "@/app/components/Highlights";
+import Gratitude from "@/app/components/Gratitude";
+import DailyChallenge from "@/app/components/DailyChallenge";
+import RoomTheme from "@/app/components/RoomTheme";
 import VoiceRecorder from "@/app/components/chat/VoiceRecorder";
 import StickerPicker from "@/app/components/chat/StickerPicker";
 import EmojiPicker from "@/app/components/chat/EmojiPicker";
@@ -47,10 +57,10 @@ import { tusaStickers } from "@/app/components/chat/stickers";
 import { eventDateInputValue, formatEventDate } from "@/lib/event-format";
 import { soundChat, soundTap, soundReward } from "@/lib/audio";
 
-type GameId = "alias" | "mafia" | "truth" | "never" | "beer" | "quiz" | "pairs" | "uno" | "wouldRather" | "twoTruths" | "kissMarry" | "blankSlate" | "bombParty" | "wheel" | "brainBurst" | "trivia" | "impostor" | "spyfall" | "codenames" | "wavelength" | "quiplash" | "fibbage" | "headsup" | "guessSong" | "charades" | "crocodil" | "werewolf" | "bunker";
+type GameId = "alias" | "mafia" | "truth" | "never" | "beer" | "quiz" | "pairs" | "uno" | "wouldRather" | "twoTruths" | "kissMarry" | "blankSlate" | "bombParty" | "wheel" | "brainBurst" | "trivia" | "impostor" | "spyfall" | "codenames" | "wavelength" | "quiplash" | "fibbage" | "headsup" | "guessSong" | "charades" | "crocodil" | "werewolf" | "bunker" | "pictionary" | "gartic" | "cardsChaos" | "musicQuiz";
 
-type TitleKey = "gamesAliasTitle" | "gamesMafiaTitle" | "gamesTruthTitle" | "gamesNeverTitle" | "gamesBeerTitle" | "gamesQuizTitle" | "gamesPairsTitle" | "gamesUnoTitle" | "gamesWouldRatherTitle" | "gamesTwoTruthsTitle" | "gamesKissMarryTitle" | "gamesBlankSlateTitle" | "gamesBombPartyTitle" | "gamesWheelTitle" | "gamesBrainBurstTitle" | "gamesTriviaTitle" | "gamesImpostorTitle" | "gamesSpyfallTitle" | "gamesCodenamesTitle" | "gamesWavelengthTitle" | "gamesQuiplashTitle" | "gamesFibbageTitle" | "gamesHeadsUpTitle" | "gamesGuessSongTitle" | "gamesCharadesTitle" | "gamesCrocodilTitle" | "gamesWerewolfTitle" | "gamesBunkerTitle";
-type DescKey = "gamesAliasDesc" | "gamesMafiaDesc" | "gamesTruthDesc" | "gamesNeverDesc" | "gamesBeerDesc" | "gamesQuizDesc" | "gamesPairsDesc" | "gamesUnoDesc" | "gamesWouldRatherDesc" | "gamesTwoTruthsDesc" | "gamesKissMarryDesc" | "gamesBlankSlateDesc" | "gamesBombPartyDesc" | "gamesWheelDesc" | "gamesBrainBurstDesc" | "gamesTriviaDesc" | "gamesImpostorDesc" | "gamesSpyfallDesc" | "gamesCodenamesDesc" | "gamesWavelengthDesc" | "gamesQuiplashDesc" | "gamesFibbageDesc" | "gamesHeadsUpDesc" | "gamesGuessSongDesc" | "gamesCharadesDesc" | "gamesCrocodilDesc" | "gamesWerewolfDesc" | "gamesBunkerDesc";
+type TitleKey = "gamesAliasTitle" | "gamesMafiaTitle" | "gamesTruthTitle" | "gamesNeverTitle" | "gamesBeerTitle" | "gamesQuizTitle" | "gamesPairsTitle" | "gamesUnoTitle" | "gamesWouldRatherTitle" | "gamesTwoTruthsTitle" | "gamesKissMarryTitle" | "gamesBlankSlateTitle" | "gamesBombPartyTitle" | "gamesWheelTitle" | "gamesBrainBurstTitle" | "gamesTriviaTitle" | "gamesImpostorTitle" | "gamesSpyfallTitle" | "gamesCodenamesTitle" | "gamesWavelengthTitle" | "gamesQuiplashTitle" | "gamesFibbageTitle" | "gamesHeadsUpTitle" | "gamesGuessSongTitle" | "gamesCharadesTitle" | "gamesCrocodilTitle" | "gamesWerewolfTitle" | "gamesBunkerTitle" | "gamesPictionaryTitle" | "gamesGarticTitle" | "gamesCardsChaosTitle" | "gamesMusicQuizTitle";
+type DescKey = "gamesAliasDesc" | "gamesMafiaDesc" | "gamesTruthDesc" | "gamesNeverDesc" | "gamesBeerDesc" | "gamesQuizDesc" | "gamesPairsDesc" | "gamesUnoDesc" | "gamesWouldRatherDesc" | "gamesTwoTruthsDesc" | "gamesKissMarryDesc" | "gamesBlankSlateDesc" | "gamesBombPartyDesc" | "gamesWheelDesc" | "gamesBrainBurstDesc" | "gamesTriviaDesc" | "gamesImpostorDesc" | "gamesSpyfallDesc" | "gamesCodenamesDesc" | "gamesWavelengthDesc" | "gamesQuiplashDesc" | "gamesFibbageDesc" | "gamesHeadsUpDesc" | "gamesGuessSongDesc" | "gamesCharadesDesc" | "gamesCrocodilDesc" | "gamesWerewolfDesc" | "gamesBunkerDesc" | "gamesPictionaryDesc" | "gamesGarticDesc" | "gamesCardsChaosDesc" | "gamesMusicQuizDesc";
 const gameCatalogue: Array<{ id: GameId; titleKey: TitleKey; descKey: DescKey; icon: string; players: string; tone: string }> = [
   { id: "alias", titleKey: "gamesAliasTitle", descKey: "gamesAliasDesc", icon: "record_voice_over", players: "4+", tone: "lime" },
   { id: "mafia", titleKey: "gamesMafiaTitle", descKey: "gamesMafiaDesc", icon: "mystery", players: "5+", tone: "pink" },
@@ -80,10 +90,14 @@ const gameCatalogue: Array<{ id: GameId; titleKey: TitleKey; descKey: DescKey; i
   { id: "kissMarry", titleKey: "gamesKissMarryTitle", descKey: "gamesKissMarryDesc", icon: "favorite", players: "3+", tone: "pink" },
   { id: "charades", titleKey: "gamesCharadesTitle", descKey: "gamesCharadesDesc", icon: "theater_comedy", players: "4+", tone: "blue" },
   { id: "trivia", titleKey: "gamesTriviaTitle", descKey: "gamesTriviaDesc", icon: "school", players: "2+", tone: "cream" },
+  { id: "pictionary", titleKey: "gamesPictionaryTitle", descKey: "gamesPictionaryDesc", icon: "draw", players: "3+", tone: "lime" },
+  { id: "gartic", titleKey: "gamesGarticTitle", descKey: "gamesGarticDesc", icon: "gesture", players: "4+", tone: "blue" },
+  { id: "cardsChaos", titleKey: "gamesCardsChaosTitle", descKey: "gamesCardsChaosDesc", icon: "playing_cards", players: "3+", tone: "pink" },
+  { id: "musicQuiz", titleKey: "gamesMusicQuizTitle", descKey: "gamesMusicQuizDesc", icon: "library_music", players: "2+", tone: "cream" },
 ];
 
 export default function PartyRoom({ party }: { party: Party }) {
-  const [tab, setTab] = useState<"space" | "games" | "chat" | "shop" | "gallery" | "koins">("space");
+  const [tab, setTab] = useState<"space" | "games" | "chat" | "shop" | "gallery" | "koins" | "pass" | "quests" | "highlights" | "gratitude" | "theme" | "daily">("space");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
   const [editing, setEditing] = useState(false);
@@ -111,7 +125,7 @@ export default function PartyRoom({ party }: { party: Party }) {
   const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/join/${party.inviteCode}` : "";
   const filteredMembers = rsvpFilter === "all" ? members : members.filter((m) => m.rsvpStatus === rsvpFilter);
   const activeSession = activeSessions.find((s) => s.id === gameSession);
-  const gameRole = useGameRole(activeSession?.participants ?? [], user?.id);
+  const gameRole = useGameRole(activeSession?.participants ?? [], user?.id, activeSession?.status);
 
   const liveChat = useLiveStream<Record<string, unknown>>(`chat:${party.id}`);
   const liveParty = useLiveStream<Record<string, unknown>>(`party:${party.id}`);
@@ -248,7 +262,20 @@ export default function PartyRoom({ party }: { party: Party }) {
     fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "score", sessionId: gameSession, score, metadata: { game: selectedGame } }) })
       .then((r) => r.json()).then((data) => {
         if (data.scores) setGameResults({ scores: data.scores as GameScore[], gameTitle: game ? t(game.titleKey) : "" });
+        if (score > 0) {
+          fetch("/api/highlights", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partyId: party.id, sessionId: gameSession, type: "score", data: { score, game: selectedGame }, thumbnail: "" }) }).catch(() => {});
+          fetch("/api/pass", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "addXp", amount: Math.min(score, 50) }) }).catch(() => {});
+          fetch("/api/quests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "track", questId: "playgames", partyId: party.id }) }).catch(() => {});
+        }
       }).catch(() => undefined);
+  }
+
+  async function startGameSession() {
+    if (!gameSession) return;
+    const response = await fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", sessionId: gameSession }) });
+    const data = await response.json();
+    if (!response.ok) { setError(data.error || (locale === "ru" ? "Не удалось запустить игру" : "Could not start the game")); return; }
+    setActiveSessions((prev) => prev.map((session) => session.id === gameSession ? data.session : session));
   }
 
   function closeGameResults() {
@@ -289,7 +316,9 @@ export default function PartyRoom({ party }: { party: Party }) {
 
   function renderGame() {
     const game = gameCatalogue.find((g) => g.id === selectedGame);
-    const props = { partyId: party.id, sessionId: gameSession, onSave: saveGameScore, role: gameRole };
+    if (activeSession?.status === "lobby") return <section className="party-room-panel game-lobby"><div className="active-game-head"><button onClick={backToCatalogue} type="button"><span className="material-symbols-rounded">arrow_back</span>{t("gamesBack")}</button><div><span>{locale === "ru" ? "Лобби" : "Lobby"}</span><h2>{game ? t(game.titleKey) : ""}</h2></div></div><div className="game-lobby-count"><strong>{activeSession.participants.length}</strong><span>{locale === "ru" ? "подключились" : "joined"}</span></div><div className="game-lobby-players">{activeSession.participants.map((id, index) => <span key={id}><i>{index + 1}</i>{id === user?.id ? (locale === "ru" ? "Ты" : "You") : id.slice(-8)}</span>)}</div>{activeSession.createdBy === user?.id ? <button className="demo-action demo-action--lime" disabled={activeSession.participants.length < 2} onClick={startGameSession} type="button"><span className="material-symbols-rounded">play_arrow</span>{locale === "ru" ? "Начать игру" : "Start game"}</button> : <p className="controller-answered">{locale === "ru" ? "Ждём, когда инициатор запустит игру" : "Waiting for the creator to start"}</p>}</section>;
+    const componentRole = gameRole === "spectator" ? "controller" : gameRole;
+    const props = { partyId: party.id, sessionId: gameSession, onSave: saveGameScore, role: componentRole };
     const board = selectedGame === "alias" ? <AliasGame {...props} /> :
       selectedGame === "mafia" ? <MafiaGame {...props} /> :
       selectedGame === "truth" ? <TruthOrDare {...props} /> :
@@ -317,8 +346,12 @@ export default function PartyRoom({ party }: { party: Party }) {
       selectedGame === "charades" ? <CharadesGame {...props} /> :
       selectedGame === "crocodil" ? <CrocodilGame {...props} /> :
       selectedGame === "werewolf" ? <WerewolfGame {...props} /> :
-      selectedGame === "bunker" ? <BunkerGame {...props} /> : null;
-    return <section className="party-room-panel"><div className="active-game-head"><button onClick={backToCatalogue} type="button"><span className="material-symbols-rounded">arrow_back</span> {t("gamesBack")}</button><div><span>{t("gamesMode")}</span><h2>{game ? t(game.titleKey) : ""}</h2></div><span className="demo-chip">{game?.players}{t("gamesPlayers")}</span></div>{board}</section>;
+      selectedGame === "bunker" ? <BunkerGame {...props} /> :
+      selectedGame === "pictionary" ? <PictionaryGame {...props} /> :
+      selectedGame === "gartic" ? <GarticPhoneGame {...props} /> :
+      selectedGame === "cardsChaos" ? <CardsOfChaosGame {...props} /> :
+      selectedGame === "musicQuiz" ? <MusicQuizGame {...props} /> : null;
+    return <section className={`party-room-panel ${gameRole === "spectator" ? "is-spectating" : ""}`}><div className="active-game-head"><button onClick={backToCatalogue} type="button"><span className="material-symbols-rounded">arrow_back</span> {t("gamesBack")}</button><div><span>{t("gamesMode")}</span><h2>{game ? t(game.titleKey) : ""}</h2></div><span className="demo-chip">{game?.players}{t("gamesPlayers")}</span></div>{gameRole === "spectator" && <div className="spectator-banner"><span className="material-symbols-rounded">visibility</span><strong>{locale === "ru" ? "Раунд уже идёт — вы наблюдаете" : "Round in progress — you are spectating"}</strong></div>}<div className="spectator-board">{board}</div></section>;
   }
 
   return <main className={`party-room ${party.adultOnly ? "party-room--adult" : "party-room--family"}`}>
@@ -350,6 +383,12 @@ export default function PartyRoom({ party }: { party: Party }) {
         <button onClick={() => setTab("shop")} className={tab === "shop" ? "active" : ""} type="button"><span className="material-symbols-rounded">shopping_cart</span>{t("shoppingSub")}</button>
         <button onClick={() => setTab("gallery")} className={tab === "gallery" ? "active" : ""} type="button"><span className="material-symbols-rounded">photo_library</span>{t("gallerySub")}</button>
         <button onClick={() => setTab("koins")} className={tab === "koins" ? "active" : ""} type="button"><span className="material-symbols-rounded">paid</span>{t("demoNavKoins")}</button>
+        <button onClick={() => setTab("pass")} className={tab === "pass" ? "active" : ""} type="button"><span className="material-symbols-rounded">stars</span>{t("passTab")}</button>
+        <button onClick={() => setTab("quests")} className={tab === "quests" ? "active" : ""} type="button"><span className="material-symbols-rounded">emoji_events</span>{t("questsTab")}</button>
+        <button onClick={() => setTab("highlights")} className={tab === "highlights" ? "active" : ""} type="button"><span className="material-symbols-rounded">auto_awesome</span>{t("highlightTab")}</button>
+        <button onClick={() => setTab("gratitude")} className={tab === "gratitude" ? "active" : ""} type="button"><span className="material-symbols-rounded">favorite</span>{t("gratitudeTab")}</button>
+        <button onClick={() => setTab("daily")} className={tab === "daily" ? "active" : ""} type="button"><span className="material-symbols-rounded">today</span>{t("dailyTitle")}</button>
+        <button onClick={() => setTab("theme")} className={tab === "theme" ? "active" : ""} type="button"><span className="material-symbols-rounded">palette</span>{t("themeTab")}</button>
       </div>
     </section>
 
@@ -419,6 +458,12 @@ export default function PartyRoom({ party }: { party: Party }) {
     {tab === "shop" && <ShoppingList partyId={party.id} members={members} canManage={isOwner || party.role === "co_host"} />}
     {tab === "gallery" && <Gallery partyId={party.id} />}
     {tab === "koins" && <Koins partyId={party.id} />}
+    {tab === "pass" && <PartyPass partyId={party.id} />}
+    {tab === "quests" && <SocialQuests partyId={party.id} />}
+    {tab === "highlights" && <Highlights partyId={party.id} />}
+    {tab === "gratitude" && <Gratitude partyId={party.id} members={members.map((m) => ({ id: m.clerkUserId, displayName: m.displayName }))} />}
+    {tab === "daily" && <DailyChallenge partyId={party.id} />}
+    {tab === "theme" && <RoomTheme partyId={party.id} currentTheme="lime" onThemeChange={(th) => {}} />}
     {tab === "chat" && <section className="party-room-panel party-chat">
       <h2>{t("roomChatTitle")}</h2>
       <div className="party-chat-stream" ref={chatStreamRef}>

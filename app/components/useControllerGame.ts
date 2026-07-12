@@ -8,22 +8,33 @@ export function useControllerGame<T extends Record<string, unknown>>(
 ) {
   const [state, setState] = useState<T>(initialState);
   const esRef = useRef<EventSource | null>(null);
+  const [connected, setConnected] = useState(true);
 
   useEffect(() => {
     if (!sessionId) { setState(initialState); return; }
 
-    fetch(`/api/games?sessionId=${sessionId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.session?.state && Object.keys(data.session.state).length > 0) {
-          setState((prev) => ({ ...prev, ...data.session.state }));
+    const applySnapshot = (data: { session?: { state?: Partial<T>; participants?: string[] } }) => {
+        const snap = data.session?.state;
+        if (snap && Object.keys(snap).length > 0) {
+          setState((prev) => {
+            const merged = { ...prev, ...snap } as T;
+            const participants = data.session?.participants ?? [];
+            if (participants.length && Array.isArray(merged.players)) (merged as Record<string, unknown>).players = participants;
+            return merged;
+          });
         }
-      }).catch(() => undefined);
+        setConnected(true);
+    };
+    fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => setConnected(false));
+    const poll = setInterval(() => {
+      fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => setConnected(false));
+    }, 1500);
 
     let reconnectTimer: ReturnType<typeof setTimeout>;
     const connect = () => {
       const es = new EventSource(`/api/live?channel=${encodeURIComponent(`game:${sessionId}`)}`);
       esRef.current = es;
+      es.onopen = () => setConnected(true);
       es.onmessage = (msg) => {
         try {
           const event = JSON.parse(msg.data) as { type: string; state?: Partial<T> };
@@ -33,12 +44,13 @@ export function useControllerGame<T extends Record<string, unknown>>(
         } catch { /* ping */ }
       };
       es.onerror = () => {
+        setConnected(false);
         es.close();
         reconnectTimer = setTimeout(connect, 3000);
       };
     };
     connect();
-    return () => { clearTimeout(reconnectTimer); esRef.current?.close(); };
+    return () => { clearInterval(poll); clearTimeout(reconnectTimer); esRef.current?.close(); };
   }, [sessionId]);
 
   const sendAction = useCallback((actionType: string, payload?: unknown) => {
@@ -50,5 +62,5 @@ export function useControllerGame<T extends Record<string, unknown>>(
     }).catch(() => undefined);
   }, [sessionId]);
 
-  return { state, sendAction };
+  return { state, sendAction, connected };
 }

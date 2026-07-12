@@ -3395,6 +3395,39 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .game-result-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: var(--border); border-radius: 99px; background: var(--white); }
 .game-result-row.is-me { background: var(--lime); }
 .game-result-rank { font: 800 14px var(--font-mono),monospace; color: var(--muted); min-width: 24px; }
+.spectator-banner { display: flex; align-items: center; gap: 9px; margin: 14px 0; padding: 12px 14px; border: var(--line); border-radius: 12px; background: var(--lime); box-shadow: 3px 3px 0 var(--black); color: var(--black); }
+.is-spectating .spectator-board button,
+.is-spectating .spectator-board input,
+.is-spectating .spectator-board textarea,
+.is-spectating .spectator-board select { pointer-events: none; opacity: .72; }
+.uno-multiplayer { overflow: hidden; }
+.uno-player-chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 20px; }
+.uno-player-chips span { padding: 7px 10px; border: 2px solid var(--black); border-radius: 999px; background: var(--cream); font-size: 11px; font-weight: 800; }
+.uno-table { display: flex; align-items: center; justify-content: center; gap: 22px; margin: 20px 0; }
+.uno-hand { display: flex; gap: 8px; padding: 18px 4px 12px; overflow-x: auto; scroll-snap-type: x proximity; }
+.uno-card { width: 74px; min-width: 74px; height: 108px; display: grid; place-items: center; padding: 7px; border: 3px solid var(--white); outline: 3px solid var(--black); border-radius: 13px; box-shadow: 4px 4px 0 var(--black); color: var(--white); cursor: pointer; scroll-snap-align: center; }
+.uno-card strong { font: 900 24px var(--font-unbounded),sans-serif; }
+.uno-card small { font-size: 8px; text-transform: uppercase; }
+.uno-card--red { background: #e52b3b; }.uno-card--yellow { background: #e7b90b; color: var(--black); }.uno-card--green { background: #159447; }.uno-card--blue { background: #2369d8; }.uno-card--wild { background: linear-gradient(135deg,#e52b3b 0 25%,#e7b90b 25% 50%,#159447 50% 75%,#2369d8 75%); }.uno-card--back { background: var(--black); }
+.uno-card:disabled { cursor: not-allowed; filter: grayscale(.65); opacity: .48; transform: translateY(8px); }
+.uno-color-choice { display: flex; justify-content: center; gap: 8px; }
+.uno-color-choice button { width: 44px; height: 44px; border: 3px solid var(--black); border-radius: 50%; cursor: pointer; }
+.uno-color-choice button.active { outline: 4px solid var(--lime); outline-offset: 2px; }
+.uno-callout { display: block; margin-top: 8px; color: var(--pink); font: 900 32px var(--font-unbounded),sans-serif; text-align: center; animation: timer-throb .7s ease-in-out infinite; }
+.drawing-canvas { width: 100%; max-height: 56svh; aspect-ratio: 5/3; display: block; margin: 14px 0; border: var(--line); border-radius: 14px; background: var(--white); box-shadow: 5px 5px 0 var(--black); color: var(--black); touch-action: none; }
+.drawing-status { padding: 10px 13px; border: 2px solid var(--black); border-radius: 10px; background: var(--lime); color: var(--black); }
+.drawing-guesses { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.drawing-guesses span { padding: 5px 9px; border-radius: 999px; background: var(--cream); font-size: 11px; }
+.chaos-hand { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-top: 16px; }
+.chaos-hand button { min-height: 96px; padding: 13px; border: var(--line); border-radius: 13px; background: var(--cream); box-shadow: 4px 4px 0 var(--black); font-weight: 800; cursor: pointer; }
+.chaos-hand button.active { background: var(--lime); transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--black); }
+.game-lobby { text-align: center; }
+.game-lobby-count { width: 150px; height: 150px; display: grid; place-content: center; margin: 25px auto; border: var(--line); border-radius: 50%; background: var(--lime); box-shadow: 7px 7px 0 var(--black); color: var(--black); }
+.game-lobby-count strong { font: 900 50px/1 var(--font-unbounded),sans-serif; }.game-lobby-count span { margin-top: 5px; font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.game-lobby-players { display: grid; grid-template-columns: repeat(auto-fit,minmax(130px,1fr)); gap: 8px; margin: 18px 0 25px; text-align: left; }
+.game-lobby-players span { min-width: 0; display: flex; align-items: center; gap: 8px; padding: 10px; border: 2px solid var(--black); border-radius: 10px; background: var(--cream); overflow: hidden; font-size: 12px; font-weight: 800; text-overflow: ellipsis; }
+.game-lobby-players i { width: 25px; height: 25px; flex: 0 0 25px; display: grid; place-items: center; border-radius: 50%; background: var(--pink); color: var(--white); font-style: normal; }
+@media (max-width: 600px) { .drawing-canvas { max-height: 42svh; } .chaos-hand { grid-template-columns: 1fr; } }
 .game-result-row strong { flex: 1; text-align: left; }
 .game-result-score { font: 800 18px var(--font-mono),monospace; }
 

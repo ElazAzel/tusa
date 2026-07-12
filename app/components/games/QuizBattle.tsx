@@ -147,69 +147,64 @@ function shuffle<T>(items: T[]) {
 
 type QuizState = { index: number; score: number; selected: string };
 
-function QuizBattleStage({ sessionId, partyId, onSave, questions }: { sessionId?: string | null; partyId: string; onSave: (score: number) => void; questions: { question: string; options: string[]; answer: string }[] }) {
-  const { t } = useLocale();
-  const { state, setState, playerActions, clearActions, complete } = useStageGame<QuizState>(
-    sessionId ?? null,
-    () => ({ index: 0, score: 0, selected: "" })
-  );
+export default function QuizBattle({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+  const { locale } = useLocale();
+  const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
+  const questions = useMemo(() => shuffle(locale === "ru" ? questionsRu : questionsEn), [locale]);
+  const isHost = role === "stage";
+
+  const stageHook = useStageGame<QuizState>(isHost ? (sessionId ?? null) : null, () => ({ index: 0, score: 0, selected: "" }));
+  const controllerHook = useControllerGame<QuizState>(!isHost ? (sessionId ?? null) : null, { index: 0, score: 0, selected: "" });
+
+  const state = isHost ? stageHook.state : controllerHook.state;
+  const sendAction = isHost ? stageHook.sendAction : controllerHook.sendAction;
+  const setState = isHost ? stageHook.setState : undefined;
+  const playerActions = isHost ? stageHook.playerActions : [];
+  const clearActions = isHost ? stageHook.clearActions : undefined;
+  const complete = isHost ? stageHook.complete : undefined;
 
   useEffect(() => {
-    if (playerActions.length === 0) return;
+    if (!isHost || playerActions.length === 0) return;
     for (const a of playerActions) {
       if (a.actionType === "answer") {
         const { option } = a.payload as { option: string };
-        setState((prev) => {
+        setState?.((prev) => {
           if (prev.selected) return prev;
           const correct = option === questions[prev.index]?.answer;
+          if (correct) soundCorrect(); else soundWrong();
           return { ...prev, selected: option, score: correct ? prev.score + 1 : prev.score };
         });
       }
     }
-    clearActions();
-  }, [playerActions, questions, setState, clearActions]);
+    clearActions?.();
+  }, [playerActions, questions, isHost, setState, clearActions]);
+
+  const [chosen, setChosen] = useState("");
+  useEffect(() => { setChosen(""); }, [state.index]);
 
   function select(option: string) {
-    if (state.selected) return;
-    const correct = option === questions[state.index].answer;
-    setState((prev) => ({ ...prev, selected: option, score: correct ? prev.score + 1 : prev.score }));
-    if (correct) soundCorrect(); else soundWrong();
+    if (chosen) return;
+    setChosen(option);
+    if (isHost) {
+      const correct = option === questions[state.index].answer;
+      setState?.((prev) => ({ ...prev, selected: option, score: correct ? prev.score + 1 : prev.score }));
+      if (correct) soundCorrect(); else soundWrong();
+    } else {
+      sendAction("answer", { option });
+    }
   }
 
   function next() {
-    if (state.index === questions.length - 1) { soundWin(); confetti(); complete(); onSave(state.score); }
-    else setState((prev) => ({ ...prev, index: prev.index + 1, selected: "" }));
+    if (!isHost) return;
+    if (state.index === questions.length - 1) { soundWin(); confetti(); complete?.(); onSave(state.score); }
+    else setState?.((prev) => ({ ...prev, index: prev.index + 1, selected: "" }));
   }
 
   const q = questions[state.index % questions.length];
+  const showSelected = isHost ? state.selected : chosen;
 
-  return <div className="party-game-board game-board-enter"><span className="game-step">{t("quizQuestion")}{state.index + 1}/{questions.length}</span><h3>{q.question}</h3><div className="quiz-options">{q.options.map((option) => <button className={state.selected === option ? (option === q.answer ? "correct" : "wrong") : ""} disabled={Boolean(state.selected)} key={option} onClick={() => select(option)} type="button">{option}</button>)}</div>{state.selected && <p className="quiz-feedback">{state.selected === q.answer ? t("quizCorrect") : `${t("quizWrong")}${q.answer}`}</p>}<div className="game-primary-actions"><button className="demo-action demo-action--lime" disabled={!state.selected} onClick={next} type="button">{state.index === questions.length - 1 ? t("quizFinish") : t("quizNext")}</button></div></div>;
+  return <div className="party-game-board game-board-enter"><span className="game-step">{t("quizQuestion")}{state.index + 1}/{questions.length}</span><h3>{q.question}</h3><div className="quiz-options">{q.options.map((option) => <button className={showSelected === option ? (option === q.answer ? "correct" : "wrong") : ""} disabled={Boolean(showSelected)} key={option} onClick={() => select(option)} type="button">{option}</button>)}</div>{showSelected && <p className="quiz-feedback">{showSelected === q.answer ? t("quizCorrect") : `${t("quizWrong")}${q.answer}`}</p>}{isHost && <div className="game-primary-actions"><button className="demo-action demo-action--lime" disabled={!showSelected} onClick={next} type="button">{state.index === questions.length - 1 ? t("quizFinish") : t("quizNext")}</button></div>}</div>;
 }
 
-function QuizBattleController({ sessionId, questions, total }: { sessionId: string; questions: { question: string; options: string[]; answer: string }[]; total: number }) {
-  const { t } = useLocale();
-  const { state, sendAction } = useControllerGame<QuizState>(sessionId, { index: 0, score: 0, selected: "" });
-  const [answered, setAnswered] = useState("");
-  const currentIndex = (state as QuizState).index || 0;
-
-  function select(option: string) {
-    if (answered) return;
-    setAnswered(option);
-    sendAction("answer", { option });
-  }
-
-  const q = questions[currentIndex % questions.length];
-
-  return <div className="party-game-board game-board-enter"><span className="game-step">{t("quizQuestion")}{currentIndex + 1}/{total}</span><h3>{q.question}</h3><div className="quiz-options">{q.options.map((option) => <button className={answered === option ? "selected" : ""} disabled={Boolean(answered)} key={option} onClick={() => select(option)} type="button">{option}</button>)}</div>{answered && <p className="controller-answered">{t("quizYouAnswered")}: {answered}</p>}</div>;
-}
-
-export default function QuizBattle({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
-  const { locale } = useLocale();
-  const shuffled = useMemo(() => shuffle(locale === "ru" ? questionsRu : questionsEn), [locale]);
-
-  if (role === "controller" && sessionId) {
-    return <QuizBattleController sessionId={sessionId} questions={shuffled} total={shuffled.length} />;
-  }
-
-  return <QuizBattleStage sessionId={sessionId} partyId={partyId} onSave={onSave} questions={shuffled} />;
-}
+const EN: Record<string, string> = { quizQuestion: "Question ", quizCorrect: "Correct!", quizWrong: "Wrong! It's ", quizFinish: "Finish", quizNext: "Next" };
+const RU: Record<string, string> = { quizQuestion: "Вопрос ", quizCorrect: "Правильно!", quizWrong: "Неправильно! Это ", quizFinish: "Завершить", quizNext: "Далее" };

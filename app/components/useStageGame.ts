@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type PlayerAction = {
+  id?: string;
   userId: string;
   actionType: string;
   payload: unknown;
@@ -16,18 +17,37 @@ export function useStageGame<T extends Record<string, unknown>>(
   const [playerActions, setPlayerActions] = useState<PlayerAction[]>([]);
   const esRef = useRef<EventSource | null>(null);
   const versionRef = useRef<number>(1);
+  const seenActionsRef = useRef<Set<string>>(new Set());
+  const syncQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     if (!sessionId) { _setState(initialState); return; }
 
-    fetch(`/api/games?sessionId=${sessionId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.session?.state && Object.keys(data.session.state).length > 0) {
-          if (data.session.version) versionRef.current = data.session.version;
-          _setState((prev) => ({ ...prev, ...data.session.state }));
+    const applySnapshot = (data: { session?: { state?: Partial<T>; version?: number; participants?: string[] }; actions?: PlayerAction[] }) => {
+        const snap = data.session?.state;
+        if (snap && Object.keys(snap).length > 0) {
+          const snapshotVersion = data.session?.version;
+          if (snapshotVersion) versionRef.current = snapshotVersion;
+          _setState((prev) => {
+            const merged = { ...prev, ...snap } as T;
+            const participants = data.session?.participants ?? [];
+            if (participants.length && Array.isArray(merged.players)) {
+              const currentPlayers = merged.players as unknown[];
+              if (!currentPlayers.length || currentPlayers.every((player) => typeof player === "string" && /^Player \d+$/.test(player))) (merged as Record<string, unknown>).players = participants;
+            }
+            return merged;
+          });
         }
-      }).catch(() => undefined);
+        const syntheticJoins: PlayerAction[] = (data.session?.participants ?? []).map((userId) => ({ id: `join:${userId}`, userId, actionType: "join", payload: {} }));
+        const fresh = [...syntheticJoins, ...(data.actions ?? [])].filter((action) => !action.id || !seenActionsRef.current.has(action.id));
+        fresh.forEach((action) => { if (action.id) seenActionsRef.current.add(action.id); });
+        if (fresh.length) setPlayerActions((prev) => [...prev, ...fresh]);
+    };
+
+    fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
+    const poll = setInterval(() => {
+      fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
+    }, 1200);
 
     let reconnectTimer: ReturnType<typeof setTimeout>;
     const connect = () => {
@@ -35,13 +55,15 @@ export function useStageGame<T extends Record<string, unknown>>(
       esRef.current = es;
       es.onmessage = (msg) => {
         try {
-          const event = JSON.parse(msg.data) as { type: string; state?: Partial<T>; version?: number; userId?: string; actionType?: string; payload?: unknown };
+          const event = JSON.parse(msg.data) as { type: string; id?: string; state?: Partial<T>; version?: number; userId?: string; actionType?: string; payload?: unknown };
           if (event.type === "state:updated" && event.state) {
             if (event.version) versionRef.current = event.version;
             _setState((prev) => ({ ...prev, ...event.state }));
           }
           if (event.type === "player:action" && event.userId && event.actionType) {
-            setPlayerActions((prev) => [...prev, { userId: event.userId!, actionType: event.actionType!, payload: event.payload }]);
+            if (event.id && seenActionsRef.current.has(event.id)) return;
+            if (event.id) seenActionsRef.current.add(event.id);
+            setPlayerActions((prev) => [...prev, { id: event.id, userId: event.userId!, actionType: event.actionType!, payload: event.payload }]);
           }
         } catch { /* ping */ }
       };
@@ -51,23 +73,27 @@ export function useStageGame<T extends Record<string, unknown>>(
       };
     };
     connect();
-    return () => { clearTimeout(reconnectTimer); esRef.current?.close(); };
+    return () => { clearInterval(poll); clearTimeout(reconnectTimer); esRef.current?.close(); };
   }, [sessionId]);
 
   const setState = useCallback((updater: T | ((prev: T) => T)) => {
     _setState((prev) => {
       const next = typeof updater === "function" ? (updater as (prev: T) => T)(prev) : updater;
       if (sessionId) {
-        const ver = versionRef.current;
-        fetch("/api/games", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "update", sessionId, state: next, version: ver }),
-        }).then((res) => {
+        syncQueueRef.current = syncQueueRef.current.then(async () => {
+          const ver = versionRef.current;
+          const res = await fetch("/api/games", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "update", sessionId, state: next, version: ver }),
+          });
           if (res.status === 409) {
-            fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then((data) => {
-              if (data.scores) return;
-            }).catch(() => undefined);
+            const data = await fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json());
+            if (data.session?.version) versionRef.current = data.session.version;
+            if (data.session?.state) _setState((current) => ({ ...current, ...data.session.state }));
+          } else if (res.ok) {
+            const data = await res.json();
+            if (data.session?.version) versionRef.current = data.session.version;
           }
         }).catch(() => undefined);
       }
@@ -86,5 +112,14 @@ export function useStageGame<T extends Record<string, unknown>>(
     }).catch(() => undefined);
   }, [sessionId]);
 
-  return { state, setState, playerActions, clearActions, complete };
+  const sendAction = useCallback((actionType: string, payload?: unknown) => {
+    if (!sessionId) return;
+    fetch("/api/games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "playerAction", sessionId, actionType, payload }),
+    }).catch(() => undefined);
+  }, [sessionId]);
+
+  return { state, setState, playerActions, clearActions, complete, sendAction };
 }

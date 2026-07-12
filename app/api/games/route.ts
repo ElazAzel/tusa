@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
-import { addGameScore, createGameSession, getActiveGameSessions, getGameScores, getGameSessionById, joinGameSession, leaveGameSession, updateGameSession, trackAnalytics, grantEngagementReward } from "@/lib/parties";
+import { addGameAction, addGameScore, createGameSession, getActiveGameSessions, getGameScores, getGameSessionById, getPartyMembers, getPendingGameActions, joinGameSession, leaveGameSession, updateGameSession, trackAnalytics, grantEngagementReward } from "@/lib/parties";
 import { publish } from "@/lib/live";
 
 export async function POST(request: Request) {
@@ -23,12 +23,26 @@ export async function POST(request: Request) {
   }
 
   if (body.action === "join") {
+    const current = await getGameSessionById(body.sessionId);
+    if (!current) return NextResponse.json({ error: "Session not found." }, { status: 404 });
+    if (current.status !== "lobby" && !current.participants.includes(userId)) return NextResponse.json({ session: current, spectator: true });
     if (!body.sessionId) return NextResponse.json({ error: "Укажите sessionId." }, { status: 400 });
     const session = await joinGameSession(body.sessionId, userId);
     if (!session) return NextResponse.json({ error: "Сессия не найдена." }, { status: 404 });
     publish(`game:${body.sessionId}`, { type: "player:joined", sessionId: body.sessionId, userId, participants: session.participants });
     publish(`party:${session.partyId}`, { type: "session:updated", session });
     return NextResponse.json({ session });
+  }
+
+  if (body.action === "start") {
+    const current = await getGameSessionById(body.sessionId);
+    if (!current) return NextResponse.json({ error: "Session not found." }, { status: 404 });
+    if (current.createdBy !== userId) return NextResponse.json({ error: "Only the game creator can start." }, { status: 403 });
+    if (current.participants.length < 2) return NextResponse.json({ error: "At least two players are required." }, { status: 400 });
+    const session = await updateGameSession(body.sessionId, userId, { status: "active" });
+    if (!session) return NextResponse.json({ error: "Session could not start." }, { status: 409 });
+    publish(`party:${session.partyId}`, { type: "session:updated", session: { ...session, participants: current.participants, createdBy: current.createdBy } });
+    return NextResponse.json({ session: { ...session, participants: current.participants, createdBy: current.createdBy } });
   }
 
   if (body.action === "leave") {
@@ -44,7 +58,6 @@ export async function POST(request: Request) {
     if (!body.sessionId) return NextResponse.json({ error: "Укажите sessionId." }, { status: 400 });
     const session = await updateGameSession(body.sessionId, userId, { status: body.status, state: body.state, expectedVersion: body.version });
     if (!session) return NextResponse.json({ error: "Конфликт версии — обновите страницу.", retry: true }, { status: 409 });
-    publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, state: body.state, status: body.status, version: session.version });
     return NextResponse.json({ session });
   }
 
@@ -72,8 +85,8 @@ export async function POST(request: Request) {
 
   if (body.action === "playerAction") {
     if (!body.sessionId || !body.actionType) return NextResponse.json({ error: "Укажите sessionId и actionType." }, { status: 400 });
-    publish(`game:${body.sessionId}`, { type: "player:action", sessionId: body.sessionId, userId, actionType: body.actionType, payload: body.payload ?? {} });
-    return NextResponse.json({ ok: true });
+    const gameAction = await addGameAction(body.sessionId, userId, String(body.actionType), body.payload ?? {});
+    return NextResponse.json({ ok: true, action: gameAction });
   }
 
   return NextResponse.json({ error: "Неверный action." }, { status: 400 });
@@ -91,7 +104,15 @@ export async function GET(request: NextRequest) {
 
   if (sessionId) {
     const [scores, session] = await Promise.all([getGameScores(sessionId), getGameSessionById(sessionId)]);
-    return NextResponse.json({ scores, session });
+    const actions = session?.createdBy === userId ? await getPendingGameActions(sessionId) : [];
+    if (!session) return NextResponse.json({ error: "Session not found." }, { status: 404 });
+    const isParticipant = session.participants.includes(userId);
+    if (!isParticipant) {
+      const members = await getPartyMembers(session.partyId);
+      if (!members.some((member) => member.clerkUserId === userId)) return NextResponse.json({ error: "Not a party member." }, { status: 403 });
+    }
+    const safeSession = session.createdBy === userId ? session : { ...session, state: sanitizeControllerState(session.game, session.state, userId) };
+    return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant });
   }
 
   if (partyId) {
@@ -100,4 +121,52 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({ error: "Укажите sessionId или partyId." }, { status: 400 });
+}
+
+function sanitizeControllerState(game: string, rawState: Record<string, unknown>, userId: string) {
+  const state = structuredClone(rawState);
+  const phase = String(state.phase ?? "");
+  if ((game === "werewolf" || game === "mafia") && phase !== "reveal") {
+    const roles = (state.roles ?? {}) as Record<string, unknown>;
+    state.roles = roles[userId] ? { [userId]: roles[userId] } : {};
+  }
+  if (game === "impostor" && phase !== "reveal") {
+    const isImpostor = state.impostorId === userId;
+    state.word = isImpostor ? "" : state.word;
+    state.impostorId = isImpostor ? userId : null;
+  }
+  if (game === "spyfall" && phase !== "reveal") {
+    const isSpy = state.spyId === userId;
+    state.location = isSpy ? "" : state.location;
+    state.spyId = isSpy ? userId : null;
+  }
+  if (game === "codenames" && phase !== "reveal") {
+    const isSpymaster = state.spymasterA === userId || state.spymasterB === userId;
+    if (!isSpymaster) {
+      const colors = Array.isArray(state.colors) ? state.colors : [];
+      const revealed = Array.isArray(state.revealed) ? state.revealed : [];
+      state.colors = colors.map((color, index) => revealed[index] ? color : "neutral");
+    }
+  }
+  if (game === "uno") {
+    const hands = (state.hands ?? {}) as Record<string, unknown>;
+    state.hands = hands[userId] ? { [userId]: hands[userId] } : {};
+    state.drawPile = [];
+  }
+  if (game === "pictionary" && phase === "drawing" && state.drawerId !== userId) state.word = "";
+  if (game === "gartic") {
+    const assignments = (state.assignments ?? {}) as Record<string, string>;
+    const source = assignments[userId];
+    const prompts = (state.prompts ?? {}) as Record<string, unknown>;
+    const drawings = (state.drawings ?? {}) as Record<string, unknown>;
+    state.prompts = source && prompts[source] ? { [source]: prompts[source] } : {};
+    state.drawings = { ...(drawings[userId] ? { [userId]: drawings[userId] } : {}), ...(source && drawings[source] ? { [source]: drawings[source] } : {}) };
+    state.guesses = {};
+  }
+  if (game === "cardsChaos") {
+    const hands = (state.hands ?? {}) as Record<string, unknown>;
+    state.hands = hands[userId] ? { [userId]: hands[userId] } : {};
+    if (phase === "play") state.submissions = {};
+  }
+  return state;
 }

@@ -10,19 +10,21 @@ export function useMultiplayerGame<T extends Record<string, unknown>>(
   const esRef = useRef<EventSource | null>(null);
   const stateRef = useRef<T>(state);
   const versionRef = useRef<number>(1);
+  const syncQueueRef = useRef<Promise<void>>(Promise.resolve());
   stateRef.current = state;
 
   useEffect(() => {
     if (!sessionId) { _setState(initialState); return; }
 
-    fetch(`/api/games?sessionId=${sessionId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.session?.state && Object.keys(data.session.state).length > 0) {
-          if (data.session.version) versionRef.current = data.session.version;
-          _setState((prev) => ({ ...prev, ...data.session.state }));
+    const applySnapshot = (data: { session?: { state?: Partial<T>; version?: number } }) => {
+        const snap = data.session?.state;
+        if (snap && Object.keys(snap).length > 0) {
+          if (data.session?.version) versionRef.current = data.session.version;
+          _setState((prev) => ({ ...prev, ...snap }));
         }
-      }).catch(() => undefined);
+    };
+    fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
+    const poll = setInterval(() => fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined), 1500);
 
     let reconnectTimer: ReturnType<typeof setTimeout>;
     const connect = () => {
@@ -43,18 +45,27 @@ export function useMultiplayerGame<T extends Record<string, unknown>>(
       };
     };
     connect();
-    return () => { clearTimeout(reconnectTimer); esRef.current?.close(); };
+    return () => { clearInterval(poll); clearTimeout(reconnectTimer); esRef.current?.close(); };
   }, [sessionId]);
 
   const setState = useCallback((updater: T | ((prev: T) => T)) => {
     _setState((prev) => {
       const next = typeof updater === "function" ? (updater as (prev: T) => T)(prev) : updater;
       if (sessionId) {
-        const ver = versionRef.current;
-        fetch("/api/games", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "update", sessionId, state: next, version: ver }),
+        syncQueueRef.current = syncQueueRef.current.then(async () => {
+          const ver = versionRef.current;
+          const response = await fetch("/api/games", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "update", sessionId, state: next, version: ver }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (response.ok && data.session?.version) versionRef.current = data.session.version;
+          if (response.status === 409) {
+            const fresh = await fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json());
+            if (fresh.session?.version) versionRef.current = fresh.session.version;
+            if (fresh.session?.state) _setState((current) => ({ ...current, ...fresh.session.state }));
+          }
         }).catch(() => undefined);
       }
       return next;
