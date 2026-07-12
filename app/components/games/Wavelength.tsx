@@ -68,7 +68,7 @@ function WavelengthStage({ sessionId, partyId, onSave }: { sessionId?: string | 
     });
   }, [pairs, pts, state.scores, setState]);
 
-  const finish = useCallback(() => { complete(); onSave(pts); }, [complete, onSave, pts]);
+  const finish = useCallback(() => { complete(); onSave(Math.max(...Object.values(state.scores), 0)); }, [complete, onSave, state.scores]);
 
   return (
     <div className="party-game-board game-board-enter">

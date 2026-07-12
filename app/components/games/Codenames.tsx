@@ -96,7 +96,7 @@ function CodenamesStage({ sessionId, partyId, onSave }: { sessionId?: string | n
             ...prev, revealed: newRevealed, phase: "reveal",
             scores: { ...prev.scores, [winner]: prev.scores[winner] + 1 },
           }));
-          return;
+          break;
         }
         if (color === state.activeTeam) {
           setState((prev) => ({

@@ -44,7 +44,7 @@ function ImpostorStage({ sessionId, partyId, onSave, words }: { sessionId?: stri
         if (word === state.word.toLowerCase()) {
           setState((prev) => ({ ...prev, phase: "reveal", impostorId: a.userId }));
           onSave(0);
-          return;
+          break;
         }
       }
     }

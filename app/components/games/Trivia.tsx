@@ -35,28 +35,32 @@ const QUESTIONS_RU = [
   { q: "Сколько звёзд на флаге США?", opts: ["48", "49", "50", "52"], correct: 2 },
 ];
 
-type GameState = { round: number; phase: "question" | "result"; question: string; options: string[]; correct: number; timer: number; scores: Record<string, number> };
+type GameState = { round: number; phase: "question" | "result"; question: string; options: string[]; correct: number; timer: number; scores: Record<string, number>; answered: Record<string, boolean> };
 
 function TriviaStage({ sessionId, partyId, onSave, questions }: { sessionId?: string | null; partyId: string; onSave: (score: number) => void; questions: { q: string; opts: string[]; correct: number }[] }) {
   const { locale } = useLocale();
   const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
   const { state, setState, playerActions, clearActions, complete } = useStageGame<GameState>(
     sessionId ?? null,
-    () => ({ round: 0, phase: "question", question: questions[0].q, options: questions[0].opts, correct: questions[0].correct, timer: 15, scores: {} })
+    () => ({ round: 0, phase: "question", question: questions[0].q, options: questions[0].opts, correct: questions[0].correct, timer: 15, scores: {}, answered: {} })
   );
 
   useEffect(() => {
     if (playerActions.length === 0) return;
     for (const a of playerActions) {
-      if (a.actionType === "answer" && state.phase === "question") {
+      if (a.actionType === "answer" && state.phase === "question" && !state.answered[a.userId]) {
         const idx = (a.payload as { index: number }).index;
-        if (idx === state.correct) {
-          setState((prev) => ({ ...prev, scores: { ...prev.scores, [a.userId]: (prev.scores[a.userId] || 0) + (prev.timer > 8 ? 2 : 1) } }));
-        }
+        setState((prev) => ({
+          ...prev,
+          answered: { ...prev.answered, [a.userId]: true },
+          scores: idx === prev.correct
+            ? { ...prev.scores, [a.userId]: (prev.scores[a.userId] || 0) + (prev.timer > 8 ? 2 : 1) }
+            : prev.scores,
+        }));
       }
     }
     clearActions();
-  }, [playerActions, state.phase, state.correct, state.timer, setState, clearActions]);
+  }, [playerActions, state.phase, state.timer, setState, clearActions]);
 
   useEffect(() => {
     if (state.phase !== "question" || state.timer <= 0) return;
@@ -108,7 +112,7 @@ function TriviaStage({ sessionId, partyId, onSave, questions }: { sessionId?: st
 function TriviaController({ sessionId, questions }: { sessionId: string; questions: { q: string; opts: string[]; correct: number }[] }) {
   const { locale } = useLocale();
   const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
-  const { state, sendAction } = useControllerGame<GameState>(sessionId, { round: 0, phase: "question", question: "", options: [], correct: 0, timer: 15, scores: {} });
+  const { state, sendAction } = useControllerGame<GameState>(sessionId, { round: 0, phase: "question", question: "", options: [], correct: 0, timer: 15, scores: {}, answered: {} });
   const [chosen, setChosen] = useState<number | null>(null);
 
   useEffect(() => { setChosen(null); }, [state.round]);

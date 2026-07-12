@@ -44,9 +44,10 @@ function WerewolfStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
     if (playerActions.length === 0) return;
     for (const a of playerActions) {
       if (a.actionType === "join" && state.phase === "deal") {
+        const pid = (a.payload as { playerId?: string })?.playerId || a.userId;
         setState((prev) => ({
           ...prev,
-          players: prev.players.includes(a.userId) ? prev.players : [...prev.players, a.userId],
+          players: prev.players.includes(pid) ? prev.players : [...prev.players, pid],
         }));
       }
       if (a.actionType === "nightAction" && state.phase === "night") {
@@ -184,22 +185,23 @@ function WerewolfStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
 function WerewolfController({ sessionId }: { sessionId: string }) {
   const { locale } = useLocale();
   const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
+  const [playerId] = useState(() => "p_" + Math.random().toString(36).slice(2, 8));
   const { state, sendAction } = useControllerGame<GameState>(sessionId, {
     phase: "deal", players: [], roles: {}, alive: [],
     nightActions: {}, votes: {}, round: 0, timer: 0, revealTarget: "", eliminated: "",
   });
   const [role, setRole] = useState<Role | null>(null);
   const [hasActed, setHasActed] = useState(false);
+  const [joined, setJoined] = useState(false);
 
   useEffect(() => {
-    if (state.phase === "night" && state.roles) {
-      const myRole = state.roles[Object.keys(state.roles).find((k) => k.startsWith("u_")) || ""];
-      setRole(myRole || null);
+    if (state.phase === "night" && state.roles && state.roles[playerId]) {
+      setRole(state.roles[playerId]);
       setHasActed(false);
     }
-  }, [state.phase, state.roles]);
+  }, [state.phase, state.roles, playerId]);
 
-  const join = useCallback(() => sendAction("join"), [sendAction]);
+  const join = useCallback(() => { setJoined(true); sendAction("join", { playerId }); }, [sendAction, playerId]);
   const nightAction = useCallback((type: Role, target: string) => {
     setHasActed(true);
     sendAction("nightAction", { type, target });

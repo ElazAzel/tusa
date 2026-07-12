@@ -145,9 +145,15 @@ function BombPartyController({
   });
   const [word, setWord] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const isEliminated = state.eliminated.includes("self");
+  const [isEliminated, setIsEliminated] = useState(false);
 
-  useEffect(() => { setWord(""); setSubmitted(false); }, [state.round]);
+  useEffect(() => {
+    if (state.round > 0 && !submitted && !isEliminated) {
+      setIsEliminated(true);
+    }
+    setWord("");
+    setSubmitted(false);
+  }, [state.round]);
 
   const submit = useCallback(() => {
     if (!word.trim() || submitted || isEliminated) return;

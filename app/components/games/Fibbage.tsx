@@ -118,9 +118,6 @@ function FibbageStage({ sessionId, partyId, onSave }: { sessionId?: string | nul
               {s.answer}
             </button>
           ))}
-          <button type="button" disabled style={{ display: "block", width: "100%", textAlign: "center", background: "#a3e635", color: "#000", borderRadius: 8, padding: "10px 14px", marginBottom: 6, border: "none", fontWeight: 700 }}>
-            {state.truth}
-          </button>
           {allVoted && <button className="demo-action demo-action--lime" onClick={reveal} type="button" style={{ marginTop: 8 }}>{t("reveal")}</button>}
         </div>
       )}

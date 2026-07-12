@@ -75,13 +75,14 @@ function WouldYouRatherStage({
 
   useEffect(() => {
     if (playerActions.length === 0) return;
-    const latest = playerActions[playerActions.length - 1];
-    if (latest.actionType === "vote") {
-      const choice = (latest.payload as { choice: "a" | "b" }).choice;
-      setState((prev) => ({
-        ...prev,
-        votes: { ...prev.votes, [latest.userId]: choice },
-      }));
+    for (const action of playerActions) {
+      if (action.actionType === "vote") {
+        const choice = (action.payload as { choice: "a" | "b" }).choice;
+        setState((prev) => ({
+          ...prev,
+          votes: { ...prev.votes, [action.userId]: choice },
+        }));
+      }
     }
     clearActions();
   }, [playerActions, setState, clearActions]);

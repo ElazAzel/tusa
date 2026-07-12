@@ -170,7 +170,7 @@ function CharadesController({ sessionId }: { sessionId: string }) {
             ✓ {t("correct")}
           </button>
           <button className="demo-action demo-action--white" onClick={skip} type="button" style={{ flex: 1, fontSize: 18, padding: "14px 0" }}>
-            ⏭ {t("skip")}
+            ⏭ {t("skipped")}
           </button>
         </div>
       </div>

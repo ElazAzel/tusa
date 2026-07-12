@@ -39,7 +39,7 @@ function SpyfallStage({ sessionId, partyId, onSave, locations }: { sessionId?: s
         if (loc === state.location.toLowerCase()) {
           setState((prev) => ({ ...prev, phase: "reveal", spyId: a.userId }));
           onSave(5);
-          return;
+          break;
         }
       }
     }
@@ -87,7 +87,7 @@ function SpyfallStage({ sessionId, partyId, onSave, locations }: { sessionId?: s
       <div className="game-primary-actions">
         {!state.spyId && (
           <>
-            {!state.phase && <button className="demo-action demo-action--lime" onClick={startGame} type="button">{t("start")}</button>}
+            <button className="demo-action demo-action--lime" onClick={startGame} type="button">{t("start")}</button>
             {state.phase === "qa" && <button className="demo-action demo-action--lime" onClick={goToVote} type="button">{t("goToVote")}</button>}
           </>
         )}

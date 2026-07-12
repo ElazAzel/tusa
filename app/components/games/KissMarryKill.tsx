@@ -99,7 +99,7 @@ function KissMarryKillStage({
             <span className="kmk-votes">{tallies[i]} {t("votes")}</span>
             {state.phase === "reveal" && (
               <span className="kmk-winner">
-                {labels[tallies.indexOf(Math.max(...tallies)) === i ? 0 : 0]}
+                {tallies.indexOf(Math.max(...tallies)) === i ? labels[i] : null}
               </span>
             )}
           </div>
