@@ -14,6 +14,7 @@ type TriviaState = {
   deadline: number;
   scores: Record<string, number>;
   answered: Record<string, boolean>;
+  game: "trivia" | "quiz";
 };
 
 const TRIVIA_ROUNDS = 5;
@@ -24,13 +25,14 @@ function triviaQuestion(round: number, locale: "ru" | "en") {
 }
 
 export function initialServerGameState(gameId: string, participants: string[], config: Record<string, unknown>, now = Date.now()) {
-  if (gameId !== "trivia") return null;
+  if (gameId !== "trivia" && gameId !== "quiz") return null;
   const locale = config.locale === "en" ? "en" : "ru";
-  return { engine: "server-v1", locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + 15_000, scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
+  const game = gameId;
+  return { engine: "server-v1", game, locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + (game === "quiz" ? 12_000 : 15_000), scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
-  if (gameId !== "trivia" || rawState.engine !== "server-v1") return null;
+  if ((gameId !== "trivia" && gameId !== "quiz") || rawState.engine !== "server-v1") return null;
   const state = rawState as unknown as TriviaState;
   if (actionType === "answer") {
     if (state.phase !== "question") return { state: rawState, changed: false, error: "This round is not accepting answers." };
@@ -38,7 +40,8 @@ export function applyServerGameCommand(gameId: string, rawState: Record<string, 
     if (state.answered[context.actorId]) return { state: rawState, changed: false };
     const answer = Number((payload as { index?: unknown }).index);
     const secondsLeft = Math.max(0, Math.ceil((state.deadline - context.now) / 1000));
-    const points = answer === state.correct ? (secondsLeft > 8 ? 2 : 1) : 0;
+    const fastThreshold = state.game === "quiz" ? 6 : 8;
+    const points = answer === state.correct ? (secondsLeft > fastThreshold ? (state.game === "quiz" ? 3 : 2) : 1) : 0;
     return { changed: true, state: { ...state, answered: { ...state.answered, [context.actorId]: true }, scores: points ? { ...state.scores, [context.actorId]: (state.scores[context.actorId] ?? 0) + points } : state.scores } };
   }
   if (actionType === "reveal") {
@@ -53,7 +56,7 @@ export function applyServerGameCommand(gameId: string, rawState: Record<string, 
     if (state.phase !== "result") return { state: rawState, changed: false, error: "Reveal the current answer first." };
     const round = state.round + 1;
     if (round >= TRIVIA_ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
-    return { changed: true, state: { ...state, phase: "question", round, ...triviaQuestion(round, state.locale), deadline: context.now + 15_000, answered: {} } };
+    return { changed: true, state: { ...state, phase: "question", round, ...triviaQuestion(round, state.locale), deadline: context.now + (state.game === "quiz" ? 12_000 : 15_000), answered: {} } };
   }
   return { state: rawState, changed: false, error: "Unsupported server game command." };
 }
