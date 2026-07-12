@@ -221,7 +221,7 @@ export default function PartyRoom({ party, actorId }: { party: Party; actorId: s
 
   function launchGame(game: GameId) {
     setSelectedGame(game);
-    fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", partyId: party.id, game }) })
+    fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", partyId: party.id, game, config: { locale } }) })
       .then((r) => r.json()).then((data) => {
         if (data.session) {
           setGameSession(data.session.id);

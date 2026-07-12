@@ -1,153 +1,76 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStageGame } from "@/app/components/useStageGame";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
 
-const QUESTIONS_EN = [
-  { q: "What planet is closest to the Sun?", opts: ["Venus", "Mercury", "Mars", "Earth"], correct: 1 },
-  { q: "How many bones in the human body?", opts: ["106", "206", "306", "406"], correct: 1 },
-  { q: "Who painted the Mona Lisa?", opts: ["Michelangelo", "Da Vinci", "Raphael", "Donatello"], correct: 1 },
-  { q: "Which element has symbol Fe?", opts: ["Silver", "Iron", "Copper", "Tin"], correct: 1 },
-  { q: "What year did WWII end?", opts: ["1943", "1944", "1945", "1946"], correct: 2 },
-  { q: "Largest desert on Earth?", opts: ["Sahara", "Gobi", "Antarctic", "Arabian"], correct: 2 },
-  { q: "Which country invented paper?", opts: ["India", "Egypt", "China", "Greece"], correct: 2 },
-  { q: "Longest river in the world?", opts: ["Amazon", "Nile", "Yangtze", "Mississippi"], correct: 1 },
-  { q: "How many hearts does an octopus have?", opts: ["1", "2", "3", "4"], correct: 2 },
-  { q: "Which animal can sleep for 3 years?", opts: ["Bear", "Snail", "Turtle", "Frog"], correct: 1 },
-  { q: "Rarest blood type?", opts: ["A", "B", "AB", "O"], correct: 2 },
-  { q: "How many stars on the US flag?", opts: ["48", "49", "50", "52"], correct: 2 },
-];
+type GameState = {
+  engine: string;
+  round: number;
+  phase: "question" | "result" | "finished";
+  question: string;
+  options: string[];
+  correct: number;
+  deadline: number;
+  scores: Record<string, number>;
+  answered: Record<string, boolean>;
+  players: string[];
+};
 
-const QUESTIONS_RU = [
-  { q: "Какая планета ближе всего к Солнцу?", opts: ["Венера", "Меркурий", "Марс", "Земля"], correct: 1 },
-  { q: "Сколько костей в теле человека?", opts: ["106", "206", "306", "406"], correct: 1 },
-  { q: "Кто написал Мону Лизу?", opts: ["Микеланджело", "Да Винчи", "Рафаэль", "Донателло"], correct: 1 },
-  { q: "У какого элемента символ Fe?", opts: ["Серебро", "Железо", "Медь", "Олово"], correct: 1 },
-  { q: "В каком году закончилась Вторая мировая?", opts: ["1943", "1944", "1945", "1946"], correct: 2 },
-  { q: "Самая большая пустыня на Земле?", opts: ["Сахара", "Гоби", "Антарктическая", "Аравийская"], correct: 2 },
-  { q: "Какая страна изобрела бумагу?", opts: ["Индия", "Египет", "Китай", "Греция"], correct: 2 },
-  { q: "Самая длинная река в мире?", opts: ["Амазонка", "Нил", "Янцзы", "Миссисипи"], correct: 1 },
-  { q: "Сколько сердец у осьминога?", opts: ["1", "2", "3", "4"], correct: 2 },
-  { q: "Какое животное может спать 3 года?", opts: ["Медведь", "Улитка", "Черепаха", "Лягушка"], correct: 1 },
-  { q: "Самая редкая группа крови?", opts: ["A", "B", "AB", "O"], correct: 2 },
-  { q: "Сколько звёзд на флаге США?", opts: ["48", "49", "50", "52"], correct: 2 },
-];
+const initialState = (): GameState => ({ engine: "server-v1", round: 0, phase: "question", question: "", options: [], correct: -1, deadline: 0, scores: {}, answered: {}, players: [] });
 
-type GameState = { round: number; phase: "question" | "result"; question: string; options: string[]; correct: number; timer: number; scores: Record<string, number>; answered: Record<string, boolean> };
-
-export default function Trivia({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+export default function Trivia({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale } = useLocale();
-  const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
-  const questions = useMemo(() => (locale === "ru" ? [...QUESTIONS_RU] : [...QUESTIONS_EN]), [locale]);
-  const [chosen, setChosen] = useState<number | null>(null);
   const isHost = role === "stage";
+  const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, initialState);
+  const controller = useControllerGame<GameState>(!isHost ? sessionId ?? null : null, initialState());
+  const state = isHost ? stage.state : controller.state;
+  const sendAction = isHost ? stage.sendAction : controller.sendAction;
+  const complete = stage.complete;
+  const [chosen, setChosen] = useState<number | null>(null);
+  const [now, setNow] = useState(0);
+  const revealRequested = useRef(-1);
+  const completionRequested = useRef(false);
 
-  const stageHook = useStageGame<GameState>(
-    isHost ? (sessionId ?? null) : null,
-    () => ({ round: 0, phase: "question", question: questions[0].q, options: questions[0].opts, correct: questions[0].correct, timer: 15, scores: {}, answered: {} })
-  );
-  const controllerHook = useControllerGame<GameState>(
-    !isHost ? (sessionId ?? null) : null,
-    { round: 0, phase: "question", question: questions[0].q, options: questions[0].opts, correct: questions[0].correct, timer: 15, scores: {}, answered: {} }
-  );
+  useEffect(() => { setChosen(null); revealRequested.current = -1; }, [state.round]);
+  useEffect(() => {
+    if (state.phase !== "question") return;
+    const timer = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, [state.phase, state.round]);
 
-  const state = isHost ? stageHook.state : controllerHook.state;
-  const sendAction = isHost ? stageHook.sendAction : controllerHook.sendAction;
-  const setState = isHost ? stageHook.setState : undefined;
-  const playerActions = isHost ? stageHook.playerActions : [];
-  const clearActions = isHost ? stageHook.clearActions : undefined;
-  const complete = isHost ? stageHook.complete : undefined;
-
-  useEffect(() => { setChosen(null); }, [state.round]);
+  const seconds = now > 0 ? Math.max(0, Math.ceil((state.deadline - now) / 1000)) : 15;
+  const everyoneAnswered = state.players.length > 0 && state.players.every((id) => state.answered[id]);
 
   useEffect(() => {
-    if (!isHost || playerActions.length === 0 || state.phase !== "question") return;
-    for (const a of playerActions) {
-      if (a.actionType === "answer") {
-        const idx = (a.payload as { index: number }).index;
-        setState?.((prev) => {
-          if (prev.answered[a.userId]) return prev;
-          return {
-            ...prev,
-            answered: { ...prev.answered, [a.userId]: true },
-            scores: idx === prev.correct
-              ? { ...prev.scores, [a.userId]: (prev.scores[a.userId] || 0) + (prev.timer > 8 ? 2 : 1) }
-              : prev.scores,
-          };
-        });
-      }
-    }
-    clearActions?.();
-  }, [playerActions, state.phase, isHost, setState, clearActions]);
+    if (!isHost || state.phase !== "question" || (seconds > 0 && !everyoneAnswered) || revealRequested.current === state.round) return;
+    revealRequested.current = state.round;
+    sendAction("reveal");
+  }, [everyoneAnswered, isHost, seconds, sendAction, state.phase, state.round]);
 
   useEffect(() => {
-    if (!isHost || state.phase !== "question" || state.timer <= 0) return;
-    const id = setTimeout(() => setState?.((p) => ({ ...p, timer: p.timer - 1 })), 1000);
-    return () => clearTimeout(id);
-  }, [state.phase, state.timer, isHost, setState]);
-
-  useEffect(() => {
-    if (!isHost) return;
-    if (state.phase === "question" && state.timer === 0) setState?.((p) => ({ ...p, phase: "result" }));
-  }, [state.timer, state.phase, isHost, setState]);
-
-  const answer = useCallback((idx: number) => {
-    if (chosen !== null) return;
-    setChosen(idx);
-    sendAction("answer", { index: idx });
-  }, [chosen, sendAction]);
-
-  const next = useCallback(() => {
-    if (!isHost) return;
-    const nextRound = state.round + 1;
-    if (nextRound >= questions.length) {
-      complete?.();
-      const top = Object.values(state.scores).reduce((a, b) => Math.max(a, b), 0);
-      onSave(top);
-      return;
-    }
-    const q = questions[nextRound];
-    setState?.((p) => ({ ...p, round: nextRound, phase: "question", question: q.q, options: q.opts, correct: q.correct, timer: 15 }));
-  }, [state.round, state.scores, questions, isHost, setState, complete, onSave]);
+    if (!isHost || state.phase !== "finished" || completionRequested.current) return;
+    completionRequested.current = true;
+    complete();
+    onSave(0);
+  }, [complete, isHost, onSave, state.phase]);
 
   const sorted = useMemo(() => Object.entries(state.scores).sort(([, a], [, b]) => b - a), [state.scores]);
+  const copy = locale === "ru" ? { round: "Раунд", correct: "Правильный ответ", points: "очк.", next: "Дальше", finish: "Завершить", answered: "Ответ принят", waiting: "Ждём вопрос…" } : { round: "Round", correct: "Correct answer", points: "pts", next: "Next", finish: "Finish", answered: "Answer accepted", waiting: "Waiting for the question…" };
 
-  return (
-    <div className="party-game-board game-board-enter">
-      <span className="game-step">{t("round")} {state.round + 1}/{questions.length}</span>
-      <h3>{state.question}</h3>
-      <p style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 5 ? "var(--red)" : "var(--lime)" }}>{state.timer}s</p>
+  function answer(index: number) {
+    if (chosen !== null || state.phase !== "question" || seconds <= 0) return;
+    setChosen(index);
+    sendAction("answer", { index });
+  }
 
-      {state.phase === "question" && (
-        <div className="quiz-options">
-          {state.options.map((opt, i) => (
-            <button key={i} className={chosen === i ? "selected" : ""} disabled={chosen !== null} onClick={() => answer(i)} type="button">{opt}</button>
-          ))}
-        </div>
-      )}
-      {chosen !== null && state.phase === "question" && <p className="controller-answered">{t("answered")}</p>}
-
-      {state.phase === "result" && (
-        <div>
-          <p style={{ color: "var(--lime)", fontWeight: 700 }}>{t("correct")}: {state.options[state.correct]}</p>
-          {sorted.length > 0 && (
-            <div style={{ marginTop: 12 }}>
-              {sorted.map(([uid, score], i) => <p key={uid}>{i + 1}. {uid.slice(0, 8)} — {score} {t("pts")}</p>)}
-            </div>
-          )}
-          {isHost && (
-            <div className="game-primary-actions">
-              <button className="demo-action demo-action--lime" onClick={next} type="button">{state.round >= questions.length - 1 ? t("finish") : t("next")}</button>
-            </div>
-          )}
-        </div>
-      )}
-      {sessionId && <span className="multiplayer-badge">LIVE</span>}
-    </div>
-  );
+  return <div className="party-game-board game-board-enter trivia-board">
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/5</span><strong className={seconds <= 5 ? "is-ending" : ""}>{seconds}s</strong></div>
+    <h3>{state.question || copy.waiting}</h3>
+    {state.phase === "question" && <div className="quiz-options">{state.options.map((option, index) => <button key={option} className={chosen === index ? "selected" : ""} disabled={chosen !== null || seconds <= 0} onClick={() => answer(index)} type="button"><b>{String.fromCharCode(65 + index)}</b><span>{option}</span></button>)}</div>}
+    {chosen !== null && state.phase === "question" && <p className="controller-answered">{copy.answered}</p>}
+    {state.phase === "result" && <div className="trivia-result"><p><b>{copy.correct}:</b> {state.options[state.correct]}</p>{sorted.length > 0 && <div className="trivia-scores">{sorted.map(([userId, score], index) => <p key={userId}><span>#{index + 1} {userId.slice(-8)}</span><strong>{score} {copy.points}</strong></p>)}</div>}{isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 4 ? copy.finish : copy.next}</button>}</div>}
+    {sessionId && <span className="multiplayer-badge">LIVE</span>}
+  </div>;
 }
-
-const EN: Record<string, string> = { round: "Round", correct: "Correct answer", pts: "pts", finish: "Finish", next: "Next", answered: "Answered!" };
-const RU: Record<string, string> = { round: "Раунд", correct: "Правильный ответ", pts: "очк", finish: "Завершить", next: "Далее", answered: "Отвечено!" };

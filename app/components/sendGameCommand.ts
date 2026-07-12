@@ -13,7 +13,7 @@ export async function sendGameCommand(sessionId: string, actionType: string, pay
         body: JSON.stringify({ action: "playerAction", sessionId, actionType, payload, clientMutationId }),
       });
       if (response.ok) return await response.json() as { ok: true; commandId: string };
-      if (response.status < 500 && response.status !== 429) throw new Error(`Game command rejected (${response.status})`);
+      if (response.status < 500 && response.status !== 409 && response.status !== 429) throw new Error(`Game command rejected (${response.status})`);
       lastError = new Error(`Game command retryable failure (${response.status})`);
     } catch (error) { lastError = error; }
     if (attempt < 2) await new Promise((resolve) => window.setTimeout(resolve, 350 * 2 ** attempt));

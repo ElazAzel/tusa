@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import {
-  addGameAction, addGameScore, createGameSession, getActiveGameSessions, getGameScores,
+  addGameAction, addGameScore, createGameSession, getActiveGameSessions, getGameScores, getGameActionByMutationId,
   getGameSessionById, getPartyMembers, getPendingGameActions, joinGameSession,
   leaveGameSession, requirePartyMember, updateGameSession, trackAnalytics, grantEngagementReward,
   addPassXp, trackQuestProgress,
@@ -13,6 +13,7 @@ import { publish } from "@/lib/live";
 import { resolveActor } from "@/lib/guest-session";
 import { deriveVerifiedScore } from "@/lib/games/scoring";
 import { parseGameCommand } from "@/lib/games/commands";
+import { applyServerGameCommand, initialServerGameState, isServerGameState } from "@/lib/games/engine";
 
 const gameRequestSchema = z.object({
   action: z.enum(["create", "join", "start", "leave", "update", "complete", "score", "playerAction"]),
@@ -75,11 +76,13 @@ export async function POST(request: Request) {
       if (current.createdBy !== userId) return apiError("Only the game creator can start.", 403);
       if (current.status !== "lobby") return apiError("Only a lobby can be started.", 409);
       if (current.participants.length < 2) return apiError("At least two players are required.", 400);
-      const session = await updateGameSession(body.sessionId, userId, { status: "active", expectedVersion: current.version });
+      const initialState = initialServerGameState(current.game, current.participants, current.config);
+      const session = await updateGameSession(body.sessionId, userId, { status: "active", state: initialState ?? undefined, expectedVersion: current.version });
       if (!session) return apiError("Session version changed. Refresh and retry.", 409);
       const responseSession = { ...session, participants: current.participants, createdBy: current.createdBy };
-      publish(`game:${body.sessionId}`, { type: "session:started", session: responseSession });
-      publish(`party:${session.partyId}`, { type: "session:updated", session: responseSession });
+      const publicSession = sanitizeControllerSession(responseSession, "");
+      publish(`game:${body.sessionId}`, { type: "session:started", session: publicSession });
+      publish(`party:${session.partyId}`, { type: "session:updated", session: publicSession });
       return NextResponse.json({ session: responseSession });
     }
 
@@ -128,11 +131,36 @@ export async function POST(request: Request) {
 
     if (body.action === "playerAction") {
       if (!body.actionType) return apiError("actionType is required.", 400);
+      const actionType = body.actionType;
       if (current.status !== "lobby" && current.status !== "active" && current.status !== "paused") return apiError("The session is not accepting actions.", 409);
-      const command = parseGameCommand(current.game, body.actionType, body.payload);
+      const command = parseGameCommand(current.game, actionType, body.payload);
       if (!command.success) return apiError(command.error, 400, "details" in command ? command.details : undefined);
       const commandId = body.clientMutationId ?? randomUUID();
-      const gameAction = await addGameAction(body.sessionId, userId, body.actionType, command.payload, commandId);
+      const existingCommand = await getGameActionByMutationId(body.sessionId, userId, commandId);
+      if (existingCommand) return NextResponse.json({ ok: true, commandId, action: existingCommand, duplicate: true });
+
+      if (isServerGameState(current.state)) {
+        let snapshot = current;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const creatorId = String(snapshot.createdBy ?? "");
+          const reduced = applyServerGameCommand(snapshot.game, snapshot.state, actionType, command.payload, { actorId: userId, creatorId, participants: snapshot.participants, now: Date.now() });
+          if (!reduced) break;
+          if (reduced.error) return apiError(reduced.error, 409);
+          if (!reduced.changed) return NextResponse.json({ ok: true, commandId, duplicate: true, session: sanitizeControllerSession(snapshot, userId) });
+          const updated = await updateGameSession(body.sessionId, creatorId, { state: reduced.state, expectedVersion: snapshot.version });
+          if (updated) {
+            const gameAction = await addGameAction(body.sessionId, userId, actionType, command.payload, commandId);
+            const responseSession = { ...updated, participants: snapshot.participants, createdBy: snapshot.createdBy };
+            publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, state: sanitizeControllerState(snapshot.game, reduced.state, ""), version: updated.version });
+            return NextResponse.json({ ok: true, commandId, action: gameAction, session: sanitizeControllerSession(responseSession, userId) });
+          }
+          const latest = await getGameSessionById(body.sessionId);
+          if (!latest) return apiError("Session not found.", 404);
+          snapshot = latest;
+        }
+        return apiError("Concurrent game update. Retry the command.", 409, { retry: true });
+      }
+      const gameAction = await addGameAction(body.sessionId, userId, actionType, command.payload, commandId);
       publish(`game:${body.sessionId}`, {
         type: "player:action",
         id: gameAction.id,
@@ -201,6 +229,7 @@ function sanitizeControllerSession(session: SessionView, userId: string) {
 function sanitizeControllerState(game: string, rawState: Record<string, unknown>, userId: string) {
   const state = structuredClone(rawState);
   const phase = String(state.phase ?? "");
+  if (game === "trivia" && phase === "question") state.correct = -1;
   if ((game === "werewolf" || game === "mafia") && phase !== "reveal") {
     const roles = (state.roles ?? {}) as Record<string, unknown>;
     state.roles = roles[userId] ? { [userId]: roles[userId] } : {};
