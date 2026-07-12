@@ -120,6 +120,7 @@ export default function PartyRoom({ party }: { party: Party }) {
   const router = useRouter();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatStreamRef = useRef<HTMLDivElement>(null);
+  const gameRecoveryRef = useRef(false);
   const { locale, t } = useLocale();
   const isOwner = party.role === "owner";
   const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/join/${party.inviteCode}` : "";
@@ -207,10 +208,24 @@ export default function PartyRoom({ party }: { party: Party }) {
   useEffect(() => { fetch(`/api/parties/${party.inviteCode}/members`).then((r) => r.json()).then((data) => { if (data.members) setMembers(data.members); }).catch(() => undefined); }, [party.inviteCode]);
 
   useEffect(() => {
-    fetch(`/api/games?partyId=${party.id}`).then((r) => r.json()).then((data) => {
-      if (data.sessions) setActiveSessions(data.sessions);
+    const loadSessions = () => fetch(`/api/games?partyId=${party.id}`).then((r) => r.json()).then((data) => {
+      if (!data.sessions) return;
+      const sessions = data.sessions as (GameSession & { participants: string[] })[];
+      setActiveSessions(sessions);
+      if (!gameRecoveryRef.current && user?.id) {
+        const resumable = sessions.find((session) => session.status === "active" && session.participants.includes(user.id));
+        if (resumable && gameCatalogue.some((game) => game.id === resumable.game)) {
+          gameRecoveryRef.current = true;
+          setGameSession(resumable.id);
+          setSelectedGame(resumable.game as GameId);
+          setTab("games");
+        }
+      }
     }).catch(() => undefined);
-  }, [party.id]);
+    loadSessions();
+    const poll = setInterval(loadSessions, 1800);
+    return () => clearInterval(poll);
+  }, [party.id, user?.id]);
 
   useEffect(() => {
     liveParty.events.forEach((ev) => {
