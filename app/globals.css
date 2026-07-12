@@ -3670,6 +3670,95 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .join-error { margin: 14px 0; padding: 12px; border: 2px solid var(--black); border-radius: 12px; background: #fee2e2; color: #7f1d1d; font-weight: 750; text-align: left; }
 .guest-account-link { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; margin-top: 10px; color: var(--black); font-weight: 750; text-underline-offset: 4px; }
 
+/* ===== Product-wide accessibility and interaction polish ===== */
+.skip-link { position: fixed; z-index: 10000; top: 10px; left: 10px; padding: 11px 15px; border: var(--line); border-radius: 10px; background: var(--lime); box-shadow: var(--shadow); color: var(--black); font-weight: 900; transform: translateY(-160%); transition: transform var(--dur) var(--ease); }
+.skip-link:focus { transform: translateY(0); }
+.sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important; }
+button, [role="button"], input, select, textarea, summary, a { touch-action: manipulation; }
+button:active:not(:disabled), .button:active, a.game-card-footer:active { transform: translate(2px, 2px); }
+:where(h1,h2,h3,.party-room-panel h2,.party-room-hero h1,.profile-hero h2,.partners-hero h1,.promo-redeem-card h2) { font-kerning: normal; font-variant-ligatures: common-ligatures; }
+
+/* ===== Cookie consent: compact branded sheet, safe on mobile keyboards ===== */
+.cookie-banner { left: 50%; right: auto; bottom: max(14px, env(safe-area-inset-bottom, 0px)); width: min(calc(100% - 28px), 860px); min-height: 64px; padding: 13px 14px 13px 18px; border: var(--line); border-radius: 16px; box-shadow: var(--shadow); transform: translateX(-50%); }
+.cookie-banner p { max-width: 68ch; color: var(--black); font-size: 13px; line-height: 1.45; }
+.cookie-banner button { min-width: 64px; min-height: 44px; }
+
+/* ===== Canonical game catalogue: search-first on mobile ===== */
+.games-page { max-width: none; min-height: 100dvh; padding: 24px clamp(14px, 4vw, 56px) 72px; background: var(--cream); color: var(--black); }
+.catalogue-header, .catalogue-hero, .catalogue-shell { width: min(100%, 1200px); margin-inline: auto; }
+.catalogue-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
+.catalogue-header .brand-logo--long { height: 56px; }
+.catalogue-header > a:last-child { min-height: 44px; display: inline-flex; align-items: center; font-size: 13px; font-weight: 900; text-decoration: underline; text-underline-offset: 4px; }
+.catalogue-hero { overflow: hidden; position: relative; padding: clamp(26px, 6vw, 68px); border: var(--line); border-radius: 26px; background: var(--blue); box-shadow: var(--shadow-lg); color: var(--white); }
+.catalogue-hero::after { content: "32"; position: absolute; right: -18px; bottom: -44px; color: rgba(255,255,255,.12); font: 900 clamp(120px, 22vw, 270px)/1 var(--font-unbounded), sans-serif; pointer-events: none; }
+.catalogue-hero > span { position: relative; z-index: 1; color: var(--lime); font: 900 11px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; }
+.games-page .catalogue-hero h1 { position: relative; z-index: 1; max-width: 11ch; margin: 16px 0 14px; color: var(--white); font: 850 clamp(42px, 8vw, 92px)/.98 var(--font-unbounded), sans-serif; letter-spacing: -.025em; text-wrap: balance; }
+.catalogue-hero p { position: relative; z-index: 1; max-width: 620px; margin: 0; color: #eeeeff; font-size: clamp(16px, 2vw, 20px); line-height: 1.55; }
+.catalogue-shell { margin-top: 30px; }
+.catalogue-controls { position: sticky; z-index: 10; top: 10px; display: grid; grid-template-columns: minmax(240px,1fr) auto auto; align-items: center; gap: 12px; margin-bottom: 22px; padding: 12px; border: var(--line); border-radius: 18px; background: rgba(247,247,242,.96); box-shadow: var(--shadow); backdrop-filter: blur(12px); }
+.catalogue-search { min-height: 48px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px; padding: 0 12px; border: 2px solid var(--black); border-radius: 11px; background: var(--white); }
+.catalogue-search input { width: 100%; min-width: 0; height: 44px; border: 0; outline: 0; background: transparent; color: var(--black); font-size: 16px; }
+.catalogue-filters { display: flex; gap: 8px; }
+.catalogue-filters button, .catalogue-empty button { min-height: 44px; padding: 8px 12px; border: 2px solid var(--black); border-radius: 999px; background: var(--white); box-shadow: 2px 2px 0 var(--black); color: var(--black); cursor: pointer; font-size: 12px; font-weight: 900; white-space: nowrap; }
+.catalogue-filters button.active { background: var(--lime); transform: translate(2px,2px); box-shadow: none; }
+.catalogue-count { min-width: 74px; font: 900 11px var(--font-mono), monospace; text-align: right; text-transform: uppercase; }
+.catalogue-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; }
+.catalogue-grid .game-card { min-height: 310px; padding: 24px; border-radius: 18px; box-shadow: 5px 5px 0 var(--black); }
+.catalogue-grid .game-card h2 { margin-bottom: 10px; font-size: clamp(19px, 2vw, 25px); line-height: 1.08; letter-spacing: -.015em; }
+.catalogue-grid .game-card p { color: inherit; font-size: 14px; line-height: 1.5; opacity: .9; }
+.catalogue-empty { min-height: 280px; display: grid; place-items: center; align-content: center; gap: 12px; padding: 30px; border: 3px dashed var(--black); border-radius: 20px; text-align: center; }
+.catalogue-empty > span { color: var(--pink); font-size: 48px; }
+
+/* ===== Auth: TUSA shell around Clerk ===== */
+.auth-page { padding: max(18px, env(safe-area-inset-top, 0px)) 14px max(18px, env(safe-area-inset-bottom, 0px)); }
+.auth-shell { width: min(100%, 540px); display: grid; gap: 16px; }
+.auth-shell > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px; border: var(--line); border-radius: 16px; background: var(--black); box-shadow: var(--shadow); color: var(--white); }
+.auth-shell > header .brand-logo--long { height: 48px; }
+.auth-shell > header > span { max-width: 180px; color: var(--lime); font: 800 10px/1.35 var(--font-mono), monospace; text-align: right; text-transform: uppercase; }
+.auth-card { border: var(--line); border-radius: 22px; background: var(--white); box-shadow: var(--shadow-lg); }
+.auth-card > div, .auth-card .clerk-card-box { width: 100%; border: 0 !important; box-shadow: none !important; }
+.auth-card .clerk-card { width: 100%; border-radius: 19px !important; box-shadow: none !important; }
+.auth-card .clerk-title { font-family: var(--font-unbounded), sans-serif !important; font-size: 22px !important; letter-spacing: -.015em !important; }
+.auth-card .clerk-primary { min-height: 48px; border: 2px solid var(--black); background: var(--lime) !important; box-shadow: 3px 3px 0 var(--black); color: var(--black) !important; font-weight: 900 !important; }
+.auth-card .clerk-social { min-height: 48px; border: 2px solid var(--black) !important; }
+.auth-card .clerk-link { color: var(--blue) !important; font-weight: 800 !important; }
+.auth-loading { min-height: 420px; display: grid; place-items: center; align-content: center; gap: 10px; padding: 32px; border-radius: 19px; background: var(--white); color: var(--black); text-align: center; }
+.auth-loading-mark { width: 64px; height: 64px; display: grid; place-items: center; border: var(--line); border-radius: 16px; background: var(--lime); box-shadow: var(--shadow); font: 900 28px var(--font-unbounded), sans-serif; animation: auth-loading-pulse 1s ease-in-out infinite alternate; }
+.auth-loading strong { margin-top: 10px; font: 800 18px/1.2 var(--font-unbounded), sans-serif; }
+.auth-loading small { color: #555; font-weight: 700; }
+@keyframes auth-loading-pulse { to { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--black); } }
+.auth-shell > footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; color: var(--black); font-size: 12px; font-weight: 800; }
+.auth-shell > footer a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 820px) {
+  .catalogue-controls { position: relative; top: auto; grid-template-columns: 1fr; }
+  .catalogue-filters { flex-wrap: wrap; overflow: visible; padding: 2px; }
+  .catalogue-count { text-align: left; }
+  .catalogue-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width: 560px) {
+  .cookie-banner { align-items: stretch; flex-direction: column; gap: 10px; padding: 14px; }
+  .cookie-banner button { width: 100%; }
+  .catalogue-header { margin-bottom: 18px; }
+  .catalogue-header .brand-logo--long { height: 44px; }
+  .catalogue-header > a:last-child { max-width: 120px; text-align: right; }
+  .catalogue-hero { padding: 27px 20px 31px; border-radius: 20px; box-shadow: 6px 6px 0 var(--black); }
+  .games-page .catalogue-hero h1 { font-size: clamp(38px, 13vw, 54px); }
+  .catalogue-grid { grid-template-columns: 1fr; }
+  .catalogue-grid .game-card { min-height: 250px; padding: 20px; }
+  .auth-shell > header > span { display: none; }
+  .auth-shell > header { justify-content: center; }
+  .auth-loading { min-height: 360px; }
+}
+
+@media (prefers-reduced-motion: reduce) { .auth-loading-mark { animation: none; } }
+
+@media (max-width: 680px) {
+  .hero h1, .user-app-hero h1, .party-room-hero h1, .partners-hero h1, .create-copy h1, .profile-editor-card h1, .join-party-card h1 { letter-spacing: -.015em; line-height: 1.03; }
+  .party-room-panel h2, .profile-hero h2, .promo-redeem-card h2 { letter-spacing: -.01em; line-height: 1.08; }
+}
+
 /* ===== Bottom Nav (max 5 items) ===== */
 .party-room-hero > div:last-child.party-bottom-nav { display: flex; gap: 4px; flex-wrap: nowrap; margin-top: 18px; }
 .party-room-hero > div:last-child.party-bottom-nav > button {

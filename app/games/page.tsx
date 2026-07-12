@@ -3,6 +3,8 @@ import Link from "next/link";
 import { cookies, headers } from "next/headers";
 import { copy, normalizeLocale } from "@/lib/i18n";
 import { GAME_COUNT, GAME_MANIFEST, formatPlayerRange } from "@/lib/games/manifest";
+import BrandLogo from "@/app/components/BrandLogo";
+import GameCatalogue from "./GameCatalogue";
 
 export async function generateMetadata(): Promise<Metadata> {
   const store = await cookies();
@@ -15,8 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const labels = {
-  ru: { beta: "Мультиплеер · beta", quick_tool: "Инструмент тусы", full_game: "Полная игра", players: "игроков", open: "Правила и детали" },
-  en: { beta: "Multiplayer · beta", quick_tool: "Party tool", full_game: "Full game", players: "players", open: "Rules and details" },
+  ru: { beta: "Мультиплеер · beta", quick_tool: "Инструмент тусы", full_game: "Полная игра", players: "игроков", open: "Правила и детали", search: "Найти игру по названию или механике", all: "Все режимы", full: "Полные игры", tools: "Быстрые режимы", result: "режимов", empty: "Ничего не найдено — сбрось фильтры" },
+  en: { beta: "Multiplayer · beta", quick_tool: "Party tool", full_game: "Full game", players: "players", open: "Rules and details", search: "Search by title or mechanic", all: "All modes", full: "Full games", tools: "Quick modes", result: "modes", empty: "No matches — reset the filters" },
 } as const;
 
 export default async function GamesPage() {
@@ -28,25 +30,9 @@ export default async function GamesPage() {
 
   return (
     <main className="games-page">
-      <Link href="/" className="legal-back">{t("backToParties")}</Link>
-      <h1>{t("gamesTitle")}</h1>
-      <p className="games-band">{GAME_COUNT} {t("gamesBandTitle")}</p>
-      <div className="games-grid">
-        {GAME_MANIFEST.map((game) => (
-          <article key={game.id} className={`game-card game-card--${game.tone}`}>
-            <div className="game-card-meta">
-              <span>{game.category === "quick_tool" ? ui.quick_tool : ui.full_game}</span>
-              <span>{formatPlayerRange(game)} {ui.players}</span>
-            </div>
-            <h2>{t(game.titleKey)}</h2>
-            <p>{t(game.descKey)}</p>
-            <div className="game-card-footer">
-              <span className="game-status">{ui.beta}</span>
-              <Link href={`/games/${game.seo.slug}`}>{ui.open} <span aria-hidden="true">→</span></Link>
-            </div>
-          </article>
-        ))}
-      </div>
+      <header className="catalogue-header"><Link href="/" aria-label="TUSA.game"><BrandLogo priority /></Link><Link href="/">{t("backToParties")}</Link></header>
+      <section className="catalogue-hero"><span>{GAME_COUNT} · TUSA.game</span><h1>{t("gamesTitle")}</h1><p>{t("gamesBandLead")}</p></section>
+      <GameCatalogue copy={{ search: ui.search, all: ui.all, full: ui.full, tools: ui.tools, result: ui.result, empty: ui.empty }} games={GAME_MANIFEST.map((game) => ({ id: game.id, title: t(game.titleKey), description: t(game.descKey), category: game.category, categoryLabel: game.category === "quick_tool" ? ui.quick_tool : ui.full_game, playerLabel: `${formatPlayerRange(game)} ${ui.players}`, statusLabel: ui.beta, openLabel: ui.open, slug: game.seo.slug, tone: game.tone }))} />
     </main>
   );
 }

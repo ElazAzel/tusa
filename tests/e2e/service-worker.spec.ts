@@ -12,7 +12,10 @@ test("service worker never intercepts the web manifest", async ({ browser }) => 
   });
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => navigator.serviceWorker?.ready);
+  await page.evaluate(async () => {
+    if ("serviceWorker" in navigator) await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+  });
+  await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length), { timeout: 10_000 }).toBeGreaterThan(0);
   await page.reload({ waitUntil: "domcontentloaded" });
 
   const manifest = await page.evaluate(async () => {

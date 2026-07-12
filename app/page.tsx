@@ -7,6 +7,7 @@ import { useAuth } from "@clerk/nextjs";
 import InstallButton from "./components/InstallButton";
 import Link from "next/link";
 import { useLocale } from "./components/LocaleProvider";
+import { GAME_COUNT, GAME_MANIFEST } from "@/lib/games/manifest";
 
 function Icon({ name, className }: { name: string; className?: string }) {
   return <span className={`material-symbols-rounded${className ? ` ${className}` : ""}`} aria-hidden="true">{name}</span>;
@@ -192,12 +193,11 @@ export default function Home() {
         <div className="container games-grid">
           <div data-reveal>
             <p className="section-kicker dark">{t("gamesBandKicker")}</p>
-            <h2 id="games-title"><span>8</span> {t("gamesBandTitle")}</h2>
+            <h2 id="games-title"><span>{GAME_COUNT}</span> {t("gamesBandTitle")}</h2>
             <p>{t("gamesBandLead")}</p>
           </div>
           <div className="game-chips" data-reveal aria-label={t("gamesBandTitle")}>
-            <span>Alias</span><span>Mafia Lite</span><span>Truth or Dare</span><span>Never Have I Ever</span>
-            <span>Beer Pong</span><span>Quiz Battle</span><span>Random Pair</span><span>Uno Tracker</span>
+            {GAME_MANIFEST.slice(0, 8).map((game) => <span key={game.id}>{t(game.titleKey)}</span>)}
           </div>
         </div>
       </section>

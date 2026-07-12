@@ -103,7 +103,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
         <ClerkProvider>
           <LocaleProvider initialLocale={locale}>
-            {children}
+            <a className="skip-link" href="#main-content">{locale === "ru" ? "К содержанию" : "Skip to content"}</a>
+            <div id="main-content">{children}</div>
             <PwaRegister />
             <MotionObserver />
             <CookieConsent />
