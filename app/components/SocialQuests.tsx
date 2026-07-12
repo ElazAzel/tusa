@@ -16,7 +16,7 @@ export default function SocialQuests({ partyId }: { partyId: string }) {
 
   const load = useCallback(() => {
     fetch(`/api/quests?partyId=${partyId}`).then((r) => r.json()).then((data) => {
-      setQuests(data.progress ?? []);
+      setQuests(Array.isArray(data.progress) ? data.progress : []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [partyId]);
 

@@ -63,8 +63,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: copy(locale, "landingTitle"),
     description: copy(locale, "landingDesc"),
     icons: {
-      icon: "/brand/tusa-game-icon.png",
-      shortcut: "/brand/tusa-game-icon.png",
+      icon: "/favicon.svg",
+      shortcut: "/favicon.svg",
       apple: "/brand/tusa-game-icon.png",
     },
     applicationName: "TUSA.game",

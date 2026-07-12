@@ -175,12 +175,51 @@ async function getSessionPartyId(sessionId: string): Promise<string | null> {
   return row ? String(row.party_id) : null;
 }
 
+let schemaV2Applied = false;
+export async function ensurePartyV2() {
+  if (schemaV2Applied) return;
+  schemaV2Applied = true;
+  const sql = db();
+  await sql`CREATE TABLE IF NOT EXISTS party_highlights (id UUID PRIMARY KEY, party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE, session_id UUID REFERENCES game_sessions(id) ON DELETE SET NULL, clerk_user_id TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'score' CHECK (type IN ('score','achievement','funny','quote','photo')), data JSONB NOT NULL DEFAULT '{}'::jsonb, thumbnail TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await sql`CREATE INDEX IF NOT EXISTS highlights_party_idx ON party_highlights (party_id, created_at DESC)`;
+  await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS theme JSONB NOT NULL DEFAULT '{}'::jsonb`;
+  await sql`ALTER TABLE game_sessions ADD COLUMN IF NOT EXISTS spectators JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_xp INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_tier INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_season TEXT NOT NULL DEFAULT ''`;
+  await sql`CREATE TABLE IF NOT EXISTS party_pass_seasons (id TEXT PRIMARY KEY, name TEXT NOT NULL, start_date DATE NOT NULL, end_date DATE NOT NULL, tiers JSONB NOT NULL DEFAULT '[]'::jsonb, active BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await sql`CREATE TABLE IF NOT EXISTS gratitude_tips (id UUID PRIMARY KEY, party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE, from_user TEXT NOT NULL, to_user TEXT NOT NULL, amount INTEGER NOT NULL CHECK (amount > 0), message TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await sql`CREATE INDEX IF NOT EXISTS gratitude_party_idx ON gratitude_tips (party_id, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS gratitude_to_idx ON gratitude_tips (to_user, created_at DESC)`;
+  await sql`CREATE TABLE IF NOT EXISTS social_quests (id TEXT PRIMARY KEY, title_key TEXT NOT NULL, desc_key TEXT NOT NULL, icon TEXT NOT NULL DEFAULT 'emoji_events', requirements JSONB NOT NULL DEFAULT '{}'::jsonb, reward_koins INTEGER NOT NULL DEFAULT 0, reward_xp INTEGER NOT NULL DEFAULT 0, reward_cosmetic TEXT NOT NULL DEFAULT '', active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await sql`CREATE TABLE IF NOT EXISTS social_quest_progress (id UUID PRIMARY KEY, quest_id TEXT NOT NULL REFERENCES social_quests(id) ON DELETE CASCADE, party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE, clerk_user_id TEXT NOT NULL, progress INTEGER NOT NULL DEFAULT 0, target INTEGER NOT NULL DEFAULT 1, claimed BOOLEAN NOT NULL DEFAULT FALSE, completed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (quest_id, party_id, clerk_user_id))`;
+  await sql`CREATE TABLE IF NOT EXISTS daily_challenges (id UUID PRIMARY KEY, game TEXT NOT NULL, date DATE NOT NULL DEFAULT CURRENT_DATE, config JSONB NOT NULL DEFAULT '{}'::jsonb, active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (game, date))`;
+  await sql`CREATE TABLE IF NOT EXISTS daily_challenge_scores (id UUID PRIMARY KEY, challenge_id UUID NOT NULL REFERENCES daily_challenges(id) ON DELETE CASCADE, clerk_user_id TEXT NOT NULL, score INTEGER NOT NULL DEFAULT 0, played_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (challenge_id, clerk_user_id))`;
+  await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS highlight_count INTEGER NOT NULL DEFAULT 0`;
+  try { await seedQuests(sql); } catch { /* already seeded */ }
+}
+
+async function seedQuests(sql: ReturnType<typeof db>) {
+  const existing = await sql`SELECT COUNT(*)::int AS cnt FROM social_quests` as unknown as { cnt: number }[];
+  if (existing[0]?.cnt > 0) return;
+  const quests = [
+    { id: "hostparty", title_key: "questHostParty", desc_key: "questDescHostParty", icon: "celebration", requirements: '{"minPlayers":4}', reward_koins: 50, reward_xp: 100 },
+    { id: "playgames", title_key: "questPlayGames", desc_key: "questDescPlayGames", icon: "sports_esports", requirements: '{"minGames":3}', reward_koins: 30, reward_xp: 60 },
+    { id: "winrounds", title_key: "questWinRounds", desc_key: "questDescWinRounds", icon: "emoji_events", requirements: '{"wins":5}', reward_koins: 40, reward_xp: 80 },
+    { id: "thankothers", title_key: "questThankOthers", desc_key: "questDescThankOthers", icon: "favorite", requirements: '{"tips":3}', reward_koins: 20, reward_xp: 40 },
+  ];
+  for (const q of quests) {
+    await sql`INSERT INTO social_quests (id, title_key, desc_key, icon, requirements, reward_koins, reward_xp) VALUES (${q.id}, ${q.title_key}, ${q.desc_key}, ${q.icon}, ${q.requirements}, ${q.reward_koins}, ${q.reward_xp}) ON CONFLICT (id) DO NOTHING`;
+  }
+}
+
 export function ensurePartySchema() {
   if (schemaPromise) return schemaPromise;
   schemaPromise = (async () => {
   const sql = db();
   const check = await sql`SELECT 1 FROM information_schema.tables WHERE table_name = 'user_profiles' LIMIT 1` as unknown as Record<string, unknown>[];
-  if (check.length > 0) return;
+  if (check.length > 0) { await ensurePartyV2(); return; }
   await sql`CREATE TABLE IF NOT EXISTS user_profiles (
     clerk_user_id TEXT PRIMARY KEY,
     display_name TEXT NOT NULL,

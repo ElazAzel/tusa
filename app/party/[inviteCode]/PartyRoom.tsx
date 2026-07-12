@@ -98,6 +98,7 @@ const gameCatalogue: Array<{ id: GameId; titleKey: TitleKey; descKey: DescKey; i
 
 export default function PartyRoom({ party }: { party: Party }) {
   const [tab, setTab] = useState<"space" | "games" | "chat" | "shop" | "gallery" | "koins" | "pass" | "quests" | "highlights" | "gratitude" | "theme" | "daily">("space");
+  const [moreOpen, setMoreOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
   const [editing, setEditing] = useState(false);
@@ -391,21 +392,29 @@ export default function PartyRoom({ party }: { party: Party }) {
           </button>
         ))}
       </div>
-      <div>
+      <div className="party-bottom-nav">
         <button onClick={() => setTab("space")} className={tab === "space" ? "active" : ""} type="button"><span className="material-symbols-rounded">home</span>{t("roomSpace")}</button>
         <button onClick={() => setTab("games")} className={tab === "games" ? "active" : ""} type="button"><span className="material-symbols-rounded">sports_esports</span>{t("roomGames")}</button>
         <button onClick={() => setTab("chat")} className={tab === "chat" ? "active" : ""} type="button"><span className="material-symbols-rounded">chat</span>{t("roomChat")}</button>
         <button onClick={() => setTab("shop")} className={tab === "shop" ? "active" : ""} type="button"><span className="material-symbols-rounded">shopping_cart</span>{t("shoppingSub")}</button>
-        <button onClick={() => setTab("gallery")} className={tab === "gallery" ? "active" : ""} type="button"><span className="material-symbols-rounded">photo_library</span>{t("gallerySub")}</button>
-        <button onClick={() => setTab("koins")} className={tab === "koins" ? "active" : ""} type="button"><span className="material-symbols-rounded">paid</span>{t("demoNavKoins")}</button>
-        <button onClick={() => setTab("pass")} className={tab === "pass" ? "active" : ""} type="button"><span className="material-symbols-rounded">stars</span>{t("passTab")}</button>
-        <button onClick={() => setTab("quests")} className={tab === "quests" ? "active" : ""} type="button"><span className="material-symbols-rounded">emoji_events</span>{t("questsTab")}</button>
-        <button onClick={() => setTab("highlights")} className={tab === "highlights" ? "active" : ""} type="button"><span className="material-symbols-rounded">auto_awesome</span>{t("highlightTab")}</button>
-        <button onClick={() => setTab("gratitude")} className={tab === "gratitude" ? "active" : ""} type="button"><span className="material-symbols-rounded">favorite</span>{t("gratitudeTab")}</button>
-        <button onClick={() => setTab("daily")} className={tab === "daily" ? "active" : ""} type="button"><span className="material-symbols-rounded">today</span>{t("dailyTitle")}</button>
-        <button onClick={() => setTab("theme")} className={tab === "theme" ? "active" : ""} type="button"><span className="material-symbols-rounded">palette</span>{t("themeTab")}</button>
+        <button onClick={() => setMoreOpen(true)} className={moreOpen ? "active" : ""} type="button"><span className="material-symbols-rounded">more_horiz</span>{t("moreTab")}</button>
       </div>
     </section>
+    {moreOpen && <div className="more-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setMoreOpen(false); }}>
+      <section className="more-modal">
+        <div className="more-modal-header"><span className="game-step">{t("moreTab")}</span><button onClick={() => setMoreOpen(false)} type="button" className="more-modal-close"><span className="material-symbols-rounded">close</span></button></div>
+        <div className="more-modal-grid">
+          <button onClick={() => { setTab("gallery"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">photo_library</span>{t("gallerySub")}</button>
+          <button onClick={() => { setTab("koins"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">paid</span>{t("demoNavKoins")}</button>
+          <button onClick={() => { setTab("pass"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">stars</span>{t("passTab")}</button>
+          <button onClick={() => { setTab("quests"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">emoji_events</span>{t("questsTab")}</button>
+          <button onClick={() => { setTab("highlights"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">auto_awesome</span>{t("highlightTab")}</button>
+          <button onClick={() => { setTab("gratitude"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">favorite</span>{t("gratitudeTab")}</button>
+          <button onClick={() => { setTab("daily"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">today</span>{t("dailyTitle")}</button>
+          <button onClick={() => { setTab("theme"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">palette</span>{t("themeTab")}</button>
+        </div>
+      </section>
+    </div>}
 
     {tab === "space" && <section className="party-room-panel">
       <div className="party-room-actions">
@@ -478,7 +487,7 @@ export default function PartyRoom({ party }: { party: Party }) {
     {tab === "highlights" && <Highlights partyId={party.id} />}
     {tab === "gratitude" && <Gratitude partyId={party.id} members={members.map((m) => ({ id: m.clerkUserId, displayName: m.displayName }))} />}
     {tab === "daily" && <DailyChallenge partyId={party.id} />}
-    {tab === "theme" && <RoomTheme partyId={party.id} currentTheme="lime" onThemeChange={(th) => {}} />}
+    {tab === "theme" && <RoomTheme inviteCode={party.inviteCode} currentTheme="lime" onThemeChange={(th) => {}} />}
     {tab === "chat" && <section className="party-room-panel party-chat">
       <h2>{t("roomChatTitle")}</h2>
       <div className="party-chat-stream" ref={chatStreamRef}>

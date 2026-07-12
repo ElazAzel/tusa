@@ -12,7 +12,7 @@ const THEMES = [
   { id: "red", name: "Red", bg: "#f87171", accent: "#000", cost: 200 },
 ];
 
-export default function RoomTheme({ partyId, currentTheme, onThemeChange }: { partyId: string; currentTheme?: string; onThemeChange?: (theme: string) => void }) {
+export default function RoomTheme({ partyId, currentTheme, onThemeChange, inviteCode }: { partyId?: string; currentTheme?: string; onThemeChange?: (theme: string) => void; inviteCode: string }) {
   const { locale, t } = useLocale();
   const [selected, setSelected] = useState(currentTheme || "lime");
   const [owned, setOwned] = useState<Set<string>>(new Set(["lime"]));
@@ -20,12 +20,12 @@ export default function RoomTheme({ partyId, currentTheme, onThemeChange }: { pa
 
   const apply = useCallback(async (id: string) => {
     setApplying(true);
-    await fetch(`/api/parties/${partyId}/theme`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: { bg: THEMES.find((t) => t.id === id)?.bg, accent: THEMES.find((t) => t.id === id)?.accent } }) });
+    await fetch(`/api/parties/${inviteCode}/theme`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: { bg: THEMES.find((t) => t.id === id)?.bg, accent: THEMES.find((t) => t.id === id)?.accent } }) });
     setSelected(id);
     setOwned((prev) => new Set(prev).add(id));
     onThemeChange?.(id);
     setApplying(false);
-  }, [partyId, onThemeChange]);
+  }, [inviteCode, onThemeChange]);
 
   return <div className="party-game-board game-board-enter">
     <span className="game-step">{t("themeTitle")}</span>

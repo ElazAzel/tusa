@@ -13,7 +13,7 @@ export default function Gratitude({ partyId, members }: { partyId: string; membe
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    fetch(`/api/gratitude?partyId=${partyId}`).then((r) => r.json()).then((data) => setTips(data ?? [])).catch(() => {}).finally(() => setLoading(false));
+    fetch(`/api/gratitude?partyId=${partyId}`).then((r) => r.json()).then((data) => setTips(Array.isArray(data) ? data : [])).catch(() => {}).finally(() => setLoading(false));
   }, [partyId]);
 
   useEffect(() => { load(); }, [load]);

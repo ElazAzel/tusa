@@ -11,7 +11,7 @@ export default function Highlights({ partyId }: { partyId: string }) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    fetch(`/api/highlights?partyId=${partyId}`).then((r) => r.json()).then((data) => setHighlights(data ?? [])).catch(() => {}).finally(() => setLoading(false));
+    fetch(`/api/highlights?partyId=${partyId}`).then((r) => r.json()).then((data) => setHighlights(Array.isArray(data) ? data : [])).catch(() => {}).finally(() => setLoading(false));
   }, [partyId]);
 
   useEffect(() => { load(); }, [load]);

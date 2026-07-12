@@ -13,7 +13,7 @@ export default function DailyChallenge({ partyId }: { partyId: string }) {
   useEffect(() => {
     fetch("/api/daily?game=trivia").then((r) => r.json()).then((data) => {
       setChallenge(data.challenge ?? null);
-      if (data.challenge?.id) fetch(`/api/daily?leaderboard=${data.challenge.id}`).then((r) => r.json()).then((lb) => setLeaderboard(lb ?? [])).catch(() => {});
+      if (data.challenge?.id) fetch(`/api/daily?leaderboard=${data.challenge.id}`).then((r) => r.json()).then((lb) => setLeaderboard(Array.isArray(lb) ? lb : [])).catch(() => {});
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 

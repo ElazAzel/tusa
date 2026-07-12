@@ -15,6 +15,11 @@ const csp = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  async redirects() {
+    return [
+      { source: "/favicon.ico", destination: "/favicon.svg", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {
