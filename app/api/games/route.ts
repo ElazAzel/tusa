@@ -12,6 +12,7 @@ import { isGameId } from "@/lib/games/manifest";
 import { publish } from "@/lib/live";
 import { resolveActor } from "@/lib/guest-session";
 import { deriveVerifiedScore } from "@/lib/games/scoring";
+import { parseGameCommand } from "@/lib/games/commands";
 
 const gameRequestSchema = z.object({
   action: z.enum(["create", "join", "start", "leave", "update", "complete", "score", "playerAction"]),
@@ -128,8 +129,10 @@ export async function POST(request: Request) {
     if (body.action === "playerAction") {
       if (!body.actionType) return apiError("actionType is required.", 400);
       if (current.status !== "lobby" && current.status !== "active" && current.status !== "paused") return apiError("The session is not accepting actions.", 409);
+      const command = parseGameCommand(current.game, body.actionType, body.payload);
+      if (!command.success) return apiError(command.error, 400, "details" in command ? command.details : undefined);
       const commandId = body.clientMutationId ?? randomUUID();
-      const gameAction = await addGameAction(body.sessionId, userId, body.actionType, body.payload ?? {}, commandId);
+      const gameAction = await addGameAction(body.sessionId, userId, body.actionType, command.payload, commandId);
       publish(`game:${body.sessionId}`, {
         type: "player:action",
         id: gameAction.id,
