@@ -32,7 +32,7 @@ const COMMANDS: Record<string, Record<string, z.ZodType>> = {
   quiplash: { answer: text("text", 240), vote: target },
   quiz: { answer: text("option", 180) },
   spyfall: { spyGuess: text("location", 120), vote: target },
-  trivia: { answer: index },
+  trivia: { answer: index, reveal: empty, next: empty },
   twoTruths: { vote: index },
   uno: { draw: empty, play: z.object({ cardId: z.string().min(1).max(80), color: z.enum(["red", "yellow", "green", "blue"]) }).strict() },
   wavelength: { clue: z.object({ value: z.number().int().min(1).max(10) }).strict(), guess: z.object({ value: z.number().int().min(1).max(10) }).strict() },

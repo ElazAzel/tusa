@@ -1176,6 +1176,12 @@ export async function addGameAction(sessionId: string, userId: string, actionTyp
   return { id: String(row.id), sessionId: String(row.session_id), userId: String(row.clerk_user_id), actionType: String(row.action_type), payload: row.payload, clientMutationId: String(row.client_mutation_id), createdAt: new Date(row.created_at as string | Date).toISOString() } as GameAction;
 }
 
+export async function getGameActionByMutationId(sessionId: string, userId: string, clientMutationId: string) {
+  await ensurePartySchema();
+  const [row] = await db()`SELECT * FROM game_actions WHERE session_id = ${sessionId} AND clerk_user_id = ${userId} AND client_mutation_id = ${clientMutationId} LIMIT 1` as unknown as Record<string, unknown>[];
+  return row ? { id: String(row.id), sessionId: String(row.session_id), userId: String(row.clerk_user_id), actionType: String(row.action_type), payload: row.payload, clientMutationId: String(row.client_mutation_id), createdAt: new Date(row.created_at as string | Date).toISOString() } as GameAction : null;
+}
+
 export async function getGameActions(sessionId: string, limit = 200) {
   await ensurePartySchema();
   const rows = await db()`SELECT * FROM game_actions WHERE session_id = ${sessionId} ORDER BY created_at ASC LIMIT ${Math.min(Math.max(limit, 1), 500)}` as unknown as Record<string, unknown>[];

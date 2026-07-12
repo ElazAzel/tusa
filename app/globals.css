@@ -3787,6 +3787,11 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .daily-quiz-skeleton { min-height: 260px; border-radius: 16px; background: linear-gradient(90deg,var(--cream),var(--white),var(--cream)); background-size: 200% 100%; animation: skeleton 1.2s linear infinite; }
 @media (max-width: 560px) { .daily-quiz-options { grid-template-columns: 1fr; }.daily-quiz-options button { min-height: 64px; }.daily-quiz h3 { font-size: 25px; line-height: 1.2; } }
 
+/* Server-authoritative Trivia controller/stage */
+.trivia-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }.trivia-head strong { font: 900 34px var(--font-mono), monospace; color: var(--lime); }.trivia-head strong.is-ending { color: var(--red); animation: pulse .7s ease-in-out infinite alternate; }
+.trivia-board .quiz-options button { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 10px; min-height: 68px; text-align: left; }.trivia-board .quiz-options button b { width: 32px; height: 32px; display: grid; place-items: center; border: 2px solid currentColor; border-radius: 8px; font-family: var(--font-mono), monospace; }.trivia-result > p { padding: 15px; border: var(--line); border-radius: 12px; background: var(--lime); color: var(--black); }.trivia-scores { display: grid; gap: 7px; margin: 16px 0; }.trivia-scores p { display: flex; justify-content: space-between; gap: 14px; margin: 0; padding: 10px 12px; border: 2px solid var(--black); border-radius: 9px; background: var(--cream); color: var(--black); }
+@media (prefers-reduced-motion: reduce) { .trivia-head strong.is-ending { animation: none; } }
+
 @media (max-width: 680px) {
   .hero h1, .user-app-hero h1, .party-room-hero h1, .partners-hero h1, .create-copy h1, .profile-editor-card h1, .join-party-card h1 { letter-spacing: -.015em; line-height: 1.03; }
   .party-room-panel h2, .profile-hero h2, .promo-redeem-card h2 { letter-spacing: -.01em; line-height: 1.08; }
