@@ -1,8 +1,8 @@
 const CACHE = "tusa-game-v4";
 const SHELL = [
   "/offline",
-  "/brand/tusa-game-logo.png",
-  "/brand/tusa-game-icon.png",
+  "/brand/tusa-logo.svg",
+  "/brand/tusa-icon.svg",
 ];
 
 self.addEventListener("install", (event) => {

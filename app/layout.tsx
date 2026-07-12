@@ -17,7 +17,7 @@ const jsonLdOrg = {
   name: "TUSA.game",
   url: SITE_ORIGIN,
   description: "Browser-based social gaming platform for real-life game nights.",
-  logo: `${SITE_ORIGIN}/brand/tusa-game-icon.png`,
+  logo: `${SITE_ORIGIN}/brand/tusa-logo.svg`,
   sameAs: [
     "https://github.com/ElazAzel/tusa",
   ],
@@ -60,8 +60,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: copy(locale, "landingTitle"),
     description: copy(locale, "landingDesc"),
     icons: {
-      icon: "/favicon.svg",
-      shortcut: "/favicon.svg",
+      icon: "/brand/tusa-icon.svg",
+      shortcut: "/brand/tusa-icon.svg",
       apple: "/brand/tusa-game-icon.png",
     },
     applicationName: "TUSA.game",
