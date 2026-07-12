@@ -101,6 +101,7 @@ export default function PartyRoom({ party }: { party: Party }) {
   const [reactionTarget, setReactionTarget] = useState<string | null>(null);
   const [rsvpFilter, setRsvpFilter] = useState<"all" | RsvpStatus>("all");
   const [gameResults, setGameResults] = useState<{ scores: GameScore[]; gameTitle: string } | null>(null);
+  const [rsvpCounts, setRsvpCounts] = useState(party.rsvpCounts);
   const { user } = useUser();
   const router = useRouter();
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -113,6 +114,7 @@ export default function PartyRoom({ party }: { party: Party }) {
   const gameRole = useGameRole(activeSession?.participants ?? [], user?.id);
 
   const liveChat = useLiveStream<Record<string, unknown>>(`chat:${party.id}`);
+  const liveParty = useLiveStream<Record<string, unknown>>(`party:${party.id}`);
 
   useEffect(() => {
     liveChat.events.forEach((raw) => {
@@ -197,6 +199,22 @@ export default function PartyRoom({ party }: { party: Party }) {
   }, [party.id]);
 
   useEffect(() => {
+    liveParty.events.forEach((ev) => {
+      if (ev.type === "session:created" && ev.session) {
+        const s = ev.session as GameSession & { participants: string[] };
+        setActiveSessions((prev) => [s, ...prev.filter((p) => p.id !== s.id)]);
+      }
+      if (ev.type === "session:updated" && ev.session) {
+        const s = ev.session as GameSession & { participants: string[] };
+        setActiveSessions((prev) => prev.map((p) => p.id === s.id ? s : p));
+      }
+      if (ev.type === "session:completed" && ev.sessionId) {
+        setActiveSessions((prev) => prev.filter((p) => p.id !== ev.sessionId));
+      }
+    });
+  }, [liveParty.events]);
+
+  useEffect(() => {
     fetch(`/api/games/payment?partyId=${party.id}`).then((r) => r.json()).then((data) => {
       if (data.paidBy) setPaymentAssignee(data.paidBy);
     }).catch(() => undefined);
@@ -261,7 +279,7 @@ export default function PartyRoom({ party }: { party: Party }) {
     setPaymentLoading(false);
   }
 
-  async function updateRsvp(status: RsvpStatus) { setRsvp(status); await fetch(`/api/parties/${party.inviteCode}/rsvp`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rsvp: status }) }); }
+  async function updateRsvp(status: RsvpStatus) { setRsvp(status); try { const res = await fetch(`/api/parties/${party.inviteCode}/rsvp`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rsvp: status }) }); if (res.ok) { const data = await res.json(); if (data.party) setRsvpCounts(data.party.rsvpCounts); } } catch { /* ignore */ } }
   async function deleteParty() { if (!confirm(t("roomDeleteConfirm"))) return; await fetch("/api/parties", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: party.id }) }); router.push("/app"); }
   async function saveEdit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); await fetch("/api/parties", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...data, id: party.id }) }); setEditing(false); router.refresh(); }
   async function generateQr() {
@@ -315,8 +333,8 @@ export default function PartyRoom({ party }: { party: Party }) {
       <h1>{party.title}</h1>
       <p>{formatEventDate(party.date, locale)} · {party.time} · {party.venue}</p>
       <div className="party-room-rsvp">
-        <b>{t("eventHubGoing")}: {party.rsvpCounts.going}</b>
-        <b>{t("eventHubThinkingCount")}: {party.rsvpCounts.maybe}</b>
+        <b>{t("eventHubGoing")}: {rsvpCounts.going}</b>
+        <b>{t("eventHubThinkingCount")}: {rsvpCounts.maybe}</b>
       </div>
       <div className="party-room-rsvp-toggle">
         {["going", "maybe", "pass"].map((status) => (

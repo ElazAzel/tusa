@@ -13,12 +13,16 @@ export function useLiveStream<T = unknown>(channel: string | null) {
 
   useEffect(() => {
     if (!channel) return;
-    const es = new EventSource(`/api/live?channel=${encodeURIComponent(channel)}`);
-    es.onmessage = (msg) => {
-      try { addEvent(JSON.parse(msg.data) as T); } catch { /* ignore pings */ }
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+    const connect = () => {
+      const es = new EventSource(`/api/live?channel=${encodeURIComponent(channel)}`);
+      es.onmessage = (msg) => {
+        try { addEvent(JSON.parse(msg.data) as T); } catch { /* ignore pings */ }
+      };
+      es.onerror = () => { es.close(); reconnectTimer = setTimeout(connect, 3000); };
     };
-    es.onerror = () => { es.close(); };
-    return () => es.close();
+    connect();
+    return () => { clearTimeout(reconnectTimer); };
   }, [channel, addEvent]);
 
   const onEvent = useCallback((handler: (event: T) => void) => { listenerRef.current = handler; }, []);

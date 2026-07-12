@@ -14,6 +14,16 @@ export function useMultiplayerGame<T extends Record<string, unknown>>(
 
   useEffect(() => {
     if (!sessionId) { _setState(initialState); return; }
+
+    fetch(`/api/games?sessionId=${sessionId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.session?.state && Object.keys(data.session.state).length > 0) {
+          if (data.session.version) versionRef.current = data.session.version;
+          _setState((prev) => ({ ...prev, ...data.session.state }));
+        }
+      }).catch(() => undefined);
+
     let reconnectTimer: ReturnType<typeof setTimeout>;
     const connect = () => {
       const es = new EventSource(`/api/live?channel=${encodeURIComponent(`game:${sessionId}`)}`);

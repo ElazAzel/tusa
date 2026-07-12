@@ -18,6 +18,7 @@ export async function POST(request: Request) {
     await joinGameSession(session.id, userId);
     const updated = await getGameSessionById(session.id);
     publish(`game:${session.id}`, { type: "session:created", session: updated });
+    publish(`party:${body.partyId}`, { type: "session:created", session: updated });
     return NextResponse.json({ session: updated }, { status: 201 });
   }
 
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
     const session = await joinGameSession(body.sessionId, userId);
     if (!session) return NextResponse.json({ error: "Сессия не найдена." }, { status: 404 });
     publish(`game:${body.sessionId}`, { type: "player:joined", sessionId: body.sessionId, userId, participants: session.participants });
+    publish(`party:${session.partyId}`, { type: "session:updated", session });
     return NextResponse.json({ session });
   }
 
@@ -34,6 +36,7 @@ export async function POST(request: Request) {
     const session = await leaveGameSession(body.sessionId, userId);
     if (!session) return NextResponse.json({ error: "Сессия не найдена." }, { status: 404 });
     publish(`game:${body.sessionId}`, { type: "player:left", sessionId: body.sessionId, userId, participants: session.participants });
+    publish(`party:${session.partyId}`, { type: "session:updated", session });
     return NextResponse.json({ session });
   }
 
@@ -50,6 +53,7 @@ export async function POST(request: Request) {
     const session = await updateGameSession(body.sessionId, userId, { status: "completed" });
     if (!session) return NextResponse.json({ error: "Сессия не найдена." }, { status: 404 });
     publish(`game:${body.sessionId}`, { type: "session:completed", sessionId: body.sessionId });
+    publish(`party:${session.partyId}`, { type: "session:completed", sessionId: body.sessionId });
     return NextResponse.json({ session });
   }
 
@@ -86,8 +90,8 @@ export async function GET(request: NextRequest) {
   const partyId = url.searchParams.get("partyId");
 
   if (sessionId) {
-    const scores = await getGameScores(sessionId);
-    return NextResponse.json({ scores });
+    const [scores, session] = await Promise.all([getGameScores(sessionId), getGameSessionById(sessionId)]);
+    return NextResponse.json({ scores, session });
   }
 
   if (partyId) {
