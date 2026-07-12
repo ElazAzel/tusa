@@ -17,6 +17,7 @@ jobs:
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_dGVzdC50ZXN0JA
       CLERK_SECRET_KEY: sk_test_dGVzdA
       NEXT_PUBLIC_SITE_URL: https://tusa.game
+      TUSA_E2E_MODE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -5,7 +5,7 @@ const isAppRoute = createRouteMatcher(["/app(.*)"]);
 const isPartyRoute = createRouteMatcher(["/party(.*)"]);
 const isLandingPage = createRouteMatcher(["/"]);
 
-export default clerkMiddleware(async (auth, request) => {
+const authenticatedProxy = clerkMiddleware(async (auth, request) => {
   const { userId } = await auth();
 
   if (isLandingPage(request) && userId) {
@@ -37,6 +37,19 @@ export default clerkMiddleware(async (auth, request) => {
 
   return response;
 });
+
+function e2eProxy() {
+  const response = NextResponse.next();
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  return response;
+}
+
+// The bypass requires both flags and exists only for isolated CI browser tests
+// that have no access to a real Clerk tenant. Vercel does not set TUSA_E2E_MODE.
+export default process.env.CI === "true" && process.env.TUSA_E2E_MODE === "1"
+  ? e2eProxy
+  : authenticatedProxy;
 
 export const config = {
   matcher: [
