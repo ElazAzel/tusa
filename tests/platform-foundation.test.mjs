@@ -14,6 +14,8 @@ const passApi = readFileSync(new URL("../app/api/pass/route.ts", import.meta.url
 const questsApi = readFileSync(new URL("../app/api/quests/route.ts", import.meta.url), "utf8");
 const gratitudeApi = readFileSync(new URL("../app/api/gratitude/route.ts", import.meta.url), "utf8");
 const partiesSource = readFileSync(new URL("../lib/parties.ts", import.meta.url), "utf8");
+const commandClient = readFileSync(new URL("../app/components/sendGameCommand.ts", import.meta.url), "utf8");
+const commandMigration = readFileSync(new URL("../drizzle/0001_game_command_idempotency.sql", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -65,4 +67,11 @@ test("KOINS gratitude transfers are validated and executed atomically", () => {
   assert.doesNotMatch(gratitudeApi, /Access-Control-Allow-Origin/);
   assert.match(partiesSource, /WITH debit AS \(/);
   assert.match(partiesSource, /Cannot send KOINS to yourself/);
+});
+
+test("multiplayer commands are idempotent across retries and reconnects", () => {
+  assert.match(commandClient, /clientMutationId/);
+  assert.match(commandClient, /attempt < 3/);
+  assert.match(partiesSource, /ON CONFLICT \(session_id, clerk_user_id, client_mutation_id\)/);
+  assert.match(commandMigration, /CREATE UNIQUE INDEX IF NOT EXISTS game_actions_command_unique/);
 });

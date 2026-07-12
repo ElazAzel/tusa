@@ -176,11 +176,13 @@ async function getSessionPartyId(sessionId: string): Promise<string | null> {
   return row ? String(row.party_id) : null;
 }
 
-let schemaV2Applied = false;
-export async function ensurePartyV2() {
-  if (schemaV2Applied) return;
-  schemaV2Applied = true;
+let schemaV2Promise: Promise<void> | null = null;
+export function ensurePartyV2() {
+  if (schemaV2Promise) return schemaV2Promise;
+  schemaV2Promise = (async () => {
   const sql = db();
+  await sql`ALTER TABLE game_actions ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS game_actions_command_unique ON game_actions(session_id, clerk_user_id, client_mutation_id) WHERE client_mutation_id IS NOT NULL`;
   await sql`CREATE TABLE IF NOT EXISTS party_highlights (id UUID PRIMARY KEY, party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE, session_id UUID REFERENCES game_sessions(id) ON DELETE SET NULL, clerk_user_id TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'score' CHECK (type IN ('score','achievement','funny','quote','photo')), data JSONB NOT NULL DEFAULT '{}'::jsonb, thumbnail TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
   await sql`CREATE INDEX IF NOT EXISTS highlights_party_idx ON party_highlights (party_id, created_at DESC)`;
   await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ`;
@@ -199,6 +201,11 @@ export async function ensurePartyV2() {
   await sql`CREATE TABLE IF NOT EXISTS daily_challenge_scores (id UUID PRIMARY KEY, challenge_id UUID NOT NULL REFERENCES daily_challenges(id) ON DELETE CASCADE, clerk_user_id TEXT NOT NULL, score INTEGER NOT NULL DEFAULT 0, played_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (challenge_id, clerk_user_id))`;
   await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS highlight_count INTEGER NOT NULL DEFAULT 0`;
   try { await seedQuests(sql); } catch { /* already seeded */ }
+  })().catch((error) => {
+    schemaV2Promise = null;
+    throw error;
+  });
+  return schemaV2Promise;
 }
 
 async function seedQuests(sql: ReturnType<typeof db>) {
@@ -430,6 +437,8 @@ export function ensurePartySchema() {
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
   await sql`CREATE INDEX IF NOT EXISTS game_actions_session_idx ON game_actions (session_id, created_at ASC)`;
+  await sql`ALTER TABLE game_actions ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS game_actions_command_unique ON game_actions(session_id, clerk_user_id, client_mutation_id) WHERE client_mutation_id IS NOT NULL`;
   await sql`CREATE TABLE IF NOT EXISTS game_scores (
     id UUID PRIMARY KEY,
     session_id UUID NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
@@ -1139,6 +1148,7 @@ export type GameAction = {
   userId: string;
   actionType: string;
   payload: unknown;
+  clientMutationId?: string;
   createdAt: string;
 };
 
@@ -1150,7 +1160,7 @@ export async function createGameSession(partyId: string, game: string, config?: 
   return { id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, version: Number(row.version), createdBy: String(row.created_by ?? ""), createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession;
 }
 
-export async function addGameAction(sessionId: string, userId: string, actionType: string, payload?: unknown) {
+export async function addGameAction(sessionId: string, userId: string, actionType: string, payload: unknown, clientMutationId: string) {
   await ensurePartySchema();
   const partyId = await getSessionPartyId(sessionId);
   if (!partyId) throw new Error("Session not found");
@@ -1158,10 +1168,12 @@ export async function addGameAction(sessionId: string, userId: string, actionTyp
   const [session] = await db()`SELECT participants, status FROM game_sessions WHERE id = ${sessionId}` as unknown as { participants: string[]; status: string }[];
   const participants = Array.isArray(session?.participants) ? session.participants : [];
   if (!participants.includes(userId) || session.status === "completed" || session.status === "cancelled") throw new Error("Not an active player");
-  const [row] = await db()`INSERT INTO game_actions (id, session_id, clerk_user_id, action_type, payload)
-    VALUES (${randomUUID()}, ${sessionId}, ${userId}, ${actionType.slice(0, 80)}, ${JSON.stringify(payload ?? {})}::jsonb)
+  let [row] = await db()`INSERT INTO game_actions (id, session_id, clerk_user_id, action_type, payload, client_mutation_id)
+    VALUES (${randomUUID()}, ${sessionId}, ${userId}, ${actionType.slice(0, 80)}, ${JSON.stringify(payload ?? {})}::jsonb, ${clientMutationId})
+    ON CONFLICT (session_id, clerk_user_id, client_mutation_id) WHERE client_mutation_id IS NOT NULL DO NOTHING
     RETURNING *` as unknown as Record<string, unknown>[];
-  return { id: String(row.id), sessionId: String(row.session_id), userId: String(row.clerk_user_id), actionType: String(row.action_type), payload: row.payload, createdAt: new Date(row.created_at as string | Date).toISOString() } as GameAction;
+  if (!row) [row] = await db()`SELECT * FROM game_actions WHERE session_id = ${sessionId} AND clerk_user_id = ${userId} AND client_mutation_id = ${clientMutationId} LIMIT 1` as unknown as Record<string, unknown>[];
+  return { id: String(row.id), sessionId: String(row.session_id), userId: String(row.clerk_user_id), actionType: String(row.action_type), payload: row.payload, clientMutationId: String(row.client_mutation_id), createdAt: new Date(row.created_at as string | Date).toISOString() } as GameAction;
 }
 
 export async function getGameActions(sessionId: string, limit = 200) {
