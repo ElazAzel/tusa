@@ -22,5 +22,6 @@ next-env.d.ts
 /work/
 /tmp/
 /.openai/
+/.rag/
 
 .vercel

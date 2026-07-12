@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import {
   adminProfileExists,
   createAdminMember,
@@ -44,8 +45,11 @@ function responseForAccess(
   return null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const access = await getAdminAccess();
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:admin:team`, 60, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const denied = responseForAccess(access, "team_read");
   if (denied) return denied;
   if (!access)
@@ -74,6 +78,9 @@ export async function POST(request: Request) {
       { error: "Нужен вход администратора." },
       { status: 401 },
     );
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:admin:team`, 5, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const clerkUserId =
     typeof body.clerkUserId === "string" ? body.clerkUserId.trim() : "";
@@ -113,6 +120,9 @@ export async function PATCH(request: Request) {
       { error: "Нужен вход администратора." },
       { status: 401 },
     );
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:admin:team`, 5, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const clerkUserId =
     typeof body.clerkUserId === "string" ? body.clerkUserId.trim() : "";
@@ -176,6 +186,9 @@ export async function DELETE(request: Request) {
       { error: "Нужен вход администратора." },
       { status: 401 },
     );
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:admin:team`, 5, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const clerkUserId =
     typeof body.clerkUserId === "string" ? body.clerkUserId.trim() : "";

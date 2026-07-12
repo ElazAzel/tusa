@@ -25,6 +25,7 @@ type GameState = {
   word: string;
   submissions: Record<string, string>;
   words: string[];
+  totalMatches: number;
 };
 
 function shuffle<T>(arr: T[]): T[] {
@@ -51,7 +52,7 @@ function BlankSlateStage({
   const t = (key: string) => (locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key));
   const { state, setState, playerActions, clearActions, complete } = useStageGame<GameState>(
     sessionId ?? null,
-    () => ({ round: 0, phase: "write", word: words[0], submissions: {}, words })
+    () => ({ round: 0, phase: "write", word: words[0], submissions: {}, words, totalMatches: 0 })
   );
 
   useEffect(() => {
@@ -76,6 +77,7 @@ function BlankSlateStage({
     groups[norm] = (groups[norm] || 0) + 1;
   }
   const matches = Object.entries(groups).filter(([, c]) => c > 1);
+  const roundMatchCount = matches.reduce((sum, [, c]) => sum + c, 0);
 
   const reveal = useCallback(() => setState((p) => ({ ...p, phase: "reveal" })), [setState]);
 
@@ -83,12 +85,12 @@ function BlankSlateStage({
     const nextIdx = state.round + 1;
     if (nextIdx >= Math.min(words.length, 6)) {
       complete();
-      onSave(subs.length);
+      onSave(state.totalMatches);
       return;
     }
     const nextWord = words[nextIdx % words.length];
-    setState((p) => ({ ...p, round: nextIdx, phase: "write", word: nextWord, submissions: {} }));
-  }, [state.round, words, setState, complete, onSave, subs.length]);
+    setState((p) => ({ ...p, round: nextIdx, phase: "write", word: nextWord, submissions: {}, totalMatches: p.totalMatches + roundMatchCount }));
+  }, [state.round, state.totalMatches, words, setState, complete, onSave, roundMatchCount]);
 
   return (
     <div className="party-game-board game-board-enter">
@@ -131,7 +133,7 @@ function BlankSlateController({
   const { locale } = useLocale();
   const t = (key: string) => (locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key));
   const { state, sendAction } = useControllerGame<GameState>(sessionId, {
-    round: 0, phase: "write", word: words[0], submissions: {}, words,
+    round: 0, phase: "write", word: words[0], submissions: {}, words, totalMatches: 0,
   });
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState(false);

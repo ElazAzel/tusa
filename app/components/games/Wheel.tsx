@@ -70,7 +70,7 @@ function WheelStage({ sessionId, partyId, onSave, options }: { sessionId?: strin
             return (
               <g key={i}>
                 <path d={`M${r},${r} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`} fill={colors[i % colors.length]} stroke="#181818" strokeWidth="2" />
-                <text x={tx} y={ty} textAnchor="middle" dominantBaseline="middle" fill="#181818" fontSize="11" fontWeight="bold" style={{ pointerEvents: "none" }}>
+                <text x={tx} y={ty} textAnchor="middle" dominantBaseline="middle" fill="#181818" fontSize="13" fontWeight="bold" style={{ pointerEvents: "none" }}>
                   {opt.length > 14 ? opt.slice(0, 13) + "…" : opt}
                 </text>
               </g>

@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useMultiplayerGame } from "@/app/components/useMultiplayerGame";
+import { useEffect, useMemo, useState } from "react";
 import { useStageGame } from "@/app/components/useStageGame";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
@@ -150,16 +149,35 @@ type QuizState = { index: number; score: number; selected: string };
 
 function QuizBattleStage({ sessionId, partyId, onSave, questions }: { sessionId?: string | null; partyId: string; onSave: (score: number) => void; questions: { question: string; options: string[]; answer: string }[] }) {
   const { t } = useLocale();
-  const { state, setState } = useMultiplayerGame<QuizState>(sessionId ?? null, () => ({ index: 0, score: 0, selected: "" }));
+  const { state, setState, playerActions, clearActions, complete } = useStageGame<QuizState>(
+    sessionId ?? null,
+    () => ({ index: 0, score: 0, selected: "" })
+  );
+
+  useEffect(() => {
+    if (playerActions.length === 0) return;
+    for (const a of playerActions) {
+      if (a.actionType === "answer") {
+        const { option } = a.payload as { option: string };
+        setState((prev) => {
+          if (prev.selected) return prev;
+          const correct = option === questions[prev.index]?.answer;
+          return { ...prev, selected: option, score: correct ? prev.score + 1 : prev.score };
+        });
+      }
+    }
+    clearActions();
+  }, [playerActions, questions, setState, clearActions]);
 
   function select(option: string) {
-    setState((prev) => ({ ...prev, selected: option }));
-    if (option === questions[state.index].answer) { setState((prev) => ({ ...prev, score: prev.score + 1 })); soundCorrect(); }
-    else soundWrong();
+    if (state.selected) return;
+    const correct = option === questions[state.index].answer;
+    setState((prev) => ({ ...prev, selected: option, score: correct ? prev.score + 1 : prev.score }));
+    if (correct) soundCorrect(); else soundWrong();
   }
 
   function next() {
-    if (state.index === questions.length - 1) { soundWin(); confetti(); onSave(state.score); setState((prev) => ({ ...prev, index: 0, score: 0, selected: "" })); }
+    if (state.index === questions.length - 1) { soundWin(); confetti(); complete(); onSave(state.score); }
     else setState((prev) => ({ ...prev, index: prev.index + 1, selected: "" }));
   }
 

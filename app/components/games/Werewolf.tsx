@@ -21,6 +21,7 @@ type GameState = {
   roles: Record<string, Role>;
   alive: string[];
   nightActions: { kill?: string; save?: string; investigate?: string };
+  seerResult: Record<string, Role>;
   votes: Record<string, string>;
   round: number;
   timer: number;
@@ -36,7 +37,7 @@ function WerewolfStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
     sessionId ?? null,
     () => ({
       phase: "deal" as const, players: [], roles: {}, alive: [],
-      nightActions: {}, votes: {}, round: 0, timer: 0, revealTarget: "", eliminated: "",
+      nightActions: {}, seerResult: {}, votes: {}, round: 0, timer: 0, revealTarget: "", eliminated: "",
     }),
   );
 
@@ -66,18 +67,39 @@ function WerewolfStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
       const saved = state.nightActions.save === state.nightActions.kill;
       const dead = saved ? "" : state.nightActions.kill;
       const alive = dead ? state.alive.filter((p) => p !== dead) : state.alive;
+      const seerResult = { ...state.seerResult };
+      if (state.nightActions.investigate && state.roles[state.nightActions.investigate]) {
+        seerResult[state.nightActions.investigate] = state.roles[state.nightActions.investigate];
+      }
       setState((prev) => ({
-        ...prev, phase: "day", alive, eliminated: dead,
+        ...prev, phase: "day", alive, eliminated: dead, seerResult,
         nightActions: {}, timer: 30,
       }));
     }
-  }, [state.nightActions, state.alive, setState]);
+  }, [state.nightActions, state.alive, state.roles, state.seerResult, setState]);
 
   useEffect(() => {
     if (state.phase !== "day" && state.phase !== "vote" || state.timer <= 0) return;
     const id = setTimeout(() => setState((p) => ({ ...p, timer: p.timer - 1 })), 1000);
     return () => clearTimeout(id);
   }, [state.phase, state.timer, setState]);
+
+  useEffect(() => {
+    if (state.phase !== "night") return;
+    const id = setTimeout(() => {
+      setState((prev) => {
+        if (prev.phase !== "night") return prev;
+        if (!prev.nightActions.kill) {
+          return { ...prev, nightActions: { ...prev.nightActions, kill: prev.alive[Math.floor(Math.random() * prev.alive.length)] || "" } };
+        }
+        if (prev.nightActions.save === undefined) {
+          return { ...prev, nightActions: { ...prev.nightActions, save: "" } };
+        }
+        return prev;
+      });
+    }, 30000);
+    return () => clearTimeout(id);
+  }, [state.phase, state.nightActions, setState]);
 
   useEffect(() => {
     if (state.phase === "day" && state.timer === 0) {
@@ -188,7 +210,7 @@ function WerewolfController({ sessionId }: { sessionId: string }) {
   const [playerId] = useState(() => "p_" + Math.random().toString(36).slice(2, 8));
   const { state, sendAction } = useControllerGame<GameState>(sessionId, {
     phase: "deal", players: [], roles: {}, alive: [],
-    nightActions: {}, votes: {}, round: 0, timer: 0, revealTarget: "", eliminated: "",
+    nightActions: {}, seerResult: {}, votes: {}, round: 0, timer: 0, revealTarget: "", eliminated: "",
   });
   const [role, setRole] = useState<Role | null>(null);
   const [hasActed, setHasActed] = useState(false);
@@ -200,6 +222,8 @@ function WerewolfController({ sessionId }: { sessionId: string }) {
       setHasActed(false);
     }
   }, [state.phase, state.roles, playerId]);
+
+  const seerInvestigation = role === "seer" && state.seerResult ? Object.entries(state.seerResult) : [];
 
   const join = useCallback(() => { setJoined(true); sendAction("join", { playerId }); }, [sendAction, playerId]);
   const nightAction = useCallback((type: Role, target: string) => {
@@ -266,6 +290,15 @@ function WerewolfController({ sessionId }: { sessionId: string }) {
     return (
       <div className="party-game-board game-board-enter">
         <h3>{t("daytime")}</h3>
+        {role === "seer" && seerInvestigation.length > 0 && (
+          <div style={{ marginBottom: 8 }}>
+            {seerInvestigation.map(([target, targetRole]) => (
+              <p key={target} style={{ color: targetRole === "mafia" ? "var(--red)" : "var(--lime)", fontWeight: 700 }}>
+                {target.slice(0, 8)}: {targetRole === "mafia" ? t("mafia") : t("villager")}
+              </p>
+            ))}
+          </div>
+        )}
         {state.phase === "vote" && !hasActed && (
           <div>
             <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("voteToEliminate")}</p>
@@ -299,7 +332,7 @@ const EN: Record<string, string> = {
   saveTarget: "Pick someone to save", seer: "Seer",
   investigate: "Pick someone to investigate", daytime: "Discussion time!",
   voteToEliminate: "Vote to eliminate", voted: "Voted! Waiting...",
-  waiting: "Waiting...", finish: "Finish",
+  waiting: "Waiting...", finish: "Finish", villager: "Villager",
 };
 
 const RU: Record<string, string> = {
@@ -313,7 +346,7 @@ const RU: Record<string, string> = {
   saveTarget: "Кого спасти", seer: "Шериф",
   investigate: "Кого проверить", daytime: "Время обсуждения!",
   voteToEliminate: "Голосуй за устранение", voted: "Проголосовал! Жди...",
-  waiting: "Ожидание...", finish: "Завершить",
+  waiting: "Ожидание...", finish: "Завершить", villager: "Мирный житель",
 };
 
 export default function Werewolf({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {

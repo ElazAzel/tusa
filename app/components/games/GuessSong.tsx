@@ -224,7 +224,7 @@ function GuessSongController({ sessionId }: { sessionId: string }) {
             placeholder={t("typeTitle")}
             disabled={sent}
             style={{
-              width: "100%", padding: 12, borderRadius: 8,               border: "1px solid #404040",
+              width: "100%", padding: 14, borderRadius: 8,               border: "1px solid #404040",
               background: "#1a1a1a", color: "var(--white)", fontSize: 16, marginTop: 12,
             }}
           />

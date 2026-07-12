@@ -1,4 +1,5 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { addShoppingItem, getShoppingItems, updateShoppingItem, deleteShoppingItem } from "@/lib/parties";
 
 export const dynamic = "force-dynamic";
@@ -6,6 +7,9 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:shopping`, 60, 60000);
+  if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
   const { searchParams } = new URL(request.url);
   const partyId = searchParams.get("partyId");
   if (!partyId) return Response.json({ error: "partyId required" }, { status: 400 });
@@ -17,6 +21,9 @@ export async function POST(request: Request) {
   const { userId } = await auth();
   const user = await currentUser();
   if (!userId || !user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:shopping`, 20, 60000);
+  if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json();
   if (body.action === "add") {
     const item = await addShoppingItem(userId, body.partyId, { text: body.text, quantity: body.quantity, unit: body.unit });

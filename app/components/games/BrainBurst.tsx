@@ -44,9 +44,10 @@ function BrainBurstStage({ sessionId, partyId, onSave, questions }: { sessionId?
   useEffect(() => {
     if (playerActions.length === 0) return;
     for (const a of playerActions) {
-      if (a.actionType === "answer" && state.phase === "question" && !state.locked[a.userId]) {
+      if (a.actionType === "answer" && state.phase === "question") {
         const idx = (a.payload as { index: number }).index;
         setState((prev) => {
+          if (prev.locked[a.userId]) return prev;
           const newScores = { ...prev.scores };
           if (idx === prev.correct) newScores[a.userId] = (newScores[a.userId] || 0) + (prev.timer > 5 ? 2 : 1);
           return { ...prev, locked: { ...prev.locked, [a.userId]: true }, scores: newScores };
@@ -54,7 +55,7 @@ function BrainBurstStage({ sessionId, partyId, onSave, questions }: { sessionId?
       }
     }
     clearActions();
-  }, [playerActions, state.phase, state.locked, state.timer, setState, clearActions]);
+  }, [playerActions, state.phase, setState, clearActions]);
 
   useEffect(() => {
     if (state.phase !== "question" || state.timer <= 0) return;

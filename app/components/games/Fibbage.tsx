@@ -114,7 +114,7 @@ function FibbageStage({ sessionId, partyId, onSave }: { sessionId?: string | nul
         <div>
           <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("votePrompt")}</p>
           {state.submissions.map((s) => (
-            <button key={s.userId} type="button" disabled style={{ display: "block", width: "100%", textAlign: "left", background: "var(--dark)", color: "var(--white)", borderRadius: 8, padding: "10px 14px", marginBottom: 6, border: "none", fontWeight: 600 }}>
+            <button key={s.userId} type="button" disabled style={{ display: "block", width: "100%", textAlign: "left", background: "var(--dark)", color: "var(--white)", borderRadius: 8, padding: "10px 14px", marginBottom: 6, border: "none", fontWeight: 600, wordBreak: "break-word", overflowWrap: "anywhere" }}>
               {s.answer}
             </button>
           ))}

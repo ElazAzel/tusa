@@ -61,14 +61,12 @@ function BunkerStage({ sessionId, partyId, onSave }: { sessionId?: string | null
     if (playerActions.length === 0) return;
     for (const a of playerActions) {
       if (a.actionType === "join" && state.phase === "reveal") {
-        const exists = state.traits.find((t) => t.userId === a.userId);
-        if (!exists) {
-          const traitIdx = state.traits.length % traits.length;
-          setState((prev) => ({
-            ...prev,
-            traits: [...prev.traits, { userId: a.userId, trait: traits[traitIdx] }],
-          }));
-        }
+        setState((prev) => {
+          const exists = prev.traits.find((t) => t.userId === a.userId);
+          if (exists) return prev;
+          const traitIdx = prev.traits.length % traits.length;
+          return { ...prev, traits: [...prev.traits, { userId: a.userId, trait: traits[traitIdx] }] };
+        });
       }
       if (a.actionType === "vote" && state.phase === "vote") {
         setState((prev) => ({
@@ -78,7 +76,7 @@ function BunkerStage({ sessionId, partyId, onSave }: { sessionId?: string | null
       }
     }
     clearActions();
-  }, [playerActions, state.phase, state.traits, traits, setState, clearActions]);
+  }, [playerActions, state.phase, traits, setState, clearActions]);
 
   useEffect(() => {
     if (state.phase === "reveal" && state.traits.length >= 4) {
@@ -91,6 +89,24 @@ function BunkerStage({ sessionId, partyId, onSave }: { sessionId?: string | null
     const id = setTimeout(() => setState((p) => ({ ...p, timer: p.timer - 1 })), 1000);
     return () => clearTimeout(id);
   }, [state.phase, state.timer, setState]);
+
+  useEffect(() => {
+    if (state.phase !== "vote") return;
+    const id = setTimeout(() => {
+      setState((prev) => {
+        if (prev.phase !== "vote") return prev;
+        const tally: Record<string, number> = {};
+        for (const t of Object.values(prev.votes)) {
+          if (t) tally[t] = (tally[t] || 0) + 1;
+        }
+        const sorted = Object.entries(tally).sort(([, a], [, b]) => b - a);
+        const eliminated = sorted.slice(prev.bunkerSpots).map(([u]) => u);
+        return { ...prev, phase: "result", eliminated };
+      });
+      complete();
+    }, 60000);
+    return () => clearTimeout(id);
+  }, [state.phase, setState, complete]);
 
   useEffect(() => {
     if (state.phase === "argue" && state.timer === 0) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { useMultiplayerGame } from "@/app/components/useMultiplayerGame";
 import { soundCorrect, soundPass, soundWin } from "@/lib/audio";
@@ -66,6 +66,8 @@ export default function AliasGame({ partyId, sessionId, onSave, role }: { partyI
   const shuffled = useMemo(() => shuffle(locale === "ru" ? wordsRu : wordsEn), [locale]);
   const { state, setState } = useMultiplayerGame<AliasState>(sessionId ?? null, () => ({ running: false, seconds: 60, wordIndex: 0, score: 0, round: 1 }));
   const { running, seconds, wordIndex, score, round } = state;
+  const scoreRef = useRef(score);
+  scoreRef.current = score;
 
   useEffect(() => {
     if (!running || !sessionId) return;
@@ -87,7 +89,7 @@ export default function AliasGame({ partyId, sessionId, onSave, role }: { partyI
     }));
   }
 
-  function finish() { soundWin(); confetti(); onSave(score); setState({ running: false, seconds: 60, wordIndex: 0, score: 0, round: round + 1 }); }
+  function finish() { soundWin(); confetti(); onSave(scoreRef.current); setState({ running: false, seconds: 60, wordIndex: 0, score: 0, round: round + 1 }); }
 
   function start() { setState({ running: true, seconds: 60, wordIndex: 0, score: 0, round }); }
 

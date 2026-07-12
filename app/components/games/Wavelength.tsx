@@ -21,6 +21,7 @@ type GameState = {
   left: string; right: string; target: number;
   clue: number; phase: "clue" | "guess" | "reveal";
   guess: number | null; scores: Record<string, number>;
+  lastGuesser: string;
 };
 
 function WavelengthStage({ sessionId, partyId, onSave }: { sessionId?: string | null; partyId: string; onSave: (score: number) => void }) {
@@ -32,7 +33,7 @@ function WavelengthStage({ sessionId, partyId, onSave }: { sessionId?: string | 
     sessionId ?? null,
     () => {
       const p = pairs[Math.floor(Math.random() * pairs.length)];
-      return { left: p[0], right: p[1], target: Math.floor(Math.random() * 9) + 1, clue: 5, phase: "clue", guess: null, scores: {} };
+      return { left: p[0], right: p[1], target: Math.floor(Math.random() * 9) + 1, clue: 5, phase: "clue", guess: null, scores: {}, lastGuesser: "" };
     },
   );
 
@@ -45,7 +46,7 @@ function WavelengthStage({ sessionId, partyId, onSave }: { sessionId?: string | 
       }
       if (a.actionType === "guess" && state.phase === "guess") {
         const { value } = a.payload as { value: number };
-        setState((prev) => ({ ...prev, guess: Math.max(1, Math.min(10, value)), phase: "reveal" }));
+        setState((prev) => ({ ...prev, guess: Math.max(1, Math.min(10, value)), phase: "reveal", lastGuesser: a.userId }));
       }
     }
     clearActions();
@@ -57,16 +58,14 @@ function WavelengthStage({ sessionId, partyId, onSave }: { sessionId?: string | 
   const next = useCallback(() => {
     const p = pairs[Math.floor(Math.random() * pairs.length)];
     const newScores = { ...state.scores };
-    if (pts > 0) {
-      const top = Object.entries(newScores).sort(([, a], [, b]) => b - a)[0];
-      const uid = top ? top[0] : "default";
-      newScores[uid] = (newScores[uid] || 0) + pts;
+    if (pts > 0 && state.lastGuesser) {
+      newScores[state.lastGuesser] = (newScores[state.lastGuesser] || 0) + pts;
     }
     setState({
       left: p[0], right: p[1], target: Math.floor(Math.random() * 9) + 1,
-      clue: 5, phase: "clue", guess: null, scores: newScores,
+      clue: 5, phase: "clue", guess: null, scores: newScores, lastGuesser: "",
     });
-  }, [pairs, pts, state.scores, setState]);
+  }, [pairs, pts, state.scores, state.lastGuesser, setState]);
 
   const finish = useCallback(() => { complete(); onSave(Math.max(...Object.values(state.scores), 0)); }, [complete, onSave, state.scores]);
 
@@ -75,7 +74,7 @@ function WavelengthStage({ sessionId, partyId, onSave }: { sessionId?: string | 
       <span className="game-step">{t("wavelength")}</span>
       <h3>{state.left} ↔ {state.right}</h3>
       <div style={{ position: "relative", margin: "16px 0", height: 60 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--gray)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "var(--gray)" }}>
           <span>{state.left}</span><span>{state.right}</span>
         </div>
         <div style={{ position: "relative", height: 8, background: "#333", borderRadius: 4, marginTop: 8 }}>
@@ -105,7 +104,7 @@ function WavelengthController({ sessionId }: { sessionId: string }) {
   const { locale } = useLocale();
   const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
   const { state, sendAction } = useControllerGame<GameState>(sessionId, {
-    left: "", right: "", target: 5, clue: 5, phase: "clue", guess: null, scores: {},
+    left: "", right: "", target: 5, clue: 5, phase: "clue", guess: null, scores: {}, lastGuesser: "",
   });
   const [val, setVal] = useState(5);
 

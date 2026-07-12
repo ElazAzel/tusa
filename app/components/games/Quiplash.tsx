@@ -119,7 +119,7 @@ function QuiplashStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
         <div>
           <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("votePrompt")}</p>
           {state.submissions.map((s) => (
-            <div key={s.userId} style={{ background: "var(--dark)", borderRadius: 8, padding: "10px 14px", marginBottom: 6 }}>
+            <div key={s.userId} style={{ background: "var(--dark)", borderRadius: 8, padding: "10px 14px", marginBottom: 6, wordBreak: "break-word", overflowWrap: "anywhere" }}>
               &quot;{s.answer}&quot;
             </div>
           ))}

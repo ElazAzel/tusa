@@ -62,17 +62,16 @@ function CrocodilStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
     if (playerActions.length === 0) return;
     for (const a of playerActions) {
       if (a.actionType === "correct" && state.phase === "play") {
-        const isTeamA = state.activeTeam === "A";
-        const streakBonus = state.streak >= 2 ? 1 : 0;
-        setState((prev) => ({
-          ...prev,
-          scores: {
-            ...prev.scores,
-            [isTeamA ? "teamA" : "teamB"]: prev.scores[isTeamA ? "teamA" : "teamB"] + 1 + streakBonus,
-          },
-          currentIndex: prev.currentIndex + 1,
-          streak: prev.streak + 1,
-        }));
+        setState((prev) => {
+          const streakBonus = prev.streak >= 2 ? 1 : 0;
+          const teamKey = prev.activeTeam === "A" ? "teamA" : "teamB";
+          return {
+            ...prev,
+            scores: { ...prev.scores, [teamKey]: prev.scores[teamKey] + 1 + streakBonus },
+            currentIndex: prev.currentIndex + 1,
+            streak: prev.streak + 1,
+          };
+        });
       }
       if (a.actionType === "pass" && state.phase === "play") {
         setState((prev) => ({
@@ -87,7 +86,7 @@ function CrocodilStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
       }
     }
     clearActions();
-  }, [playerActions, state.phase, state.activeTeam, state.streak, setState, clearActions]);
+  }, [playerActions, state.phase, setState, clearActions]);
 
   useEffect(() => {
     if (state.phase !== "play" || state.timer <= 0 || !state.activePlayer) return;

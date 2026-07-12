@@ -1,10 +1,14 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { createPartyWithPromo, deleteParty, getDashboard, syncProfile, trackAnalytics, updateParty } from "@/lib/parties";
 
-export async function GET() {
+export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:parties`, 60, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   return NextResponse.json({ parties: await getDashboard(userId) });
 }
 
@@ -12,6 +16,9 @@ export async function POST(request: Request) {
   const { userId } = await auth();
   const user = await currentUser();
   if (!userId || !user) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:parties`, 10, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const required = ["title", "date", "time", "venue", "category"] as const;
   if (!required.every((field) => typeof body[field] === "string" && body[field].trim())) {
@@ -40,6 +47,9 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:parties`, 10, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   if (!body.id) return NextResponse.json({ error: "Укажите ID тусы." }, { status: 400 });
   try {
@@ -55,6 +65,9 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:parties`, 10, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   if (!body.id) return NextResponse.json({ error: "Укажите ID тусы." }, { status: 400 });
   const ok = await deleteParty(body.id, userId);

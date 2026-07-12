@@ -85,30 +85,21 @@ function CodenamesStage({ sessionId, partyId, onSave }: { sessionId?: string | n
       }
       if (a.actionType === "pickWord" && state.phase === "guess") {
         const { index } = a.payload as { index: number };
-        if (state.revealed[index]) continue;
         const color = state.colors[index];
-        const newRevealed = [...state.revealed];
-        newRevealed[index] = true;
-
-        if (color === "assassin") {
-          const winner = state.activeTeam === "a" ? "b" : "a";
-          setState((prev) => ({
-            ...prev, revealed: newRevealed, phase: "reveal",
-            scores: { ...prev.scores, [winner]: prev.scores[winner] + 1 },
-          }));
-          break;
-        }
-        if (color === state.activeTeam) {
-          setState((prev) => ({
-            ...prev, revealed: newRevealed,
-            scores: { ...prev.scores, [color]: prev.scores[color] + 1 },
-          }));
-        } else {
-          const next = state.activeTeam === "a" ? "b" : "a";
-          setState((prev) => ({
-            ...prev, revealed: newRevealed, activeTeam: next, clue: "", clueNumber: 0, phase: "clue",
-          }));
-        }
+        setState((prev) => {
+          if (prev.revealed[index]) return prev;
+          const newRevealed = [...prev.revealed];
+          newRevealed[index] = true;
+          if (color === "assassin") {
+            const winner = prev.activeTeam === "a" ? "b" : "a";
+            return { ...prev, revealed: newRevealed, phase: "reveal", scores: { ...prev.scores, [winner]: prev.scores[winner] + 1 } };
+          }
+          if (color === prev.activeTeam) {
+            return { ...prev, revealed: newRevealed, scores: { ...prev.scores, [color]: prev.scores[color] + 1 } };
+          }
+          const next = prev.activeTeam === "a" ? "b" : "a";
+          return { ...prev, revealed: newRevealed, activeTeam: next, clue: "", clueNumber: 0, phase: "clue" };
+        });
       }
     }
     clearActions();
@@ -141,9 +132,10 @@ function CodenamesStage({ sessionId, partyId, onSave }: { sessionId?: string | n
             disabled={state.revealed[i] || state.phase === "clue" || state.phase === "assign"}
             onClick={() => setState((prev) => prev)}
             style={{
-              padding: "10px 4px", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 13,
+              padding: "10px 4px", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 14,
               background: state.revealed[i] ? colorMap[state.colors[i]] : state.phase === "reveal" ? colorMap[state.colors[i]] : "var(--dark)",
               color: "var(--white)", opacity: state.revealed[i] ? 1 : 0.85, cursor: state.revealed[i] ? "default" : "pointer",
+              wordBreak: "break-word",
             }}
           >
             {word}
@@ -231,9 +223,9 @@ function CodenamesController({ sessionId }: { sessionId: string }) {
               disabled={state.revealed[i]}
               onClick={() => sendAction("pickWord", { index: i })}
               style={{
-                padding: "10px 4px", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 13,
+                padding: "10px 4px", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 14,
                 background: state.revealed[i] ? "#525252" : "var(--dark)", color: "var(--white)",
-                cursor: state.revealed[i] ? "default" : "pointer",
+                cursor: state.revealed[i] ? "default" : "pointer", wordBreak: "break-word",
               }}
             >
               {word}

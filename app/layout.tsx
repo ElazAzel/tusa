@@ -10,6 +10,30 @@ import { LocaleProvider } from "./components/LocaleProvider";
 import { detectLocale, normalizeLocale, copy } from "@/lib/i18n";
 import "./globals.css";
 
+const jsonLdOrg = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "TUSA.game",
+  url: "https://tusa.game",
+  description: "Browser-based social gaming platform for real-life game nights.",
+  logo: "https://tusa.game/brand/tusa-game-icon.png",
+  sameAs: [
+    "https://github.com/ElazAzel/tusa",
+  ],
+};
+
+const jsonLdApp = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "TUSA.game",
+  url: "https://tusa.game",
+  applicationCategory: "GameApplication",
+  operatingSystem: "Any",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  description: "Платформа для организации тусовок с 28 играми, чатом, фото и покупками.",
+  inLanguage: ["ru", "en"],
+};
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "cyrillic"],
@@ -45,12 +69,16 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     applicationName: "TUSA.game",
     manifest: "/manifest.webmanifest",
+    alternates: {
+      languages: { "ru": origin, "en": origin, "x-default": origin },
+    },
     openGraph: {
       title: copy(locale, "ogTitle"),
       description: copy(locale, "ogDesc"),
       type: "website",
       locale: locale === "ru" ? "ru_KZ" : "en_US",
       url: origin,
+      siteName: "TUSA.game",
       images: [{ url: socialImage, width: 1730, height: 909, alt: copy(locale, "ogTitleAlt") }],
     },
     twitter: {
@@ -58,6 +86,9 @@ export async function generateMetadata(): Promise<Metadata> {
       title: copy(locale, "ogTitle"),
       description: copy(locale, "ogDesc"),
       images: [socialImage],
+    },
+    other: {
+      "application/ld+json": JSON.stringify([jsonLdOrg, jsonLdApp]),
     },
   };
 }

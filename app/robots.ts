@@ -8,7 +8,17 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   const origin = `${protocol}://${host}`;
 
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/api/", "/app/"] },
+    rules: [
+      { userAgent: "*", allow: "/", disallow: ["/api/"] },
+      { userAgent: "GPTBot", allow: "/" },
+      { userAgent: "ChatGPT-User", allow: "/" },
+      { userAgent: "ClaudeBot", allow: "/" },
+      { userAgent: "Claude-Web", allow: "/" },
+      { userAgent: "anthropic-ai", allow: "/" },
+      { userAgent: "PerplexityBot", allow: "/" },
+      { userAgent: "Google-Extended", allow: "/" },
+      { userAgent: "CCBot", allow: "/" },
+    ],
     sitemap: `${origin}/sitemap.xml`,
   };
 }

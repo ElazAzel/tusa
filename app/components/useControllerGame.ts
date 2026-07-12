@@ -11,18 +11,25 @@ export function useControllerGame<T extends Record<string, unknown>>(
 
   useEffect(() => {
     if (!sessionId) { setState(initialState); return; }
-    const es = new EventSource(`/api/live?channel=${encodeURIComponent(`game:${sessionId}`)}`);
-    esRef.current = es;
-    es.onmessage = (msg) => {
-      try {
-        const event = JSON.parse(msg.data) as { type: string; state?: Partial<T> };
-        if (event.type === "state:updated" && event.state) {
-          setState((prev) => ({ ...prev, ...event.state }));
-        }
-      } catch { /* ping */ }
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+    const connect = () => {
+      const es = new EventSource(`/api/live?channel=${encodeURIComponent(`game:${sessionId}`)}`);
+      esRef.current = es;
+      es.onmessage = (msg) => {
+        try {
+          const event = JSON.parse(msg.data) as { type: string; state?: Partial<T> };
+          if (event.type === "state:updated" && event.state) {
+            setState((prev) => ({ ...prev, ...event.state }));
+          }
+        } catch { /* ping */ }
+      };
+      es.onerror = () => {
+        es.close();
+        reconnectTimer = setTimeout(connect, 3000);
+      };
     };
-    es.onerror = () => es.close();
-    return () => { es.close(); };
+    connect();
+    return () => { clearTimeout(reconnectTimer); esRef.current?.close(); };
   }, [sessionId]);
 
   const sendAction = useCallback((actionType: string, payload?: unknown) => {

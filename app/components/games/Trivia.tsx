@@ -48,19 +48,22 @@ function TriviaStage({ sessionId, partyId, onSave, questions }: { sessionId?: st
   useEffect(() => {
     if (playerActions.length === 0) return;
     for (const a of playerActions) {
-      if (a.actionType === "answer" && state.phase === "question" && !state.answered[a.userId]) {
+      if (a.actionType === "answer" && state.phase === "question") {
         const idx = (a.payload as { index: number }).index;
-        setState((prev) => ({
-          ...prev,
-          answered: { ...prev.answered, [a.userId]: true },
-          scores: idx === prev.correct
-            ? { ...prev.scores, [a.userId]: (prev.scores[a.userId] || 0) + (prev.timer > 8 ? 2 : 1) }
-            : prev.scores,
-        }));
+        setState((prev) => {
+          if (prev.answered[a.userId]) return prev;
+          return {
+            ...prev,
+            answered: { ...prev.answered, [a.userId]: true },
+            scores: idx === prev.correct
+              ? { ...prev.scores, [a.userId]: (prev.scores[a.userId] || 0) + (prev.timer > 8 ? 2 : 1) }
+              : prev.scores,
+          };
+        });
       }
     }
     clearActions();
-  }, [playerActions, state.phase, state.timer, setState, clearActions]);
+  }, [playerActions, state.phase, setState, clearActions]);
 
   useEffect(() => {
     if (state.phase !== "question" || state.timer <= 0) return;

@@ -2177,7 +2177,7 @@ body:has(.demo-shell)::-webkit-scrollbar,
 .beer-teams > div > div { display: flex; justify-content: center; gap: 8px; }
 .beer-teams button { min-height: 40px; padding: 8px 10px; border: 2px solid var(--black); border-radius: 9px; background: var(--lime); font-weight: 900; cursor: pointer; }
 .quiz-options { width: min(100%, 760px); display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin: 25px 0; }
-.quiz-options button { min-height: 66px; padding: 13px; border: var(--line); border-radius: 13px; background: var(--white); box-shadow: 4px 4px 0 var(--black); color: var(--black); font-weight: 900; cursor: pointer; }
+.quiz-options button { min-height: 66px; padding: 13px; border: var(--line); border-radius: 13px; background: var(--white); box-shadow: 4px 4px 0 var(--black); color: var(--black); font-weight: 900; cursor: pointer; word-break: break-word; overflow-wrap: anywhere; }
 .quiz-options button.correct { background: var(--lime); }
 .quiz-options button.wrong { background: #ff8ab5; }
 .quiz-options button.selected { background: var(--blue); color: var(--white); box-shadow: 0 0 0 3px var(--lime); }
@@ -2944,7 +2944,7 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   background: rgba(255,255,255,.06); color: var(--white); font-weight: 800;
   font-size: 12px; cursor: pointer; letter-spacing: .04em; text-transform: uppercase;
   transition: background var(--dur) var(--ease), color var(--dur), transform var(--dur), box-shadow var(--dur);
-  box-shadow: none;
+  box-shadow: none; white-space: nowrap;
 }
 .party-room-hero > div:last-child > button:hover {
   background: rgba(255,255,255,.12);
@@ -3046,12 +3046,12 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   }
   .party-room-hero > div:last-child > button {
     border: none; border-radius: 12px; padding: 8px 4px;
-    font-size: 10px; box-shadow: none; background: transparent;
+    font-size: 10px; box-shadow: none; background: transparent; color: var(--muted);
     display: flex; flex-direction: column; align-items: center; gap: 4px;
     min-height: 48px;
   }
   .party-room-hero > div:last-child > button.active {
-    background: var(--lime); box-shadow: none; transform: none;
+    background: var(--lime); box-shadow: none; transform: none; color: var(--black);
   }
   .party-room-hero > div:last-child > button .material-symbols-rounded {
     font-size: 22px;
@@ -3555,3 +3555,20 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   .profile-stats { grid-template-columns: repeat(3, 1fr); }
   .party-member-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+.games-page { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+.games-page h1 { font-size: clamp(28px, 5vw, 48px); font-family: var(--font-unbounded); margin-bottom: 8px; }
+.games-page .subtitle { font-size: clamp(14px, 2vw, 18px); color: var(--gray); margin-bottom: 40px; }
+.games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.game-card { background: var(--white); border: 3px solid var(--black); padding: 20px; border-radius: 0; transition: transform .15s; }
+.game-card:hover { transform: translate(-4px, -4px); box-shadow: 4px 4px 0 var(--black); }
+.game-card h2 { font-size: 15px; font-family: var(--font-unbounded); margin: 0 0 6px; letter-spacing: -.02em; }
+.game-card p { font-size: 13px; color: var(--dark); margin: 0; line-height: 1.4; }
+
+.faq-page { max-width: 800px; margin: 0 auto; padding: 40px 24px; }
+.faq-page h1 { font-size: clamp(24px, 4vw, 40px); font-family: var(--font-unbounded); margin-bottom: 32px; }
+.faq-question { border: 2px solid var(--black); margin-bottom: 8px; padding: 16px 20px; cursor: pointer; font-size: 15px; font-weight: 600; font-family: var(--font-unbounded); list-style: none; }
+.faq-question::-webkit-details-marker { display: none; }
+.faq-question::after { content: "+"; float: right; font-size: 20px; transition: transform .2s; }
+.faq-page details[open] .faq-question::after { content: "−"; }
+.faq-answer { padding: 0 20px 16px; font-size: 14px; line-height: 1.5; color: var(--dark); }

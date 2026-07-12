@@ -6,7 +6,7 @@ Source of truth: `tusa-style-guide-v1.4.html`, product PRD and the 28-mode game 
 
 - Mobile: 375, 390 and 430 px; no horizontal scroll; 44 px minimum touch target; safe-area aware fixed controls.
 - Accessibility: keyboard focus, text/icon status in addition to colour, reduced-motion support and usable screen-reader labels.
-- Multiplayer: server-authoritative snapshot; lobby, ready state, active round, results, rematch and match end.
+- Multiplayer: server-authoritative snapshot via SSE; lobby, ready state, active round, results, rematch and match end.
 - Devices: each player uses their own controller; the shared Stage never receives private roles or correct answers early.
 - Recovery: `playerId + session + roomId`; reconnect restores the last server snapshot and deadline-derived default action.
 - Spectators: joining after lock/start opens the public Stage view without leaking private state.
@@ -15,48 +15,72 @@ Source of truth: `tusa-style-guide-v1.4.html`, product PRD and the 28-mode game 
 
 ## Game matrix
 
-| # | Mode | Required controller mechanic | Current product state |
+| # | Mode | Controller mechanic | Status |
 |---:|---|---|---|
-| 1 | Alias / Word Blast | private word, team timer, pass/correct | Component exists; multiplayer hardening required |
-| 2 | Mafia / Nightfall | private role, night actions, day vote | Component exists; full rules/reconnect audit required |
-| 3 | Werewolf / One Night | private role, timed actions, reveal | Missing |
-| 4 | Codenames / Code Crack | spymaster board, team guesses | Missing |
-| 5 | Spyfall | private location/spy role, vote | Missing |
-| 6 | Impostor | private word, bluff and vote | Missing |
-| 7 | Crocodil / Mime Riot | private prompt, team timer | Missing |
-| 8 | Heads Up | private card, gesture fallback | Missing |
-| 9 | Pictionary / Scribble Fight | realtime drawing strokes and guesses | Missing |
-| 10 | Quiplash | private prompt, anonymous answers, vote | Missing |
-| 11 | Psych / Fibbage | decoys, answer lock, reveal | Missing |
-| 12 | Cards of Chaos | hand of cards, judge and reveal | Missing |
-| 13 | Truth or Dare | private choice, prompt, completion | Component exists; multiplayer round audit required |
-| 14 | Never Have I Ever | private response, public aggregate | Component exists; multiplayer round audit required |
-| 15 | Would You Rather | private vote, live aggregate | Missing |
-| 16 | Two Truths and a Lie | submissions, private vote, reveal | Missing |
-| 17 | Blank Slate | simultaneous word submit and matching | Missing |
-| 18 | Wavelength | private target, team dial and reveal | Missing |
-| 19 | Brain Burst | locked quiz answers and response time | Quiz component exists; content/rules expansion required |
-| 20 | Guess the Song | protected audio round and answer lock | Missing |
-| 21 | Bomb Party | realtime syllable turn and timeout | Missing |
-| 22 | Gartic Phone | drawing/text chain with private handoff | Missing |
-| 23 | Bunker / Bunker Escape | private character card, debate and elimination | Missing |
-| 24 | Wheel of Fate | shared deterministic spin and result | Missing |
-| 25 | Kiss / Marry / Kill | private choices and moderated reveal | Missing |
-| 26 | Charades | private prompt and team scoring | Missing |
-| 27 | Music Quiz | protected audio/metadata and locked answers | Missing |
-| 28 | Trivia | questions, locked answers, timer and leaderboard | Quiz component can be shared; dedicated packs missing |
+| 1 | Alias / Word Blast | private word, team timer, pass/correct | **Stage+Controller**, timer, score |
+| 2 | Mafia Lite | private role, night actions, day vote | **Stage+Controller**, role assignment |
+| 3 | Werewolf / One Night | private role, timed actions, reveal | **Stage+Controller**, seer result display, night timeout (30s) |
+| 4 | Codenames | spymaster board, team guesses | **Stage+Controller**, 4x4 board, clue phase |
+| 5 | Spyfall | private location/spy role, vote | **Stage+Controller**, vote timeout |
+| 6 | Impostor | private word, bluff and vote | **Stage+Controller**, clue circle + vote |
+| 7 | Crocodil / Mime Riot | private prompt, team timer | **Stage+Controller**, streak bonus |
+| 8 | Heads Up | private card, gesture fallback | **Stage+Controller**, timer |
+| 9 | Quiplash | private prompt, anonymous answers, vote | **Stage+Controller**, answer voting |
+| 10 | Fibbage | decoys, answer lock, reveal | **Stage+Controller**, truth reveal |
+| 11 | Truth or Dare | private choice, prompt, completion | **Stage+Controller**, mode switch, atomic state |
+| 12 | Never Have I Ever | private response, public aggregate | **Stage+Controller**, count tracking |
+| 13 | Would You Rather | private vote, live aggregate | **Stage+Controller**, 12 prompts |
+| 14 | Two Truths and a Lie | submissions, private vote, reveal | **Stage+Controller**, lie detection |
+| 15 | Blank Slate | simultaneous word submit and matching | **Stage+Controller**, match-based scoring |
+| 16 | Wavelength | private target, team dial and reveal | **Stage+Controller**, lastGuesser tracking |
+| 17 | Brain Burst | locked quiz answers and response time | **Stage+Controller**, anti-double-score guard |
+| 18 | Guess the Song | protected audio round and answer lock | **Stage+Controller**, progressive clues |
+| 19 | Bomb Party | realtime syllable turn and timeout | **Stage+Controller**, elimination detection |
+| 20 | Bunker | private character card, debate and elimination | **Stage+Controller**, trait assignment inside setState, vote timeout (60s) |
+| 21 | Wheel of Fate | shared deterministic spin and result | **Stage+Controller**, SVG wheel |
+| 22 | Kiss / Marry / Kill | private choices and moderated reveal | **Stage+Controller**, 8 name sets |
+| 23 | Charades | private prompt and team scoring | **Stage+Controller**, mime timer |
+| 24 | Trivia | questions, locked answers, timer and leaderboard | **Stage+Controller**, anti-double-score guard |
+| 25 | Beer Pong | score tracker | Local (host only) |
+| 26 | Random Pair | random partner generator | Local (host only) |
+| 27 | Uno Tracker | card score tracker | Local (useState) |
+| 28 | Quiz Battle | multiplayer quiz answers | **Stage+Controller**, uses useStageGame |
 
-Existing extra modes (`Beer Pong`, `Random Pair`, `UNO`) remain supported, but do not replace any of the 28 documented modes. UNO must remain a real synced card game rather than a score-only tracker.
+### Supplementary modes (not in 28-mode guide)
 
-## Current high-priority findings
+| Mode | Status | Notes |
+|---|---|---|
+| Beer Pong | Local | Score tracker, no multiplayer |
+| Random Pair | Local | Random generator, no multiplayer |
+| Uno Tracker | Local | useState, not yet converted to useMultiplayerGame |
 
-1. The game catalogue exposes eight modes while the guide specifies 28.
-2. The shared game-session API has participant/state primitives, but all modes still need the same lobby/ready/spectator/reconnect contract.
-3. Several late CSS media queries contradicted the mobile bottom navigation and reduced touch targets below 44 px.
-4. Native selects produced unbranded OS popups in key user flows; profile cosmetics now use accessible branded choices.
-5. Shopping prices could overflow narrow rows; host/co-host assignment and buyer name synchronisation were incomplete.
-6. QR presentation used blend colouring around a machine-readable asset; the code must stay black on white with a quiet zone.
-7. Tight negative tracking in large Cyrillic headings caused glyph collisions.
+## High-priority fixes applied (this session)
+
+1. **QuizBattle** — Converted from `useMultiplayerGame` to `useStageGame` with `playerActions` processing (controller answers were silently lost).
+2. **AliasGame** — Fixed stale `score` closure in `onSave` via `scoreRef`.
+3. **TruthOrDare** — Merged split `setState` calls into single atomic update.
+4. **BrainBurst/Trivia** — Moved locked/answered guard inside `setState(prev)` callback to prevent double-scoring.
+5. **Wavelength** — Added `lastGuesser` state tracking; credits actual guesser instead of highest scorer.
+6. **Codenames** — Moved `revealed` check inside `setState(prev)` callback; disabled buttons properly.
+7. **Crocodil** — Moved `streakBonus` computation inside `setState(prev)` callback.
+8. **Bunker** — Moved `traitIdx` inside `setState(prev)` callback; added 60s vote timeout.
+9. **Werewolf** — Added `seerResult` state (seer can now see investigation results on controller); added 30s night timeout.
+10. **BlankSlate** — Score now tracks match count across rounds instead of raw submission count.
+11. **Mobile quiz overflow** — Added `word-break: break-word` to `.quiz-options button`.
+12. **Party room tabs** — Fixed white-on-white text, added Material icons, `color: var(--muted)`.
+13. **Codenames/Wavelength/Wheel fonts** — Increased inline font sizes to 14px/13px minimum.
+14. **Quiplash/Fibbage word-break** — Added `word-break: break-word` on user answers.
+15. **GuessSong touch target** — Increased input padding for 44px target.
+16. **ensurePartySchema()** — Added `information_schema.tables` check; skips 48 DDL statements on warm starts.
+
+## Known remaining issues
+
+- UnoTracker still uses local `useState` instead of `useMultiplayerGame` (527 lines, deferred).
+- Party room mobile tabs need horizontal scroll on small screens (6 tabs in fixed bottom bar).
+- Neon Postgres cold start latency improved but still ~100ms for schema check.
+- Stripe payment integration pending (needs Stripe account).
+- Push notifications pending (needs VAPID keys).
+- Self-serve ad platform deferred to v3+.
 
 ## Definition of done for a game
 

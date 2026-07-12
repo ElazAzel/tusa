@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
-import { useMultiplayerGame } from "@/app/components/useMultiplayerGame";
 
 type UnoColor = "red" | "yellow" | "green" | "blue";
 type UnoKind = "number" | "skip" | "reverse" | "draw2" | "wild" | "wild4";

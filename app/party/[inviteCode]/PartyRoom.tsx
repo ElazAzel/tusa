@@ -132,9 +132,20 @@ export default function PartyRoom({ party }: { party: Party }) {
   }, [chatMessages, liveChat.events]);
 
   useEffect(() => {
-    fetch(`/api/chat?partyId=${party.id}`).then((r) => r.json()).then((data) => {
-      if (data.messages) setChatMessages(data.messages as ChatMessage[]);
-    }).catch(() => undefined);
+    let cancelled = false;
+    async function loadChat(retries = 3) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const r = await fetch(`/api/chat?partyId=${party.id}`);
+          if (!r.ok) { await new Promise((res) => setTimeout(res, 1000 * (i + 1))); continue; }
+          const data = await r.json();
+          if (!cancelled && data.messages) setChatMessages(data.messages as ChatMessage[]);
+          return;
+        } catch { if (i < retries - 1) await new Promise((res) => setTimeout(res, 1000 * (i + 1))); }
+      }
+    }
+    loadChat();
+    return () => { cancelled = true; };
   }, [party.id]);
 
   useEffect(() => {
@@ -315,12 +326,12 @@ export default function PartyRoom({ party }: { party: Party }) {
         ))}
       </div>
       <div>
-        <button onClick={() => setTab("space")} className={tab === "space" ? "active" : ""} type="button">{t("roomSpace")}</button>
-        <button onClick={() => setTab("games")} className={tab === "games" ? "active" : ""} type="button">{t("roomGames")}</button>
-        <button onClick={() => setTab("chat")} className={tab === "chat" ? "active" : ""} type="button">{t("roomChat")}</button>
-        <button onClick={() => setTab("shop")} className={tab === "shop" ? "active" : ""} type="button">{t("shoppingSub")}</button>
-        <button onClick={() => setTab("gallery")} className={tab === "gallery" ? "active" : ""} type="button">{t("gallerySub")}</button>
-        <button onClick={() => setTab("koins")} className={tab === "koins" ? "active" : ""} type="button">{t("demoNavKoins")}</button>
+        <button onClick={() => setTab("space")} className={tab === "space" ? "active" : ""} type="button"><span className="material-symbols-rounded">home</span>{t("roomSpace")}</button>
+        <button onClick={() => setTab("games")} className={tab === "games" ? "active" : ""} type="button"><span className="material-symbols-rounded">sports_esports</span>{t("roomGames")}</button>
+        <button onClick={() => setTab("chat")} className={tab === "chat" ? "active" : ""} type="button"><span className="material-symbols-rounded">chat</span>{t("roomChat")}</button>
+        <button onClick={() => setTab("shop")} className={tab === "shop" ? "active" : ""} type="button"><span className="material-symbols-rounded">shopping_cart</span>{t("shoppingSub")}</button>
+        <button onClick={() => setTab("gallery")} className={tab === "gallery" ? "active" : ""} type="button"><span className="material-symbols-rounded">photo_library</span>{t("gallerySub")}</button>
+        <button onClick={() => setTab("koins")} className={tab === "koins" ? "active" : ""} type="button"><span className="material-symbols-rounded">paid</span>{t("demoNavKoins")}</button>
       </div>
     </section>
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { getAdminAccess } from "@/lib/admin-auth";
 import {
   getAdminParties,
@@ -8,8 +9,11 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   const access = await getAdminAccess();
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:admin:data`, 60, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   if (!access)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!access.permissions.includes("dashboard_read"))

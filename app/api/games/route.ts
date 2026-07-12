@@ -1,11 +1,15 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { addGameScore, createGameSession, getActiveGameSessions, getGameScores, getGameSessionById, joinGameSession, leaveGameSession, updateGameSession, trackAnalytics, grantEngagementReward } from "@/lib/parties";
 import { publish } from "@/lib/live";
 
 export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:games`, 30, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
 
   if (body.action === "create") {
@@ -35,15 +39,15 @@ export async function POST(request: Request) {
 
   if (body.action === "update") {
     if (!body.sessionId) return NextResponse.json({ error: "Укажите sessionId." }, { status: 400 });
-    const session = await updateGameSession(body.sessionId, { status: body.status, state: body.state });
-    if (!session) return NextResponse.json({ error: "Сессия не найдена." }, { status: 404 });
-    publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, state: body.state, status: body.status });
+    const session = await updateGameSession(body.sessionId, userId, { status: body.status, state: body.state, expectedVersion: body.version });
+    if (!session) return NextResponse.json({ error: "Конфликт версии — обновите страницу.", retry: true }, { status: 409 });
+    publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, state: body.state, status: body.status, version: session.version });
     return NextResponse.json({ session });
   }
 
   if (body.action === "complete") {
     if (!body.sessionId) return NextResponse.json({ error: "Укажите sessionId." }, { status: 400 });
-    const session = await updateGameSession(body.sessionId, { status: "completed" });
+    const session = await updateGameSession(body.sessionId, userId, { status: "completed" });
     if (!session) return NextResponse.json({ error: "Сессия не найдена." }, { status: 404 });
     publish(`game:${body.sessionId}`, { type: "session:completed", sessionId: body.sessionId });
     return NextResponse.json({ session });
@@ -52,7 +56,8 @@ export async function POST(request: Request) {
   if (body.action === "score") {
     if (!body.sessionId) return NextResponse.json({ error: "Укажите sessionId." }, { status: 400 });
     const session = await getGameSessionById(body.sessionId);
-    const score = await addGameScore(body.sessionId, userId, body.score ?? 0, body.metadata);
+    const metadata = { ...(body.metadata ?? {}), clientMutationId: body.clientMutationId || `${userId}_${Date.now()}` };
+    const score = await addGameScore(body.sessionId, userId, body.score ?? 0, metadata);
     const scores = await getGameScores(body.sessionId);
     publish(`game:${body.sessionId}`, { type: "score:added", sessionId: body.sessionId, score, scores });
     trackAnalytics(userId, "game_played", { sessionId: body.sessionId, game: body.metadata?.game, score: body.score });
@@ -73,6 +78,9 @@ export async function POST(request: Request) {
 export async function GET(request: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:games`, 60, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const url = new URL(request.url);
   const sessionId = url.searchParams.get("sessionId");
   const partyId = url.searchParams.get("partyId");

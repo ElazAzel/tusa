@@ -265,9 +265,11 @@ export default function TruthOrDare({ partyId, sessionId, onSave, role }: { part
 
   function next() {
     soundTap();
-    if (mode === "truth") setState((prev) => ({ ...prev, truthIndex: prev.truthIndex + 1 }));
-    else setState((prev) => ({ ...prev, dareIndex: prev.dareIndex + 1 }));
-    setState((prev) => ({ ...prev, count: prev.count + 1 }));
+    setState((prev) => ({
+      ...prev,
+      ...(prev.mode === "truth" ? { truthIndex: prev.truthIndex + 1 } : { dareIndex: prev.dareIndex + 1 }),
+      count: prev.count + 1,
+    }));
   }
 
   const currentPool = mode === "truth" ? shuffledTruths : shuffledDares;
