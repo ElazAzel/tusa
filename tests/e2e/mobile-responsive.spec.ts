@@ -5,8 +5,9 @@ const publicRoutes = ["/", "/demo", "/partners", "/sign-in"];
 
 for (const width of widths) {
   for (const route of publicRoutes) {
-    test(`${route} stays inside ${width}px`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 812 });
+    test(`${route} stays inside ${width}px`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: { width, height: 812 }, serviceWorkers: "block" });
+      const page = await context.newPage();
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(1_100);
       const layout = await page.evaluate(() => ({
@@ -22,6 +23,7 @@ for (const width of widths) {
           .map((node) => `${node.tagName}.${node.className}`),
       }));
       expect(layout.scroll, `overflow: ${layout.offenders.join(", ")}`).toBeLessThanOrEqual(layout.viewport + 2);
+      await context.close();
     });
   }
 }

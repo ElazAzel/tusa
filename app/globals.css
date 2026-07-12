@@ -38,10 +38,14 @@
 html {
   scroll-behavior: smooth;
   background: var(--bg);
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
+  max-width: 100%;
+  overflow-x: clip;
   background: var(--bg);
   color: var(--white);
   font-family: var(--font-inter), system-ui, sans-serif;
@@ -1287,8 +1291,9 @@ select:focus-visible {
   .desktop-label { display: none; }
   .mobile-label { display: inline; }
   .hero-grid { min-height: auto; padding-block: 58px 72px; }
-  .hero h1 { max-width: 100%; font-size: clamp(40px, 12vw, 54px); letter-spacing: -.035em; overflow-wrap: anywhere; }
+  .hero h1 { max-width: 100%; font-size: clamp(36px, 10vw, 48px); letter-spacing: -.025em; overflow-wrap: anywhere; word-break: break-word; }
   .eyebrows, .hero-lead, .hero-actions { min-width: 0; max-width: 100%; }
+  .hero-actions .button { min-width: 0; white-space: normal; text-align: center; }
   .hero-lead { font-size: 17px; }
   .hero-actions { display: grid; }
   .button { width: 100%; min-height: 56px; }
