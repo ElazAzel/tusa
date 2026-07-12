@@ -17,6 +17,26 @@ import BeerPong from "@/app/components/games/BeerPong";
 import QuizBattle from "@/app/components/games/QuizBattle";
 import RandomPair from "@/app/components/games/RandomPair";
 import UnoTracker from "@/app/components/games/UnoTracker";
+import WouldYouRather from "@/app/components/games/WouldYouRather";
+import TwoTruths from "@/app/components/games/TwoTruths";
+import KissMarryKill from "@/app/components/games/KissMarryKill";
+import BlankSlate from "@/app/components/games/BlankSlate";
+import BombParty from "@/app/components/games/BombParty";
+import Wheel from "@/app/components/games/Wheel";
+import BrainBurst from "@/app/components/games/BrainBurst";
+import TriviaGame from "@/app/components/games/Trivia";
+import ImpostorGame from "@/app/components/games/Impostor";
+import SpyfallGame from "@/app/components/games/Spyfall";
+import CodenamesGame from "@/app/components/games/Codenames";
+import WavelengthGame from "@/app/components/games/Wavelength";
+import QuiplashGame from "@/app/components/games/Quiplash";
+import FibbageGame from "@/app/components/games/Fibbage";
+import HeadsUpGame from "@/app/components/games/HeadsUp";
+import GuessSongGame from "@/app/components/games/GuessSong";
+import CharadesGame from "@/app/components/games/Charades";
+import CrocodilGame from "@/app/components/games/Crocodil";
+import WerewolfGame from "@/app/components/games/Werewolf";
+import BunkerGame from "@/app/components/games/Bunker";
 import ShoppingList from "@/app/components/ShoppingList";
 import Gallery from "@/app/components/Gallery";
 import Koins from "@/app/components/Koins";
@@ -27,10 +47,10 @@ import { tusaStickers } from "@/app/components/chat/stickers";
 import { eventDateInputValue, formatEventDate } from "@/lib/event-format";
 import { soundChat, soundTap, soundReward } from "@/lib/audio";
 
-type GameId = "alias" | "mafia" | "truth" | "never" | "beer" | "quiz" | "pairs" | "uno";
+type GameId = "alias" | "mafia" | "truth" | "never" | "beer" | "quiz" | "pairs" | "uno" | "wouldRather" | "twoTruths" | "kissMarry" | "blankSlate" | "bombParty" | "wheel" | "brainBurst" | "trivia" | "impostor" | "spyfall" | "codenames" | "wavelength" | "quiplash" | "fibbage" | "headsup" | "guessSong" | "charades" | "crocodil" | "werewolf" | "bunker";
 
-type TitleKey = "gamesAliasTitle" | "gamesMafiaTitle" | "gamesTruthTitle" | "gamesNeverTitle" | "gamesBeerTitle" | "gamesQuizTitle" | "gamesPairsTitle" | "gamesUnoTitle";
-type DescKey = "gamesAliasDesc" | "gamesMafiaDesc" | "gamesTruthDesc" | "gamesNeverDesc" | "gamesBeerDesc" | "gamesQuizDesc" | "gamesPairsDesc" | "gamesUnoDesc";
+type TitleKey = "gamesAliasTitle" | "gamesMafiaTitle" | "gamesTruthTitle" | "gamesNeverTitle" | "gamesBeerTitle" | "gamesQuizTitle" | "gamesPairsTitle" | "gamesUnoTitle" | "gamesWouldRatherTitle" | "gamesTwoTruthsTitle" | "gamesKissMarryTitle" | "gamesBlankSlateTitle" | "gamesBombPartyTitle" | "gamesWheelTitle" | "gamesBrainBurstTitle" | "gamesTriviaTitle" | "gamesImpostorTitle" | "gamesSpyfallTitle" | "gamesCodenamesTitle" | "gamesWavelengthTitle" | "gamesQuiplashTitle" | "gamesFibbageTitle" | "gamesHeadsUpTitle" | "gamesGuessSongTitle" | "gamesCharadesTitle" | "gamesCrocodilTitle" | "gamesWerewolfTitle" | "gamesBunkerTitle";
+type DescKey = "gamesAliasDesc" | "gamesMafiaDesc" | "gamesTruthDesc" | "gamesNeverDesc" | "gamesBeerDesc" | "gamesQuizDesc" | "gamesPairsDesc" | "gamesUnoDesc" | "gamesWouldRatherDesc" | "gamesTwoTruthsDesc" | "gamesKissMarryDesc" | "gamesBlankSlateDesc" | "gamesBombPartyDesc" | "gamesWheelDesc" | "gamesBrainBurstDesc" | "gamesTriviaDesc" | "gamesImpostorDesc" | "gamesSpyfallDesc" | "gamesCodenamesDesc" | "gamesWavelengthDesc" | "gamesQuiplashDesc" | "gamesFibbageDesc" | "gamesHeadsUpDesc" | "gamesGuessSongDesc" | "gamesCharadesDesc" | "gamesCrocodilDesc" | "gamesWerewolfDesc" | "gamesBunkerDesc";
 const gameCatalogue: Array<{ id: GameId; titleKey: TitleKey; descKey: DescKey; icon: string; players: string; tone: string }> = [
   { id: "alias", titleKey: "gamesAliasTitle", descKey: "gamesAliasDesc", icon: "record_voice_over", players: "4+", tone: "lime" },
   { id: "mafia", titleKey: "gamesMafiaTitle", descKey: "gamesMafiaDesc", icon: "mystery", players: "5+", tone: "pink" },
@@ -40,6 +60,26 @@ const gameCatalogue: Array<{ id: GameId; titleKey: TitleKey; descKey: DescKey; i
   { id: "quiz", titleKey: "gamesQuizTitle", descKey: "gamesQuizDesc", icon: "quiz", players: "2+", tone: "lime" },
   { id: "pairs", titleKey: "gamesPairsTitle", descKey: "gamesPairsDesc", icon: "shuffle", players: "4+", tone: "blue" },
   { id: "uno", titleKey: "gamesUnoTitle", descKey: "gamesUnoDesc", icon: "style", players: "2+", tone: "cream" },
+  { id: "werewolf", titleKey: "gamesWerewolfTitle", descKey: "gamesWerewolfDesc", icon: "bug_report", players: "4+", tone: "pink" },
+  { id: "codenames", titleKey: "gamesCodenamesTitle", descKey: "gamesCodenamesDesc", icon: "vpn_key", players: "4+", tone: "blue" },
+  { id: "spyfall", titleKey: "gamesSpyfallTitle", descKey: "gamesSpyfallDesc", icon: "visibility", players: "4+", tone: "lime" },
+  { id: "impostor", titleKey: "gamesImpostorTitle", descKey: "gamesImpostorDesc", icon: "person_off", players: "4+", tone: "cream" },
+  { id: "crocodil", titleKey: "gamesCrocodilTitle", descKey: "gamesCrocodilDesc", icon: "theater_comedy", players: "4+", tone: "lime" },
+  { id: "headsup", titleKey: "gamesHeadsUpTitle", descKey: "gamesHeadsUpDesc", icon: "cell_tower", players: "2+", tone: "blue" },
+  { id: "quiplash", titleKey: "gamesQuiplashTitle", descKey: "gamesQuiplashDesc", icon: "emoji_emotions", players: "3+", tone: "pink" },
+  { id: "fibbage", titleKey: "gamesFibbageTitle", descKey: "gamesFibbageDesc", icon: "psychology", players: "3+", tone: "cream" },
+  { id: "wouldRather", titleKey: "gamesWouldRatherTitle", descKey: "gamesWouldRatherDesc", icon: "compare", players: "2+", tone: "lime" },
+  { id: "twoTruths", titleKey: "gamesTwoTruthsTitle", descKey: "gamesTwoTruthsDesc", icon: "fact_check", players: "3+", tone: "blue" },
+  { id: "blankSlate", titleKey: "gamesBlankSlateTitle", descKey: "gamesBlankSlateDesc", icon: "edit_note", players: "3+", tone: "cream" },
+  { id: "wavelength", titleKey: "gamesWavelengthTitle", descKey: "gamesWavelengthDesc", icon: "tune", players: "4+", tone: "pink" },
+  { id: "brainBurst", titleKey: "gamesBrainBurstTitle", descKey: "gamesBrainBurstDesc", icon: "bolt", players: "2+", tone: "lime" },
+  { id: "guessSong", titleKey: "gamesGuessSongTitle", descKey: "gamesGuessSongDesc", icon: "music_note", players: "2+", tone: "blue" },
+  { id: "bombParty", titleKey: "gamesBombPartyTitle", descKey: "gamesBombPartyDesc", icon: "local_fire_department", players: "2+", tone: "pink" },
+  { id: "bunker", titleKey: "gamesBunkerTitle", descKey: "gamesBunkerDesc", icon: "shield", players: "5+", tone: "cream" },
+  { id: "wheel", titleKey: "gamesWheelTitle", descKey: "gamesWheelDesc", icon: "casino", players: "2+", tone: "lime" },
+  { id: "kissMarry", titleKey: "gamesKissMarryTitle", descKey: "gamesKissMarryDesc", icon: "favorite", players: "3+", tone: "pink" },
+  { id: "charades", titleKey: "gamesCharadesTitle", descKey: "gamesCharadesDesc", icon: "theater_comedy", players: "4+", tone: "blue" },
+  { id: "trivia", titleKey: "gamesTriviaTitle", descKey: "gamesTriviaDesc", icon: "school", players: "2+", tone: "cream" },
 ];
 
 export default function PartyRoom({ party }: { party: Party }) {
@@ -228,7 +268,27 @@ export default function PartyRoom({ party }: { party: Party }) {
       selectedGame === "beer" ? <BeerPong {...props} /> :
       selectedGame === "quiz" ? <QuizBattle {...props} /> :
       selectedGame === "pairs" ? <RandomPair {...props} /> :
-      selectedGame === "uno" ? <UnoTracker {...props} /> : null;
+      selectedGame === "uno" ? <UnoTracker {...props} /> :
+      selectedGame === "wouldRather" ? <WouldYouRather {...props} /> :
+      selectedGame === "twoTruths" ? <TwoTruths {...props} /> :
+      selectedGame === "kissMarry" ? <KissMarryKill {...props} /> :
+      selectedGame === "blankSlate" ? <BlankSlate {...props} /> :
+      selectedGame === "bombParty" ? <BombParty {...props} /> :
+      selectedGame === "wheel" ? <Wheel {...props} /> :
+      selectedGame === "brainBurst" ? <BrainBurst {...props} /> :
+      selectedGame === "trivia" ? <TriviaGame {...props} /> :
+      selectedGame === "impostor" ? <ImpostorGame {...props} /> :
+      selectedGame === "spyfall" ? <SpyfallGame {...props} /> :
+      selectedGame === "codenames" ? <CodenamesGame {...props} /> :
+      selectedGame === "wavelength" ? <WavelengthGame {...props} /> :
+      selectedGame === "quiplash" ? <QuiplashGame {...props} /> :
+      selectedGame === "fibbage" ? <FibbageGame {...props} /> :
+      selectedGame === "headsup" ? <HeadsUpGame {...props} /> :
+      selectedGame === "guessSong" ? <GuessSongGame {...props} /> :
+      selectedGame === "charades" ? <CharadesGame {...props} /> :
+      selectedGame === "crocodil" ? <CrocodilGame {...props} /> :
+      selectedGame === "werewolf" ? <WerewolfGame {...props} /> :
+      selectedGame === "bunker" ? <BunkerGame {...props} /> : null;
     return <section className="party-room-panel"><div className="active-game-head"><button onClick={backToCatalogue} type="button"><span className="material-symbols-rounded">arrow_back</span> {t("gamesBack")}</button><div><span>{t("gamesMode")}</span><h2>{game ? t(game.titleKey) : ""}</h2></div><span className="demo-chip">{game?.players}{t("gamesPlayers")}</span></div>{board}</section>;
   }
 
@@ -293,7 +353,7 @@ export default function PartyRoom({ party }: { party: Party }) {
     </section>}
 
     {tab === "games" && (selectedGame ? renderGame() : <section className="party-room-panel">
-      <div className="demo-panel-title"><div><span>{t("gamesCatalogue")}</span><h2>{t("gamesTitle")}</h2></div><span className="demo-chip">{t("gamesCatalogue").split(" ")[0]?.replace(/\D/g, "") || "8"}{t("gamesSessions")}</span></div>
+      <div className="demo-panel-title"><div><span>{t("gamesCatalogue")}</span><h2>{t("gamesTitle")}</h2></div><span className="demo-chip">{t("gamesCatalogue").split(" ")[0]?.replace(/\D/g, "") || "28"}{t("gamesSessions")}</span></div>
 
       <div className="game-catalogue-grid">
         {gameCatalogue.map((game) => {

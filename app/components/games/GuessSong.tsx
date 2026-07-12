@@ -1,0 +1,274 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useStageGame } from "@/app/components/useStageGame";
+import { useControllerGame } from "@/app/components/useControllerGame";
+import { useLocale } from "@/app/components/LocaleProvider";
+
+const SONGS_EN = [
+  { title: "Bohemian Rhapsody", artist: "Queen", year: "1975", clue: "Is this the real life? Is this just fantasy?" },
+  { title: "Hotel California", artist: "Eagles", year: "1977", clue: "Welcome to the Hotel California, such a lovely place" },
+  { title: "Stairway to Heaven", artist: "Led Zeppelin", year: "1971", clue: "There's a lady who's sure all that glitters is gold" },
+  { title: "Imagine", artist: "John Lennon", year: "1971", clue: "Imagine there's no heaven, it's easy if you try" },
+  { title: "Smells Like Teen Spirit", artist: "Nirvana", year: "1991", clue: "With the lights out, it's less dangerous" },
+  { title: "Billie Jean", artist: "Michael Jackson", year: "1982", clue: "She was more like a beauty queen from a movie scene" },
+  { title: "Like a Rolling Stone", artist: "Bob Dylan", year: "1965", clue: "Once upon a time you dressed so fine, you threw the bums a dime" },
+  { title: "Hey Jude", artist: "The Beatles", year: "1968", clue: "Hey Jude, don't make it bad, take a sad song and make it better" },
+  { title: "Yesterday", artist: "The Beatles", year: "1965", clue: "Yesterday, all my troubles seemed so far away" },
+  { title: "Superstition", artist: "Stevie Wonder", year: "1972", clue: "Very superstitious, writing's on the wall" },
+  { title: "Sweet Child O' Mine", artist: "Guns N' Roses", year: "1987", clue: "She's got a smile that it seems to me reminds me of childhood memories" },
+  { title: "Thriller", artist: "Michael Jackson", year: "1982", clue: "It's close to midnight and something evil's lurking from the dark" },
+];
+
+const SONGS_RU = [
+  { title: "Богемская рапсодия", artist: "Queen", year: "1975", clue: "Это реальная жизнь? Или просто фантазия?" },
+  { title: "Отель Калифорния", artist: "Eagles", year: "1977", clue: "Добро пожаловать в Отель Калифорния, такое прекрасное место" },
+  { title: "Лестница в небо", artist: "Led Zeppelin", year: "1971", clue: "Есть леди, уверенная что всё что блестит — золото" },
+  { title: "Представь", artist: "John Lennon", year: "1971", clue: "Представь что нет рая, это легко если попробовать" },
+  { title: "Пахнет как подростковый дух", artist: "Nirvana", year: "1991", clue: "Со светом выключено, это менее опасно" },
+  { title: "Билли Джин", artist: "Michael Jackson", year: "1982", clue: "Она была скорее как королева красоты из фильма" },
+  { title: "Как скользящий камень", artist: "Bob Dylan", year: "1965", clue: "Когда-то ты одевался так хорошо" },
+  { title: "Эй Джуд", artist: "The Beatles", year: "1968", clue: "Эй Джуд, не порть всё, возьми грустную песню и сделай лучше" },
+  { title: "Вчера", artist: "The Beatles", year: "1965", clue: "Вчера все мои проблемы казались такими далёкими" },
+  { title: "Суеверие", artist: "Stevie Wonder", year: "1972", clue: "Очень суеверно, письмо на стене" },
+  { title: "Сладкий ребёнок мой", artist: "Guns N' Roses", year: "1987", clue: "У неё улыбка которая напоминает мне детские воспоминания" },
+  { title: "Триллер", artist: "Michael Jackson", year: "1982", clue: "Близко к полуночи и что-то злое подстерегает из темноты" },
+];
+
+function shuffle<T>(arr: T[]): T[] {
+  const r = [...arr];
+  for (let i = r.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [r[i], r[j]] = [r[j], r[i]];
+  }
+  return r;
+}
+
+type Song = { title: string; artist: string; clue: string; year: string };
+type GameState = {
+  round: number;
+  phase: "clue" | "guess" | "reveal";
+  song: Song;
+  scores: Record<string, number>;
+  timer: number;
+  hintStage: number;
+  winner: string;
+};
+
+function GuessSongStage({ sessionId, partyId, onSave }: { sessionId?: string | null; partyId: string; onSave: (score: number) => void }) {
+  const { locale } = useLocale();
+  const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
+  const songs = useMemo(() => shuffle(locale === "ru" ? SONGS_RU : SONGS_EN), [locale]);
+
+  const { state, setState, playerActions, clearActions, complete } = useStageGame<GameState>(
+    sessionId ?? null,
+    () => ({
+      round: 0, phase: "clue" as const, song: songs[0],
+      scores: {}, timer: 12, hintStage: 0, winner: "",
+    }),
+  );
+
+  useEffect(() => {
+    if (playerActions.length === 0) return;
+    for (const a of playerActions) {
+      if (a.actionType === "guess" && state.phase === "guess" && !state.winner) {
+        const guess = ((a.payload as { title: string }).title || "").toLowerCase().trim();
+        const title = state.song.title.toLowerCase();
+        if (guess.length >= 3 && title.includes(guess)) {
+          setState((prev) => ({
+            ...prev,
+            scores: { ...prev.scores, [a.userId]: (prev.scores[a.userId] || 0) + (prev.timer > 6 ? 3 : 1) },
+            winner: a.userId,
+            phase: "reveal",
+          }));
+        }
+      }
+    }
+    clearActions();
+  }, [playerActions, state.phase, state.song.title, state.timer, state.winner, setState, clearActions]);
+
+  useEffect(() => {
+    if (state.phase === "clue" || (state.phase === "guess" && !state.winner)) {
+      if (state.timer <= 0) return;
+      const id = setTimeout(() => setState((p) => ({ ...p, timer: p.timer - 1 })), 1000);
+      return () => clearTimeout(id);
+    }
+  }, [state.phase, state.timer, state.winner, setState]);
+
+  useEffect(() => {
+    if (state.phase === "clue" && state.timer === 9) {
+      setState((p) => ({ ...p, hintStage: 1 }));
+    }
+    if (state.phase === "clue" && state.timer === 6) {
+      setState((p) => ({ ...p, hintStage: 2, phase: "guess" }));
+    }
+    if (state.phase === "guess" && state.timer === 0 && !state.winner) {
+      setState((p) => ({ ...p, phase: "reveal" }));
+    }
+  }, [state.timer, state.phase, state.winner, setState]);
+
+  const sorted = useMemo(() => Object.entries(state.scores).sort(([, a], [, b]) => b - a), [state.scores]);
+
+  const next = useCallback(() => {
+    const nextRound = state.round + 1;
+    if (nextRound >= songs.length) {
+      complete();
+      const top = sorted[0]?.[1] || 0;
+      onSave(top);
+      return;
+    }
+    setState((p) => ({
+      ...p, round: nextRound, phase: "clue", song: songs[nextRound],
+      timer: 12, hintStage: 0, winner: "",
+    }));
+  }, [state.round, sorted, songs, setState, complete, onSave]);
+
+  const hint1 = state.song.artist + ", " + state.song.year;
+  const hint2 = state.song.clue;
+  const full = state.song.title + " — " + state.song.artist;
+
+  return (
+    <div className="party-game-board game-board-enter">
+      <span className="game-step">{t("round")} {state.round + 1}/{songs.length}</span>
+      <div style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 5 ? "#f87171" : "#a3e635", margin: "8px 0" }}>
+        {state.timer}s
+      </div>
+      {state.phase === "clue" && (
+        <div style={{ textAlign: "center" }}>
+          <p style={{ color: "#a3a3a3" }}>{t("listen")}</p>
+          {state.hintStage === 0 && <p style={{ fontSize: 24, marginTop: 8 }}>🎵 🎵 🎵</p>}
+          {state.hintStage >= 1 && (
+            <div style={{ fontSize: 18, background: "#262626", borderRadius: 8, padding: 12, marginTop: 8 }}>
+              {hint1}
+            </div>
+          )}
+        </div>
+      )}
+      {state.phase === "guess" && (
+        <div>
+          <div style={{ fontSize: 18, background: "#262626", borderRadius: 8, padding: 12, marginBottom: 8 }}>
+            {hint1}
+          </div>
+          <div style={{ fontSize: 16, color: "#a3a3a3", marginBottom: 8 }}>
+            &ldquo;{hint2}&rdquo;
+          </div>
+          <p style={{ color: "#fbbf24", fontWeight: 700 }}>{t("guessOnPhone")}</p>
+        </div>
+      )}
+      {state.phase === "reveal" && (
+        <div style={{ textAlign: "center" }}>
+          {state.winner ? (
+            <p style={{ color: "#a3e635", fontWeight: 700 }}>{state.winner.slice(0, 8)} {t("guessed")}!</p>
+          ) : (
+            <p style={{ color: "#f87171" }}>{t("noOneGuessed")}</p>
+          )}
+          <div style={{ fontSize: 20, fontWeight: 700, background: "#262626", borderRadius: 8, padding: 12, marginTop: 8 }}>
+            🎵 {full}
+          </div>
+          {sorted.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              {sorted.slice(0, 5).map(([uid, score], i) => (
+                <p key={uid} style={{ color: "#a3a3a3" }}>{i + 1}. {uid.slice(0, 8)} — {score} {t("pts")}</p>
+              ))}
+            </div>
+          )}
+          <button className="demo-action demo-action--lime" onClick={next} type="button" style={{ marginTop: 12 }}>
+            {state.round >= songs.length - 1 ? t("finish") : t("next")}
+          </button>
+        </div>
+      )}
+      {sessionId && <span className="multiplayer-badge">LIVE</span>}
+    </div>
+  );
+}
+
+function GuessSongController({ sessionId }: { sessionId: string }) {
+  const { locale } = useLocale();
+  const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
+  const { state, sendAction } = useControllerGame<GameState>(sessionId, {
+    round: 0, phase: "clue", song: { title: "", artist: "", clue: "", year: "" },
+    scores: {}, timer: 12, hintStage: 0, winner: "",
+  });
+  const [guess, setGuess] = useState("");
+  const [sent, setSent] = useState(false);
+
+  useEffect(() => { setGuess(""); setSent(false); }, [state.round]);
+
+  const submitGuess = useCallback(() => {
+    if (!guess.trim() || sent) return;
+    setSent(true);
+    sendAction("guess", { title: guess.trim() });
+  }, [guess, sent, sendAction]);
+
+  const handleKey = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter") submitGuess();
+  }, [submitGuess]);
+
+  return (
+    <div className="party-game-board game-board-enter">
+      <span className="game-step">{t("round")} {state.round + 1}</span>
+      {state.phase === "clue" && (
+        <div>
+          <p style={{ color: "#a3a3a3" }}>{t("listening")}</p>
+          <div style={{ fontSize: 32, margin: "16px 0" }}>🎵</div>
+        </div>
+      )}
+      {state.phase === "guess" && (
+        <div>
+          <p style={{ color: "#a3a3a3" }}>{state.hintStage >= 1 ? state.song.artist + ", " + state.song.year : "🎵 🎵 🎵"}</p>
+          {state.hintStage >= 2 && <p style={{ color: "#a3a3a3", marginTop: 4 }}>&ldquo;{state.song.clue}&rdquo;</p>}
+          <input
+            value={guess}
+            onChange={(e) => setGuess(e.target.value)}
+            onKeyDown={handleKey}
+            placeholder={t("typeTitle")}
+            disabled={sent}
+            style={{
+              width: "100%", padding: 12, borderRadius: 8, border: "1px solid #404040",
+              background: "#1a1a1a", color: "#fff", fontSize: 16, marginTop: 12,
+            }}
+          />
+          <button
+            className="demo-action demo-action--lime"
+            onClick={submitGuess}
+            disabled={sent || !guess.trim()}
+            type="button"
+            style={{ marginTop: 8, width: "100%" }}
+          >
+            {sent ? t("guessed") : t("submit")}
+          </button>
+        </div>
+      )}
+      {state.phase === "reveal" && (
+        <div>
+          {state.winner ? (
+            <p style={{ color: state.winner ? "#a3e635" : "#f87171", fontWeight: 700 }}>
+              {state.winner ? t("someoneGuessed") : t("noOneGuessed")}
+            </p>
+          ) : (
+            <p style={{ color: "#f87171" }}>{t("noOneGuessed")}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const EN: Record<string, string> = {
+  round: "Round", listen: "Listen to the clue...", guessOnPhone: "Guess the song on your phone!",
+  guessed: "Guessed!", noOneGuessed: "No one guessed", pts: "pts", next: "Next",
+  finish: "Finish", listening: "Listening...", typeTitle: "Type song title",
+  submit: "Submit", someoneGuessed: "Someone guessed it!",
+};
+
+const RU: Record<string, string> = {
+  round: "Раунд", listen: "Слушай подсказку...", guessOnPhone: "Угадай песню на телефоне!",
+  guessed: "Угадал!", noOneGuessed: "Никто не угадал", pts: "очк", next: "Далее",
+  finish: "Завершить", listening: "Слушаю...", typeTitle: "Введите название песни",
+  submit: "Отправить", someoneGuessed: "Кто-то угадал!",
+};
+
+export default function GuessSong({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+  if (role === "controller" && sessionId) return <GuessSongController sessionId={sessionId} />;
+  return <GuessSongStage sessionId={sessionId} partyId={partyId} onSave={onSave} />;
+}
