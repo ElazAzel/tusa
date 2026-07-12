@@ -1,6 +1,5 @@
-const CACHE = "tusa-game-v3";
+const CACHE = "tusa-game-v4";
 const SHELL = [
-  "/",
   "/offline",
   "/brand/tusa-game-logo.png",
   "/brand/tusa-game-icon.png",
@@ -22,9 +21,16 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
 
-  // Never cache identity or data requests: they must reach the server and
-  // should not turn an authentication redirect into a stale offline response.
-  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/sign-")) return;
+  // Browser metadata, Next assets, identity and data requests must always
+  // reach the network. Never manufacture a 503 for the web manifest.
+  if (
+    url.origin !== self.location.origin ||
+    url.pathname === "/manifest.webmanifest" ||
+    url.pathname === "/sw.js" ||
+    url.pathname.startsWith("/_next/") ||
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/sign-")
+  ) return;
 
   if (event.request.mode === "navigate") {
     event.respondWith(
@@ -39,7 +45,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request).catch(() => new Response("", { status: 503, statusText: "Offline" }))),
-  );
+  if (SHELL.includes(url.pathname)) {
+    event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
+  }
 });
