@@ -3671,6 +3671,14 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .guest-account-link { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; margin-top: 10px; color: var(--black); font-weight: 750; text-underline-offset: 4px; }
 
 /* ===== Product-wide accessibility and interaction polish ===== */
+.product-header { width: min(100%,1180px); min-height: 58px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 20px; margin-inline: auto; }
+.product-header__brand { display: inline-flex; min-width: 0; align-items: center; }
+.product-header__brand .brand-logo--long { width: auto; height: 52px; }
+.product-header__nav { display: flex; align-items: center; justify-content: center; gap: clamp(12px,2.5vw,28px); }
+.product-header__nav a, .product-header__back { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; color: var(--black); font-size: 13px; font-weight: 900; text-decoration: none; }
+.product-header__actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.product-header__back { max-width: 220px; line-height: 1.15; }
+.product-header__back:hover, .product-header__nav a:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .skip-link { position: fixed; z-index: 10000; top: 10px; left: 10px; padding: 11px 15px; border: var(--line); border-radius: 10px; background: var(--lime); box-shadow: var(--shadow); color: var(--black); font-weight: 900; transform: translateY(-160%); transition: transform var(--dur) var(--ease); }
 .skip-link:focus { transform: translateY(0); }
 .sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important; }
@@ -3738,6 +3746,11 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 }
 
 @media (max-width: 560px) {
+  .product-header { grid-template-columns: minmax(90px,1fr) auto; gap: 10px; }
+  .product-header__brand .brand-logo--long { height: 42px; max-width: 132px; }
+  .product-header__spacer, .product-header__nav { display: none; }
+  .product-header__actions { gap: 8px; }
+  .product-header__back { max-width: 132px; justify-content: flex-end; font-size: 11px; text-align: right; }
   .cookie-banner { align-items: stretch; flex-direction: column; gap: 10px; padding: 14px; }
   .cookie-banner button { width: 100%; }
   .catalogue-header { margin-bottom: 18px; }
@@ -3751,6 +3764,9 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
   .auth-shell > header { justify-content: center; }
   .auth-loading { min-height: 360px; }
 }
+
+/* The select label includes its caption; anchor the custom chevron to the control. */
+.brand-select::after { top: auto; bottom: 17px; transform: none; }
 
 @media (prefers-reduced-motion: reduce) { .auth-loading-mark { animation: none; } }
 
