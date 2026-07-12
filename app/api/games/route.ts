@@ -229,7 +229,7 @@ function sanitizeControllerSession(session: SessionView, userId: string) {
 function sanitizeControllerState(game: string, rawState: Record<string, unknown>, userId: string) {
   const state = structuredClone(rawState);
   const phase = String(state.phase ?? "");
-  if ((game === "trivia" || game === "quiz") && phase === "question") state.correct = -1;
+  if ((game === "trivia" || game === "quiz" || game === "brainBurst") && phase === "question") state.correct = -1;
   if (game === "twoTruths" && phase === "vote") state.lie = -1;
   if ((game === "werewolf" || game === "mafia") && phase !== "reveal") {
     const roles = (state.roles ?? {}) as Record<string, unknown>;

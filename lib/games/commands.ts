@@ -9,7 +9,7 @@ const point = z.object({ x: z.number().int().min(0).max(600), y: z.number().int(
 const COMMANDS: Record<string, Record<string, z.ZodType>> = {
   blankSlate: { submit: text("answer", 120) },
   bombParty: { submit: text("word", 60) },
-  brainBurst: { answer: index },
+  brainBurst: { answer: index, reveal: empty, next: empty },
   bunker: { join: empty, vote: target },
   cardsChaos: { submit: text("card", 240), judge: z.object({ winner: z.string().min(1).max(128) }).strict() },
   charades: { correct: empty, skip: empty, setActive: empty },
