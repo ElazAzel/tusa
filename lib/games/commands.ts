@@ -30,7 +30,7 @@ const COMMANDS: Record<string, Record<string, z.ZodType>> = {
   kissMarry: { vote: z.object({ choice: z.union([z.literal(0), z.literal(1), z.literal(2)]) }).strict() },
   pictionary: { guess: text("text", 120), stroke: z.object({ points: z.array(point).min(1).max(32) }).strict() },
   quiplash: { answer: text("text", 240), vote: target },
-  quiz: { answer: text("option", 180) },
+  quiz: { answer: index, reveal: empty, next: empty },
   spyfall: { spyGuess: text("location", 120), vote: target },
   trivia: { answer: index, reveal: empty, next: empty },
   twoTruths: { vote: index },

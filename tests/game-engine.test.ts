@@ -31,3 +31,11 @@ test("server trivia enforces deadline and stage-only transitions", () => {
   assert.equal(next.state.round, 1);
   assert.deepEqual(next.state.answered, {});
 });
+
+test("Quiz Battle reuses the engine with a faster deadline and bonus", () => {
+  const started = initialServerGameState("quiz", players, { locale: "en" }, 5_000)!;
+  assert.equal(started.game, "quiz");
+  assert.equal(started.deadline, 17_000);
+  const answer = applyServerGameCommand("quiz", started, "answer", { index: started.correct }, context("guest", 6_000))!;
+  assert.equal((answer.state.scores as Record<string, number>).guest, 3);
+});
