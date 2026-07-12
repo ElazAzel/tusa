@@ -81,7 +81,7 @@ function ImpostorStage({ sessionId, partyId, onSave, words }: { sessionId?: stri
       <div className="party-game-board game-board-enter">
         <span className="game-step">{t("impostorReveal")}</span>
         <h3>{state.impostorId ? `${t("impostorWas")}: ${state.impostorId.slice(0, 8)}` : t("impostorNone")}</h3>
-        <p>{t("word")}: <strong style={{ color: "#a3e635" }}>{state.word}</strong></p>
+        <p>{t("word")}: <strong style={{ color: "var(--lime)" }}>{state.word}</strong></p>
         <div className="game-primary-actions"><button className="demo-action demo-action--lime" onClick={() => { startGame(); }} type="button">{t("newRound")}</button></div>
       </div>
     );

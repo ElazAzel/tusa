@@ -123,21 +123,21 @@ function CrocodilStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
       <span className="game-step">{t("round")} {state.round + 1}</span>
       <div style={{ display: "flex", gap: 24, justifyContent: "center", marginBottom: 12 }}>
         <div style={{ textAlign: "center" }}>
-          <p style={{ color: "#a3e635", fontWeight: 700, fontSize: 24 }}>{state.scores.teamA}</p>
-          <p style={{ color: "#a3a3a3" }}>{t("teamA")}</p>
+          <p style={{ color: "var(--lime)", fontWeight: 700, fontSize: 24 }}>{state.scores.teamA}</p>
+          <p style={{ color: "var(--gray)" }}>{t("teamA")}</p>
         </div>
         <div style={{ textAlign: "center" }}>
-          <p style={{ color: "#f87171", fontWeight: 700, fontSize: 24 }}>{state.scores.teamB}</p>
-          <p style={{ color: "#a3a3a3" }}>{t("teamB")}</p>
+          <p style={{ color: "var(--red)", fontWeight: 700, fontSize: 24 }}>{state.scores.teamB}</p>
+          <p style={{ color: "var(--gray)" }}>{t("teamB")}</p>
         </div>
       </div>
-      <div style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 10 ? "#f87171" : "#a3e635", margin: "8px 0" }}>
+      <div style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 10 ? "var(--red)" : "var(--lime)", margin: "8px 0" }}>
         {state.timer}s
       </div>
       {state.phase === "play" && (
         <div>
-          <p style={{ color: "#a3a3a3", marginBottom: 4 }}>{t("mimeFor")} {state.activeTeam === "A" ? t("teamA") : t("teamB")}</p>
-          <div style={{ fontSize: 28, fontWeight: 700, background: "#262626", borderRadius: 12, padding: 16, textAlign: "center" }}>
+          <p style={{ color: "var(--gray)", marginBottom: 4 }}>{t("mimeFor")} {state.activeTeam === "A" ? t("teamA") : t("teamB")}</p>
+          <div style={{ fontSize: 28, fontWeight: 700, background: "var(--dark)", borderRadius: 12, padding: 16, textAlign: "center" }}>
             {currentWord}
           </div>
           {state.streak >= 2 && (
@@ -152,8 +152,8 @@ function CrocodilStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
       )}
       {state.phase === "result" && (
         <div style={{ textAlign: "center" }}>
-          <p style={{ fontSize: 24, fontWeight: 700, color: "#a3e635" }}>{t("teamA")}: {state.scores.teamA} {t("pts")}</p>
-          <p style={{ fontSize: 24, fontWeight: 700, color: "#f87171" }}>{t("teamB")}: {state.scores.teamB} {t("pts")}</p>
+          <p style={{ fontSize: 24, fontWeight: 700, color: "var(--lime)" }}>{t("teamA")}: {state.scores.teamA} {t("pts")}</p>
+          <p style={{ fontSize: 24, fontWeight: 700, color: "var(--red)" }}>{t("teamB")}: {state.scores.teamB} {t("pts")}</p>
           {winner && <p style={{ fontSize: 20, fontWeight: 700, color: "#fbbf24", marginTop: 8 }}>{t("teamWins")} {winner === "A" ? t("teamA") : t("teamB")}</p>}
           <button className="demo-action demo-action--lime" onClick={reset} type="button" style={{ marginTop: 8 }}>{t("playAgain")}</button>
           <button className="demo-action demo-action--white" onClick={finish} type="button" style={{ marginTop: 8 }}>{t("finish")}</button>
@@ -185,8 +185,8 @@ function CrocodilController({ sessionId }: { sessionId: string }) {
     return (
       <div className="party-game-board game-board-enter">
         <h3>{t("teamView")}</h3>
-        <p style={{ color: "#a3a3a3", marginBottom: 8 }}>{t("teamDesc")}</p>
-        <div style={{ fontSize: 28, fontWeight: 700, background: "#262626", borderRadius: 12, padding: 16, textAlign: "center", marginBottom: 12 }}>
+        <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("teamDesc")}</p>
+        <div style={{ fontSize: 28, fontWeight: 700, background: "var(--dark)", borderRadius: 12, padding: 16, textAlign: "center", marginBottom: 12 }}>
           {currentWord}
         </div>
         <button className="demo-action demo-action--lime" onClick={setActive} type="button">{t("startMiming")}</button>
@@ -199,7 +199,7 @@ function CrocodilController({ sessionId }: { sessionId: string }) {
       <div className="party-game-board game-board-enter">
         <span className="game-step">{t("mimeIt")}</span>
         <h3>{currentWord}</h3>
-        <p style={{ color: "#a3a3a3", marginBottom: 12 }}>{t("mimeDesc")}</p>
+        <p style={{ color: "var(--gray)", marginBottom: 12 }}>{t("mimeDesc")}</p>
         <div style={{ display: "flex", gap: 12 }}>
           <button className="demo-action demo-action--lime" onClick={correct} type="button" style={{ flex: 1, fontSize: 18, padding: "14px 0" }}>
             ✓ {t("gotIt")}

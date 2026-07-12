@@ -97,20 +97,20 @@ function HeadsUpStage({ sessionId, partyId, onSave }: { sessionId?: string | nul
   return (
     <div className="party-game-board game-board-enter">
       <span className="game-step">{t("round")} {state.round + 1}</span>
-      <div style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 10 ? "#f87171" : "#a3e635", margin: "8px 0" }}>
+      <div style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 10 ? "var(--red)" : "var(--lime)", margin: "8px 0" }}>
         {state.timer}s
       </div>
       {state.phase === "play" && (
         <div>
-          <p style={{ color: "#a3a3a3", marginBottom: 4 }}>{t("currentWord")}</p>
-          <div style={{ fontSize: 28, fontWeight: 700, background: "#262626", borderRadius: 12, padding: 16, textAlign: "center" }}>
+          <p style={{ color: "var(--gray)", marginBottom: 4 }}>{t("currentWord")}</p>
+          <div style={{ fontSize: 28, fontWeight: 700, background: "var(--dark)", borderRadius: 12, padding: 16, textAlign: "center" }}>
             {currentWord}
           </div>
-          <p style={{ color: "#a3a3a3", marginTop: 8 }}>
+          <p style={{ color: "var(--gray)", marginTop: 8 }}>
             {t("score")}: {state.score} | {t("word")} {state.currentIndex + 1}/{totalWords}
           </p>
           {state.direction && (
-            <p style={{ color: state.direction === "correct" ? "#a3e635" : "#f87171", fontWeight: 700, marginTop: 4 }}>
+            <p style={{ color: state.direction === "correct" ? "var(--lime)" : "var(--red)", fontWeight: 700, marginTop: 4 }}>
               {state.direction === "correct" ? `✓ ${t("correct")}` : `⏭ ${t("skipped")}`}
             </p>
           )}
@@ -123,7 +123,7 @@ function HeadsUpStage({ sessionId, partyId, onSave }: { sessionId?: string | nul
       )}
       {state.phase === "result" && (
         <div style={{ textAlign: "center" }}>
-          <p style={{ fontSize: 32, fontWeight: 700, color: "#a3e635" }}>{state.score} {t("pts")}</p>
+          <p style={{ fontSize: 32, fontWeight: 700, color: "var(--lime)" }}>{state.score} {t("pts")}</p>
           <button className="demo-action demo-action--lime" onClick={reset} type="button" style={{ marginTop: 8 }}>{t("playAgain")}</button>
           <button className="demo-action demo-action--white" onClick={finish} type="button" style={{ marginTop: 8 }}>{t("finish")}</button>
         </div>
@@ -154,8 +154,8 @@ function HeadsUpController({ sessionId }: { sessionId: string }) {
     return (
       <div className="party-game-board game-board-enter">
         <h3>{t("teamView")}</h3>
-        <p style={{ color: "#a3a3a3", marginBottom: 8 }}>{t("teamDesc")}</p>
-        <div style={{ fontSize: 28, fontWeight: 700, background: "#262626", borderRadius: 12, padding: 16, textAlign: "center", marginBottom: 12 }}>
+        <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("teamDesc")}</p>
+        <div style={{ fontSize: 28, fontWeight: 700, background: "var(--dark)", borderRadius: 12, padding: 16, textAlign: "center", marginBottom: 12 }}>
           {currentWord}
         </div>
         <button className="demo-action demo-action--lime" onClick={setActive} type="button">{t("startClueing")}</button>
@@ -168,7 +168,7 @@ function HeadsUpController({ sessionId }: { sessionId: string }) {
       <div className="party-game-board game-board-enter">
         <span className="game-step">{t("activePlayer")}</span>
         <h3>{currentWord}</h3>
-        <p style={{ color: "#a3a3a3", marginBottom: 12 }}>{t("sayClues")}</p>
+        <p style={{ color: "var(--gray)", marginBottom: 12 }}>{t("sayClues")}</p>
         <div style={{ display: "flex", gap: 12 }}>
           <button className="demo-action demo-action--lime" onClick={correct} type="button" style={{ flex: 1, fontSize: 18, padding: "14px 0" }}>
             ✓ {t("correct")}

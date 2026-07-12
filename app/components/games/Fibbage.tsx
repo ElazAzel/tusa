@@ -108,13 +108,13 @@ function FibbageStage({ sessionId, partyId, onSave }: { sessionId?: string | nul
       <span className="game-step">{t("round")} {state.round + 1}/{Math.min(questions.length, 6)}</span>
       <h3>{state.question}</h3>
       {state.phase === "answer" && (
-        <p style={{ color: "#a3a3a3" }}>{t("waitingAnswers")} ({state.submissions.length})</p>
+        <p style={{ color: "var(--gray)" }}>{t("waitingAnswers")} ({state.submissions.length})</p>
       )}
       {state.phase === "vote" && (
         <div>
-          <p style={{ color: "#a3a3a3", marginBottom: 8 }}>{t("votePrompt")}</p>
+          <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("votePrompt")}</p>
           {state.submissions.map((s) => (
-            <button key={s.userId} type="button" disabled style={{ display: "block", width: "100%", textAlign: "left", background: "#262626", color: "#fff", borderRadius: 8, padding: "10px 14px", marginBottom: 6, border: "none", fontWeight: 600 }}>
+            <button key={s.userId} type="button" disabled style={{ display: "block", width: "100%", textAlign: "left", background: "var(--dark)", color: "var(--white)", borderRadius: 8, padding: "10px 14px", marginBottom: 6, border: "none", fontWeight: 600 }}>
               {s.answer}
             </button>
           ))}
@@ -123,11 +123,11 @@ function FibbageStage({ sessionId, partyId, onSave }: { sessionId?: string | nul
       )}
       {state.phase === "reveal" && (
         <div>
-          <p style={{ fontSize: 20, fontWeight: 700, color: "#a3e635", marginBottom: 8 }}>{t("truth")}: {state.truth}</p>
+          <p style={{ fontSize: 20, fontWeight: 700, color: "var(--lime)", marginBottom: 8 }}>{t("truth")}: {state.truth}</p>
           {state.submissions.map((s) => {
             const votes = Object.values(state.votes).filter((v) => v === s.userId).length;
             return (
-              <div key={s.userId} style={{ background: "#262626", borderRadius: 8, padding: "10px 14px", marginBottom: 6 }}>
+              <div key={s.userId} style={{ background: "var(--dark)", borderRadius: 8, padding: "10px 14px", marginBottom: 6 }}>
                 {s.answer} — {votes} {t("tricked")}
               </div>
             );
@@ -188,14 +188,14 @@ function FibbageController({ sessionId }: { sessionId: string }) {
     return (
       <div className="party-game-board game-board-enter">
         <h3>{state.question}</h3>
-        <p style={{ color: "#a3a3a3", marginBottom: 8 }}>{t("votePrompt")}</p>
+        <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("votePrompt")}</p>
         {state.submissions.map((s) => (
           <button
             key={s.userId} type="button" disabled={votedFor !== null}
             onClick={() => vote(s.userId)}
             style={{
-              display: "block", width: "100%", textAlign: "left", background: votedFor === s.userId ? "#a3e635" : "#262626",
-              color: votedFor === s.userId ? "#000" : "#fff", borderRadius: 8, padding: "10px 14px", marginBottom: 6,
+              display: "block", width: "100%", textAlign: "left", background: votedFor === s.userId ? "var(--lime)" : "var(--dark)",
+              color: votedFor === s.userId ? "var(--black)" : "var(--white)", borderRadius: 8, padding: "10px 14px", marginBottom: 6,
               border: "none", fontWeight: 600, fontSize: 14, cursor: votedFor ? "default" : "pointer",
             }}
           >
@@ -209,7 +209,7 @@ function FibbageController({ sessionId }: { sessionId: string }) {
   return (
     <div className="party-game-board game-board-enter">
       <h3>{state.question}</h3>
-      <p style={{ color: "#a3e635", fontWeight: 700 }}>{t("truth")}: {state.truth}</p>
+      <p style={{ color: "var(--lime)", fontWeight: 700 }}>{t("truth")}: {state.truth}</p>
     </div>
   );
 }

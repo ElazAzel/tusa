@@ -84,10 +84,10 @@ function BrainBurstStage({ sessionId, partyId, onSave, questions }: { sessionId?
     <div className="party-game-board game-board-enter">
       <span className="game-step">{t("round")} {state.round + 1}/{questions.length}</span>
       <h3>{state.question}</h3>
-      {state.phase === "question" && <p style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 3 ? "#f87171" : "#a3e635" }}>{state.timer}s</p>}
+      {state.phase === "question" && <p style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 3 ? "var(--red)" : "var(--lime)" }}>{state.timer}s</p>}
       {state.phase === "results" && (
         <div>
-          <p style={{ color: "#a3e635", fontWeight: 700 }}>{t("correct")}: {state.options[state.correct]}</p>
+          <p style={{ color: "var(--lime)", fontWeight: 700 }}>{t("correct")}: {state.options[state.correct]}</p>
           {sorted.length > 0 && (
             <div style={{ marginTop: 12 }}>
               {sorted.map(([uid, score], i) => <p key={uid}>{i + 1}. {uid.slice(0, 8)} — {score} {t("pts")}</p>)}
@@ -123,7 +123,7 @@ function BrainBurstController({ sessionId, questions }: { sessionId: string; que
     <div className="party-game-board game-board-enter">
       <span className="game-step">{t("round")} {state.round + 1}/{questions.length}</span>
       <h3>{state.question || q.q}</h3>
-      <p style={{ fontSize: 32, fontWeight: 700, color: state.timer <= 3 ? "#f87171" : "#a3e635" }}>{state.timer}s</p>
+      <p style={{ fontSize: 32, fontWeight: 700, color: state.timer <= 3 ? "var(--red)" : "var(--lime)" }}>{state.timer}s</p>
       <div className="quiz-options">
         {(state.options.length ? state.options : q.opts).map((opt, i) => (
           <button key={i} className={chosen === i ? "selected" : ""} disabled={chosen !== null} onClick={() => answer(i)} type="button">{opt}</button>

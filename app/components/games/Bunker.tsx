@@ -140,11 +140,11 @@ function BunkerStage({ sessionId, partyId, onSave }: { sessionId?: string | null
   return (
     <div className="party-game-board game-board-enter">
       <span className="game-step">{t("phase")}: {t(state.phase)}</span>
-      <p style={{ color: "#a3a3a3" }}>{t("spots")}: {state.bunkerSpots}</p>
+      <p style={{ color: "var(--gray)" }}>{t("spots")}: {state.bunkerSpots}</p>
       {state.phase === "reveal" && (
         <div>
           {state.traits.slice(0, state.revealedIndex + 1).map((t) => (
-            <div key={t.userId} style={{ background: "#262626", borderRadius: 8, padding: 10, marginBottom: 6 }}>
+            <div key={t.userId} style={{ background: "var(--dark)", borderRadius: 8, padding: 10, marginBottom: 6 }}>
               <span style={{ fontWeight: 700 }}>{t.userId.slice(0, 8)}</span>: {t.trait}
             </div>
           ))}
@@ -157,18 +157,18 @@ function BunkerStage({ sessionId, partyId, onSave }: { sessionId?: string | null
       )}
       {state.phase === "argue" && (
         <div>
-          <p style={{ fontSize: 36, fontWeight: 700, color: state.timer <= 10 ? "#f87171" : "#a3e635" }}>{state.timer}s</p>
-          <p style={{ color: "#a3a3a3" }}>{t("argueDesc")}</p>
+          <p style={{ fontSize: 36, fontWeight: 700, color: state.timer <= 10 ? "var(--red)" : "var(--lime)" }}>{state.timer}s</p>
+          <p style={{ color: "var(--gray)" }}>{t("argueDesc")}</p>
           {state.traits.map((t) => (
-            <p key={t.userId} style={{ color: "#a3a3a3" }}>{t.userId.slice(0, 8)}: {t.trait}</p>
+            <p key={t.userId} style={{ color: "var(--gray)" }}>{t.userId.slice(0, 8)}: {t.trait}</p>
           ))}
         </div>
       )}
       {state.phase === "vote" && (
         <div>
-          <p style={{ color: "#a3a3a3", marginBottom: 8 }}>{t("voting")}</p>
+          <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("voting")}</p>
           {state.traits.map((tr) => (
-            <p key={tr.userId} style={{ color: getVoteTally[tr.userId] ? "#a3e635" : "#a3a3a3" }}>
+            <p key={tr.userId} style={{ color: getVoteTally[tr.userId] ? "var(--lime)" : "var(--gray)" }}>
               {tr.userId.slice(0, 8)}: {getVoteTally[tr.userId] || 0} {t("votes")}
             </p>
           ))}
@@ -176,8 +176,8 @@ function BunkerStage({ sessionId, partyId, onSave }: { sessionId?: string | null
       )}
       {state.phase === "result" && (
         <div>
-          <p style={{ fontSize: 20, fontWeight: 700, color: "#a3e635" }}>{t("saved")}: {state.traits.length - state.eliminated.length}</p>
-          <p style={{ color: "#f87171" }}>{t("eliminated")}: {state.eliminated.map((e) => e.slice(0, 8)).join(", ") || "—"}</p>
+          <p style={{ fontSize: 20, fontWeight: 700, color: "var(--lime)" }}>{t("saved")}: {state.traits.length - state.eliminated.length}</p>
+          <p style={{ color: "var(--red)" }}>{t("eliminated")}: {state.eliminated.map((e) => e.slice(0, 8)).join(", ") || "—"}</p>
           <button className="demo-action demo-action--lime" onClick={finish} type="button" style={{ marginTop: 12 }}>{t("finish")}</button>
         </div>
       )}
@@ -207,7 +207,7 @@ function BunkerController({ sessionId }: { sessionId: string }) {
     return (
       <div className="party-game-board game-board-enter">
         <h3>{t("joining")}</h3>
-        <p style={{ color: "#a3a3a3" }}>{t("waitForTrait")}</p>
+        <p style={{ color: "var(--gray)" }}>{t("waitForTrait")}</p>
         <button className="demo-action demo-action--lime" onClick={join} type="button">{t("joinBunker")}</button>
       </div>
     );
@@ -217,7 +217,7 @@ function BunkerController({ sessionId }: { sessionId: string }) {
     return (
       <div className="party-game-board game-board-enter">
         <h3>{t("argue")}</h3>
-        <p style={{ color: "#a3a3a3" }}>{t("argueController")}</p>
+        <p style={{ color: "var(--gray)" }}>{t("argueController")}</p>
       </div>
     );
   }

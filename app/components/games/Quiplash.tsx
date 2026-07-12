@@ -113,13 +113,13 @@ function QuiplashStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
       <span className="game-step">{t("round")} {state.round + 1}/{Math.min(prompts.length, 6)}</span>
       <h3>{state.prompt}</h3>
       {state.phase === "answer" && (
-        <p style={{ color: "#a3a3a3" }}>{t("waitingAnswers")} ({state.submissions.length})</p>
+        <p style={{ color: "var(--gray)" }}>{t("waitingAnswers")} ({state.submissions.length})</p>
       )}
       {state.phase === "vote" && (
         <div>
-          <p style={{ color: "#a3a3a3", marginBottom: 8 }}>{t("votePrompt")}</p>
+          <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("votePrompt")}</p>
           {state.submissions.map((s) => (
-            <div key={s.userId} style={{ background: "#262626", borderRadius: 8, padding: "10px 14px", marginBottom: 6 }}>
+            <div key={s.userId} style={{ background: "var(--dark)", borderRadius: 8, padding: "10px 14px", marginBottom: 6 }}>
               &quot;{s.answer}&quot;
             </div>
           ))}
@@ -131,7 +131,7 @@ function QuiplashStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
           {state.submissions.map((s) => {
             const votes = Object.values(state.votes).filter((v) => v === s.userId).length;
             return (
-              <div key={s.userId} style={{ background: "#262626", borderRadius: 8, padding: "10px 14px", marginBottom: 6, borderLeft: winners.includes(s.userId) ? "3px solid #a3e635" : "none" }}>
+              <div key={s.userId} style={{ background: "var(--dark)", borderRadius: 8, padding: "10px 14px", marginBottom: 6, borderLeft: winners.includes(s.userId) ? "3px solid var(--lime)" : "none" }}>
                 &quot;{s.answer}&quot; — {votes} {t("votes")}
               </div>
             );
@@ -197,8 +197,8 @@ function QuiplashController({ sessionId }: { sessionId: string }) {
             key={s.userId} type="button" disabled={votedFor !== null}
             onClick={() => vote(s.userId)}
             style={{
-              display: "block", width: "100%", textAlign: "left", background: votedFor === s.userId ? "#a3e635" : "#262626",
-              color: votedFor === s.userId ? "#000" : "#fff", borderRadius: 8, padding: "10px 14px", marginBottom: 6,
+              display: "block", width: "100%", textAlign: "left", background: votedFor === s.userId ? "var(--lime)" : "var(--dark)",
+              color: votedFor === s.userId ? "var(--black)" : "var(--white)", borderRadius: 8, padding: "10px 14px", marginBottom: 6,
               border: "none", fontWeight: 600, fontSize: 14, cursor: votedFor ? "default" : "pointer",
             }}
           >
@@ -212,7 +212,7 @@ function QuiplashController({ sessionId }: { sessionId: string }) {
   return (
     <div className="party-game-board game-board-enter">
       <h3>{state.prompt}</h3>
-      <p style={{ color: "#a3e635" }}>{t("revealed")}</p>
+      <p style={{ color: "var(--lime)" }}>{t("revealed")}</p>
     </div>
   );
 }

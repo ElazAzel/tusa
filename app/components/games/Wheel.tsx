@@ -63,7 +63,7 @@ function WheelStage({ sessionId, partyId, onSave, options }: { sessionId?: strin
             const y1 = r - r * Math.cos((start * Math.PI) / 180);
             const x2 = r + r * Math.sin((end * Math.PI) / 180);
             const y2 = r - r * Math.cos((end * Math.PI) / 180);
-            const colors = ["#a3e635", "#facc15", "#f87171", "#60a5fa", "#c084fc", "#fb923c", "#34d399", "#f472b6"];
+            const colors = ["var(--lime)", "#facc15", "var(--red)", "#60a5fa", "#c084fc", "#fb923c", "#34d399", "#f472b6"];
             const mid = start + segAngle / 2;
             const tx = r + r * 0.55 * Math.sin((mid * Math.PI) / 180);
             const ty = r - r * 0.55 * Math.cos((mid * Math.PI) / 180);
@@ -77,11 +77,11 @@ function WheelStage({ sessionId, partyId, onSave, options }: { sessionId?: strin
             );
           })}
         </svg>
-        <div style={{ position: "absolute", top: -6, left: "50%", marginLeft: -8, width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "8px solid transparent", borderTop: "14px solid #fff" }} />
+        <div style={{ position: "absolute", top: -6, left: "50%", marginLeft: -8, width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "8px solid transparent", borderTop: "14px solid var(--white)" }} />
       </div>
       {state.result ? (
         <div>
-          <h3 style={{ color: "#a3e635" }}>{state.result}</h3>
+          <h3 style={{ color: "var(--lime)" }}>{state.result}</h3>
           <div className="game-primary-actions">
             <button className="demo-action demo-action--lime" onClick={reset} type="button">{t("finish")}</button>
           </div>
@@ -114,7 +114,7 @@ function WheelController({ sessionId }: { sessionId: string }) {
   }, [text, sent, sendAction]);
 
   if (state.result) {
-    return <div className="party-game-board game-board-enter"><h3>{t("wheelResult")}</h3><p style={{ fontSize: 32, color: "#a3e635", fontWeight: 700 }}>{state.result}</p></div>;
+    return <div className="party-game-board game-board-enter"><h3>{t("wheelResult")}</h3><p style={{ fontSize: 32, color: "var(--lime)", fontWeight: 700 }}>{state.result}</p></div>;
   }
 
   return (

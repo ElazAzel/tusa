@@ -142,8 +142,8 @@ function CodenamesStage({ sessionId, partyId, onSave }: { sessionId?: string | n
             onClick={() => setState((prev) => prev)}
             style={{
               padding: "10px 4px", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 13,
-              background: state.revealed[i] ? colorMap[state.colors[i]] : state.phase === "reveal" ? colorMap[state.colors[i]] : "#262626",
-              color: "#fff", opacity: state.revealed[i] ? 1 : 0.85, cursor: state.revealed[i] ? "default" : "pointer",
+              background: state.revealed[i] ? colorMap[state.colors[i]] : state.phase === "reveal" ? colorMap[state.colors[i]] : "var(--dark)",
+              color: "var(--white)", opacity: state.revealed[i] ? 1 : 0.85, cursor: state.revealed[i] ? "default" : "pointer",
             }}
           >
             {word}
@@ -152,7 +152,7 @@ function CodenamesStage({ sessionId, partyId, onSave }: { sessionId?: string | n
       </div>
       {gameOver && (
         <div style={{ marginTop: 12, textAlign: "center" }}>
-          <p style={{ fontSize: 20, fontWeight: 700, color: "#a3e635" }}>
+          <p style={{ fontSize: 20, fontWeight: 700, color: "var(--lime)" }}>
             {teamACount === 0 ? t("teamAWins") : teamBCount === 0 ? t("teamBWins") : state.activeTeam === "a" ? t("teamBWins") : t("teamAWins")}
           </p>
           <button className="demo-action demo-action--lime" onClick={finish} type="button">{t("finish")}</button>
@@ -232,7 +232,7 @@ function CodenamesController({ sessionId }: { sessionId: string }) {
               onClick={() => sendAction("pickWord", { index: i })}
               style={{
                 padding: "10px 4px", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 13,
-                background: state.revealed[i] ? "#525252" : "#262626", color: "#fff",
+                background: state.revealed[i] ? "#525252" : "var(--dark)", color: "var(--white)",
                 cursor: state.revealed[i] ? "default" : "pointer",
               }}
             >

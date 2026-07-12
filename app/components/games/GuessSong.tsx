@@ -130,15 +130,15 @@ function GuessSongStage({ sessionId, partyId, onSave }: { sessionId?: string | n
   return (
     <div className="party-game-board game-board-enter">
       <span className="game-step">{t("round")} {state.round + 1}/{songs.length}</span>
-      <div style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 5 ? "#f87171" : "#a3e635", margin: "8px 0" }}>
+      <div style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 5 ? "var(--red)" : "var(--lime)", margin: "8px 0" }}>
         {state.timer}s
       </div>
       {state.phase === "clue" && (
         <div style={{ textAlign: "center" }}>
-          <p style={{ color: "#a3a3a3" }}>{t("listen")}</p>
+          <p style={{ color: "var(--gray)" }}>{t("listen")}</p>
           {state.hintStage === 0 && <p style={{ fontSize: 24, marginTop: 8 }}>🎵 🎵 🎵</p>}
           {state.hintStage >= 1 && (
-            <div style={{ fontSize: 18, background: "#262626", borderRadius: 8, padding: 12, marginTop: 8 }}>
+            <div style={{ fontSize: 18, background: "var(--dark)", borderRadius: 8, padding: 12, marginTop: 8 }}>
               {hint1}
             </div>
           )}
@@ -146,10 +146,10 @@ function GuessSongStage({ sessionId, partyId, onSave }: { sessionId?: string | n
       )}
       {state.phase === "guess" && (
         <div>
-          <div style={{ fontSize: 18, background: "#262626", borderRadius: 8, padding: 12, marginBottom: 8 }}>
+          <div style={{ fontSize: 18, background: "var(--dark)", borderRadius: 8, padding: 12, marginBottom: 8 }}>
             {hint1}
           </div>
-          <div style={{ fontSize: 16, color: "#a3a3a3", marginBottom: 8 }}>
+          <div style={{ fontSize: 16, color: "var(--gray)", marginBottom: 8 }}>
             &ldquo;{hint2}&rdquo;
           </div>
           <p style={{ color: "#fbbf24", fontWeight: 700 }}>{t("guessOnPhone")}</p>
@@ -158,17 +158,17 @@ function GuessSongStage({ sessionId, partyId, onSave }: { sessionId?: string | n
       {state.phase === "reveal" && (
         <div style={{ textAlign: "center" }}>
           {state.winner ? (
-            <p style={{ color: "#a3e635", fontWeight: 700 }}>{state.winner.slice(0, 8)} {t("guessed")}!</p>
+            <p style={{ color: "var(--lime)", fontWeight: 700 }}>{state.winner.slice(0, 8)} {t("guessed")}!</p>
           ) : (
-            <p style={{ color: "#f87171" }}>{t("noOneGuessed")}</p>
+            <p style={{ color: "var(--red)" }}>{t("noOneGuessed")}</p>
           )}
-          <div style={{ fontSize: 20, fontWeight: 700, background: "#262626", borderRadius: 8, padding: 12, marginTop: 8 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, background: "var(--dark)", borderRadius: 8, padding: 12, marginTop: 8 }}>
             🎵 {full}
           </div>
           {sorted.length > 0 && (
             <div style={{ marginTop: 12 }}>
               {sorted.slice(0, 5).map(([uid, score], i) => (
-                <p key={uid} style={{ color: "#a3a3a3" }}>{i + 1}. {uid.slice(0, 8)} — {score} {t("pts")}</p>
+                <p key={uid} style={{ color: "var(--gray)" }}>{i + 1}. {uid.slice(0, 8)} — {score} {t("pts")}</p>
               ))}
             </div>
           )}
@@ -209,14 +209,14 @@ function GuessSongController({ sessionId }: { sessionId: string }) {
       <span className="game-step">{t("round")} {state.round + 1}</span>
       {state.phase === "clue" && (
         <div>
-          <p style={{ color: "#a3a3a3" }}>{t("listening")}</p>
+          <p style={{ color: "var(--gray)" }}>{t("listening")}</p>
           <div style={{ fontSize: 32, margin: "16px 0" }}>🎵</div>
         </div>
       )}
       {state.phase === "guess" && (
         <div>
-          <p style={{ color: "#a3a3a3" }}>{state.hintStage >= 1 ? state.song.artist + ", " + state.song.year : "🎵 🎵 🎵"}</p>
-          {state.hintStage >= 2 && <p style={{ color: "#a3a3a3", marginTop: 4 }}>&ldquo;{state.song.clue}&rdquo;</p>}
+          <p style={{ color: "var(--gray)" }}>{state.hintStage >= 1 ? state.song.artist + ", " + state.song.year : "🎵 🎵 🎵"}</p>
+          {state.hintStage >= 2 && <p style={{ color: "var(--gray)", marginTop: 4 }}>&ldquo;{state.song.clue}&rdquo;</p>}
           <input
             value={guess}
             onChange={(e) => setGuess(e.target.value)}
@@ -224,8 +224,8 @@ function GuessSongController({ sessionId }: { sessionId: string }) {
             placeholder={t("typeTitle")}
             disabled={sent}
             style={{
-              width: "100%", padding: 12, borderRadius: 8, border: "1px solid #404040",
-              background: "#1a1a1a", color: "#fff", fontSize: 16, marginTop: 12,
+              width: "100%", padding: 12, borderRadius: 8,               border: "1px solid #404040",
+              background: "#1a1a1a", color: "var(--white)", fontSize: 16, marginTop: 12,
             }}
           />
           <button
@@ -242,11 +242,11 @@ function GuessSongController({ sessionId }: { sessionId: string }) {
       {state.phase === "reveal" && (
         <div>
           {state.winner ? (
-            <p style={{ color: state.winner ? "#a3e635" : "#f87171", fontWeight: 700 }}>
+            <p style={{ color: state.winner ? "var(--lime)" : "var(--red)", fontWeight: 700 }}>
               {state.winner ? t("someoneGuessed") : t("noOneGuessed")}
             </p>
           ) : (
-            <p style={{ color: "#f87171" }}>{t("noOneGuessed")}</p>
+            <p style={{ color: "var(--red)" }}>{t("noOneGuessed")}</p>
           )}
         </div>
       )}

@@ -72,7 +72,7 @@ function SpyfallStage({ sessionId, partyId, onSave, locations }: { sessionId?: s
       <div className="party-game-board game-board-enter">
         <span className="game-step">{t("spyReveal")}</span>
         <h3>{state.spyId ? `${t("spyWas")}: ${state.spyId.slice(0, 8)}` : t("spyNone")}</h3>
-        <p>{t("location")}: <strong style={{ color: "#a3e635" }}>{state.location}</strong></p>
+        <p>{t("location")}: <strong style={{ color: "var(--lime)" }}>{state.location}</strong></p>
         <div className="game-primary-actions"><button className="demo-action demo-action--lime" onClick={startGame} type="button">{t("newRound")}</button></div>
       </div>
     );

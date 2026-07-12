@@ -75,23 +75,23 @@ function WavelengthStage({ sessionId, partyId, onSave }: { sessionId?: string | 
       <span className="game-step">{t("wavelength")}</span>
       <h3>{state.left} ↔ {state.right}</h3>
       <div style={{ position: "relative", margin: "16px 0", height: 60 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#a3a3a3" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--gray)" }}>
           <span>{state.left}</span><span>{state.right}</span>
         </div>
         <div style={{ position: "relative", height: 8, background: "#333", borderRadius: 4, marginTop: 8 }}>
-          <div style={{ position: "absolute", left: `${((state.clue - 1) / 9) * 100}%`, top: -6, width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "10px solid #a3e635" }} />
+          <div style={{ position: "absolute", left: `${((state.clue - 1) / 9) * 100}%`, top: -6, width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "10px solid var(--lime)" }} />
           {state.phase === "reveal" && state.guess !== null && (
-            <div style={{ position: "absolute", left: `${((state.guess - 1) / 9) * 100}%`, top: -6, width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "10px solid #f87171" }} />
+            <div style={{ position: "absolute", left: `${((state.guess - 1) / 9) * 100}%`, top: -6, width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "10px solid var(--red)" }} />
           )}
         </div>
       </div>
-      <p style={{ fontSize: 14, color: "#a3a3a3" }}>{t("clueLabel")}: {state.clue}</p>
+      <p style={{ fontSize: 14, color: "var(--gray)" }}>{t("clueLabel")}: {state.clue}</p>
       {state.phase === "reveal" && (
         <div style={{ textAlign: "center", marginTop: 8 }}>
-          <p style={{ fontSize: 24, fontWeight: 700, color: pts >= 2 ? "#a3e635" : pts === 1 ? "#facc15" : "#f87171" }}>
+          <p style={{ fontSize: 24, fontWeight: 700, color: pts >= 2 ? "var(--lime)" : pts === 1 ? "#facc15" : "var(--red)" }}>
             {dist === 0 ? "🎯 " : ""}{pts} {t("pts")}
           </p>
-          <p style={{ color: "#a3a3a3" }}>{t("target")}: {state.target}</p>
+          <p style={{ color: "var(--gray)" }}>{t("target")}: {state.target}</p>
           <button className="demo-action demo-action--lime" onClick={next} type="button" style={{ marginTop: 8 }}>{t("next")}</button>
           <button className="demo-action demo-action--white" onClick={finish} type="button" style={{ marginTop: 8 }}>{t("finish")}</button>
         </div>
@@ -116,7 +116,7 @@ function WavelengthController({ sessionId }: { sessionId: string }) {
       <div className="party-game-board game-board-enter">
         <span className="game-step">{t("spymaster")}</span>
         <h3>{state.left} ↔ {state.right}</h3>
-        <p style={{ color: "#a3a3a3", marginBottom: 8 }}>{t("targetHidden")}: {state.target}</p>
+        <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("targetHidden")}: {state.target}</p>
         <input type="range" min={1} max={10} value={val} onChange={(e) => setVal(Number(e.target.value))} style={{ width: "100%" }} />
         <p style={{ textAlign: "center", fontSize: 32, fontWeight: 700 }}>{val}</p>
         <button className="demo-action demo-action--lime" onClick={() => sendAction("clue", { value: val })} type="button">{t("sendClue")}</button>
@@ -129,7 +129,7 @@ function WavelengthController({ sessionId }: { sessionId: string }) {
       <div className="party-game-board game-board-enter">
         <span className="game-step">{t("team")}</span>
         <h3>{state.left} ↔ {state.right}</h3>
-        <p style={{ color: "#a3a3a3", marginBottom: 8 }}>{t("clueLabel")}: {state.clue}</p>
+        <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("clueLabel")}: {state.clue}</p>
         <input type="range" min={1} max={10} value={val} onChange={(e) => setVal(Number(e.target.value))} style={{ width: "100%" }} />
         <p style={{ textAlign: "center", fontSize: 32, fontWeight: 700 }}>{val}</p>
         <button className="demo-action demo-action--lime" onClick={() => sendAction("guess", { value: val })} type="button">{t("lockGuess")}</button>
@@ -140,7 +140,7 @@ function WavelengthController({ sessionId }: { sessionId: string }) {
   return (
     <div className="party-game-board game-board-enter">
       <h3>{state.left} ↔ {state.right}</h3>
-      <p style={{ color: "#a3a3a3" }}>{t("revealed")}</p>
+      <p style={{ color: "var(--gray)" }}>{t("revealed")}</p>
     </div>
   );
 }

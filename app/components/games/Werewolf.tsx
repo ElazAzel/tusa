@@ -135,8 +135,8 @@ function WerewolfStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
       <span className="game-step">{t("phase")}: {t(state.phase)}</span>
       {state.phase === "deal" && (
         <div>
-          <p style={{ color: "#a3a3a3" }}>{t("playersJoined")}: {state.players.length}</p>
-          <p style={{ color: "#a3a3a3", marginBottom: 12 }}>{t("needPlayers")}</p>
+          <p style={{ color: "var(--gray)" }}>{t("playersJoined")}: {state.players.length}</p>
+          <p style={{ color: "var(--gray)", marginBottom: 12 }}>{t("needPlayers")}</p>
           <button className="demo-action demo-action--lime" disabled={state.players.length < 5} onClick={assignRoles} type="button">
             {t("dealRoles")}
           </button>
@@ -145,30 +145,30 @@ function WerewolfStage({ sessionId, partyId, onSave }: { sessionId?: string | nu
       {state.phase === "night" && (
         <div style={{ textAlign: "center" }}>
           <p style={{ fontSize: 32, margin: "16px 0" }}>🌙</p>
-          <p style={{ color: "#a3a3a3" }}>{t("nightDesc")}</p>
+          <p style={{ color: "var(--gray)" }}>{t("nightDesc")}</p>
         </div>
       )}
       {state.phase === "day" && (
         <div>
-          {state.eliminated && <p style={{ color: "#f87171" }}>{t("eliminated")}: {state.eliminated.slice(0, 8)}</p>}
-          <p style={{ fontSize: 36, fontWeight: 700, color: state.timer <= 10 ? "#f87171" : "#a3e635" }}>{state.timer}s</p>
-          <p style={{ color: "#a3a3a3" }}>{state.alive.length} {t("alive")}</p>
-          <p style={{ color: "#a3a3a3" }}>{t("discuss")}</p>
+          {state.eliminated && <p style={{ color: "var(--red)" }}>{t("eliminated")}: {state.eliminated.slice(0, 8)}</p>}
+          <p style={{ fontSize: 36, fontWeight: 700, color: state.timer <= 10 ? "var(--red)" : "var(--lime)" }}>{state.timer}s</p>
+          <p style={{ color: "var(--gray)" }}>{state.alive.length} {t("alive")}</p>
+          <p style={{ color: "var(--gray)" }}>{t("discuss")}</p>
         </div>
       )}
       {state.phase === "vote" && (
         <div>
-          <p style={{ color: "#a3a3a3", marginBottom: 8 }}>{t("voting")}</p>
+          <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("voting")}</p>
           {state.alive.map((p) => (
-            <p key={p} style={{ color: "#a3a3a3" }}>{p.slice(0, 8)}: {getVoteTally[p] || 0} {t("votes")}</p>
+            <p key={p} style={{ color: "var(--gray)" }}>{p.slice(0, 8)}: {getVoteTally[p] || 0} {t("votes")}</p>
           ))}
         </div>
       )}
       {state.phase === "reveal" && (
         <div style={{ textAlign: "center" }}>
-          <p style={{ fontSize: 24, fontWeight: 700, color: "#a3e635" }}>{t("gameOver")}</p>
+          <p style={{ fontSize: 24, fontWeight: 700, color: "var(--lime)" }}>{t("gameOver")}</p>
           {state.players.map((p) => (
-            <p key={p} style={{ color: state.roles[p] === "mafia" ? "#f87171" : "#a3a3a3" }}>
+            <p key={p} style={{ color: state.roles[p] === "mafia" ? "var(--red)" : "var(--gray)" }}>
               {p.slice(0, 8)}: {t(state.roles[p])}
             </p>
           ))}
@@ -225,7 +225,7 @@ function WerewolfController({ sessionId }: { sessionId: string }) {
       return (
         <div className="party-game-board game-board-enter">
           <span className="game-step">{t("mafia")}</span>
-          <p style={{ color: "#a3a3a3" }}>{t("pickTarget")}</p>
+          <p style={{ color: "var(--gray)" }}>{t("pickTarget")}</p>
           {state.alive.map((p) => (
             <button key={p} className="demo-action demo-action--white" onClick={() => nightAction("mafia", p)} type="button" style={{ marginBottom: 6, width: "100%" }}>
               {p.slice(0, 12)}
@@ -238,7 +238,7 @@ function WerewolfController({ sessionId }: { sessionId: string }) {
       return (
         <div className="party-game-board game-board-enter">
           <span className="game-step">{t("doctor")}</span>
-          <p style={{ color: "#a3a3a3" }}>{t("saveTarget")}</p>
+          <p style={{ color: "var(--gray)" }}>{t("saveTarget")}</p>
           {state.alive.map((p) => (
             <button key={p} className="demo-action demo-action--white" onClick={() => nightAction("doctor", p)} type="button" style={{ marginBottom: 6, width: "100%" }}>
               {p.slice(0, 12)}
@@ -251,7 +251,7 @@ function WerewolfController({ sessionId }: { sessionId: string }) {
       return (
         <div className="party-game-board game-board-enter">
           <span className="game-step">{t("seer")}</span>
-          <p style={{ color: "#a3a3a3" }}>{t("investigate")}</p>
+          <p style={{ color: "var(--gray)" }}>{t("investigate")}</p>
           {state.alive.map((p) => (
             <button key={p} className="demo-action demo-action--white" onClick={() => nightAction("seer", p)} type="button" style={{ marginBottom: 6, width: "100%" }}>
               {p.slice(0, 12)}
@@ -268,7 +268,7 @@ function WerewolfController({ sessionId }: { sessionId: string }) {
         <h3>{t("daytime")}</h3>
         {state.phase === "vote" && !hasActed && (
           <div>
-            <p style={{ color: "#a3a3a3", marginBottom: 8 }}>{t("voteToEliminate")}</p>
+            <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("voteToEliminate")}</p>
             {state.alive.map((p) => (
               <button key={p} className="demo-action demo-action--white" onClick={() => vote(p)} type="button" style={{ marginBottom: 6, width: "100%" }}>
                 {p.slice(0, 12)}
@@ -276,7 +276,7 @@ function WerewolfController({ sessionId }: { sessionId: string }) {
             ))}
           </div>
         )}
-        {hasActed && <p style={{ color: "#a3e635" }}>{t("voted")}</p>}
+        {hasActed && <p style={{ color: "var(--lime)" }}>{t("voted")}</p>}
       </div>
     );
   }
