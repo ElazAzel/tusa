@@ -1,7 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isProtectedRoute = createRouteMatcher(["/app(.*)", "/party(.*)"]);
+const isAppRoute = createRouteMatcher(["/app(.*)"]);
+const isPartyRoute = createRouteMatcher(["/party(.*)"]);
 const isLandingPage = createRouteMatcher(["/"]);
 
 export default clerkMiddleware(async (auth, request) => {
@@ -11,13 +12,18 @@ export default clerkMiddleware(async (auth, request) => {
     return NextResponse.redirect(new URL("/app", request.url));
   }
 
-  if (isProtectedRoute(request) && !userId) {
+  if (isAppRoute(request) && !userId) {
     return NextResponse.redirect(
       new URL(
         "/sign-in?redirect_url=" + encodeURIComponent(request.nextUrl.pathname),
         request.url,
       ),
     );
+  }
+
+  if (isPartyRoute(request) && !userId && !request.cookies.get("tusa_guest_session")) {
+    const inviteCode = request.nextUrl.pathname.split("/")[2] ?? "";
+    return NextResponse.redirect(new URL(`/join/${encodeURIComponent(inviteCode)}`, request.url));
   }
 
   const response = NextResponse.next();

@@ -91,7 +91,7 @@ Source of truth: `tusa-style-guide-v1.4.html`, product PRD and the 28-mode game 
 | Page | Schema | Purpose |
 |---|---|---|
 | `/` | WebApplication + Organization | Landing with hreflang, OG, Twitter |
-| `/games` | CollectionPage | 28-game catalogue grid with i18n |
+| `/games` | CollectionPage | Manifest-driven 32-mode catalogue with i18n |
 | `/faq` | FAQPage (7 Q&A) | Expandable FAQ with JSON-LD |
 | `/about` | Organization | Mission, story, features, tech |
 | `/use-cases/online-parties` | WebPage | "Online party games" SEO landing |

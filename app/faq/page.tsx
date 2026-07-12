@@ -14,7 +14,7 @@ const faqItems = [
   {
     question: "What is TUSA.game?",
     answer:
-      "TUSA.game is a browser-based social gaming platform where friends play 28 multiplayer party games together from any device — no downloads needed.",
+      "TUSA.game is a browser-based social gaming platform where friends use 32 party game modes together from any device — no downloads needed.",
   },
   {
     question: "How many players can play?",
@@ -39,7 +39,7 @@ const faqItems = [
   {
     question: "What games are available?",
     answer:
-      "TUSA.game has 28 games including Alias, Crocodil, Werewolf, Codenames, Quiplash, Fibbage, Trivia, Bomb Party, and many more.",
+      "TUSA.game has 32 game modes including Word Blast, Mime Riot, Night Wolves, Secret Grid, Punchline, Fake Fact, Trivia, Word Bomb, and more.",
   },
   {
     question: "Does TUSA.game require downloading an app?",

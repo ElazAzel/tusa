@@ -1,75 +1,50 @@
-/*
-  Styles go in app/globals.css:
-  - .games-page — main container
-  - .legal-back — back link
-  - .games-grid — CSS grid container
-  - .game-card — individual game card
-  - .game-card h2 — game title
-  - .game-card p — game description
-*/
-
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies, headers } from "next/headers";
 import { copy, normalizeLocale } from "@/lib/i18n";
+import { GAME_COUNT, GAME_MANIFEST, formatPlayerRange } from "@/lib/games/manifest";
 
 export async function generateMetadata(): Promise<Metadata> {
   const store = await cookies();
   const locale = normalizeLocale(store.get("tusa_locale")?.value);
-  return { title: copy(locale, "gamesTitle"), description: copy(locale, "gamesBandTitle") };
+  return {
+    title: copy(locale, "gamesTitle"),
+    description: copy(locale, "gamesBandTitle"),
+    alternates: { canonical: "/games" },
+  };
 }
 
-const GAME_KEYS = [
-  ["gamesAliasTitle", "gamesAliasDesc"],
-  ["gamesMafiaTitle", "gamesMafiaDesc"],
-  ["gamesTruthTitle", "gamesTruthDesc"],
-  ["gamesNeverTitle", "gamesNeverDesc"],
-  ["gamesBeerTitle", "gamesBeerDesc"],
-  ["gamesQuizTitle", "gamesQuizDesc"],
-  ["gamesPairsTitle", "gamesPairsDesc"],
-  ["gamesUnoTitle", "gamesUnoDesc"],
-  ["gamesWerewolfTitle", "gamesWerewolfDesc"],
-  ["gamesCodenamesTitle", "gamesCodenamesDesc"],
-  ["gamesSpyfallTitle", "gamesSpyfallDesc"],
-  ["gamesImpostorTitle", "gamesImpostorDesc"],
-  ["gamesCrocodilTitle", "gamesCrocodilDesc"],
-  ["gamesHeadsUpTitle", "gamesHeadsUpDesc"],
-  ["gamesPictionaryTitle", "gamesPictionaryDesc"],
-  ["gamesQuiplashTitle", "gamesQuiplashDesc"],
-  ["gamesFibbageTitle", "gamesFibbageDesc"],
-  ["gamesWouldRatherTitle", "gamesWouldRatherDesc"],
-  ["gamesTwoTruthsTitle", "gamesTwoTruthsDesc"],
-  ["gamesBlankSlateTitle", "gamesBlankSlateDesc"],
-  ["gamesWavelengthTitle", "gamesWavelengthDesc"],
-  ["gamesBrainBurstTitle", "gamesBrainBurstDesc"],
-  ["gamesGuessSongTitle", "gamesGuessSongDesc"],
-  ["gamesBombPartyTitle", "gamesBombPartyDesc"],
-  ["gamesGarticPhoneTitle", "gamesGarticPhoneDesc"],
-  ["gamesBunkerTitle", "gamesBunkerDesc"],
-  ["gamesWheelTitle", "gamesWheelDesc"],
-  ["gamesKissMarryTitle", "gamesKissMarryDesc"],
-  ["gamesCharadesTitle", "gamesCharadesDesc"],
-  ["gamesCardsTitle", "gamesCardsDesc"],
-  ["gamesMusicQuizTitle", "gamesMusicQuizDesc"],
-  ["gamesTriviaTitle", "gamesTriviaDesc"],
-] as const;
+const labels = {
+  ru: { beta: "Мультиплеер · beta", quick_tool: "Инструмент тусы", full_game: "Полная игра", players: "игроков", open: "Правила и детали" },
+  en: { beta: "Multiplayer · beta", quick_tool: "Party tool", full_game: "Full game", players: "players", open: "Rules and details" },
+} as const;
 
 export default async function GamesPage() {
   const store = await cookies();
   const requestHeaders = await headers();
-  const locale = normalizeLocale(store.get("tusa_locale")?.value ?? (await requestHeaders).get("accept-language"));
-  const t = (key: string) => copy(locale, key as never);
+  const locale = normalizeLocale(store.get("tusa_locale")?.value ?? requestHeaders.get("accept-language"));
+  const t = (key: Parameters<typeof copy>[1]) => copy(locale, key);
+  const ui = labels[locale];
+
   return (
     <main className="games-page">
       <Link href="/" className="legal-back">{t("backToParties")}</Link>
       <h1>{t("gamesTitle")}</h1>
-      <p className="games-band">28 {t("gamesBandTitle")}</p>
+      <p className="games-band">{GAME_COUNT} {t("gamesBandTitle")}</p>
       <div className="games-grid">
-        {GAME_KEYS.map(([titleKey, descKey]) => (
-          <div key={titleKey} className="game-card">
-            <h2>{t(titleKey)}</h2>
-            <p>{t(descKey)}</p>
-          </div>
+        {GAME_MANIFEST.map((game) => (
+          <article key={game.id} className={`game-card game-card--${game.tone}`}>
+            <div className="game-card-meta">
+              <span>{game.category === "quick_tool" ? ui.quick_tool : ui.full_game}</span>
+              <span>{formatPlayerRange(game)} {ui.players}</span>
+            </div>
+            <h2>{t(game.titleKey)}</h2>
+            <p>{t(game.descKey)}</p>
+            <div className="game-card-footer">
+              <span className="game-status">{ui.beta}</span>
+              <Link href={`/games/${game.seo.slug}`}>{ui.open} <span aria-hidden="true">→</span></Link>
+            </div>
+          </article>
         ))}
       </div>
     </main>

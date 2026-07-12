@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Party Games for In-Person Gatherings | TUSA.game",
     description:
-      "Play browser-based party games with friends at your next gathering. 28 games. One link.",
+      "Play browser-based party games with friends at your next gathering. 32 modes. One link.",
   };
 }
 

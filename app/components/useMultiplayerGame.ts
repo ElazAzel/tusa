@@ -8,10 +8,8 @@ export function useMultiplayerGame<T extends Record<string, unknown>>(
 ) {
   const [state, _setState] = useState<T>(initialState);
   const esRef = useRef<EventSource | null>(null);
-  const stateRef = useRef<T>(state);
   const versionRef = useRef<number>(1);
   const syncQueueRef = useRef<Promise<void>>(Promise.resolve());
-  stateRef.current = state;
 
   useEffect(() => {
     if (!sessionId) { _setState(initialState); return; }
@@ -23,29 +21,37 @@ export function useMultiplayerGame<T extends Record<string, unknown>>(
           _setState((prev) => ({ ...prev, ...snap }));
         }
     };
-    fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
-    const poll = setInterval(() => fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined), 1500);
+    let disposed = false;
+    let attempts = 0;
+    const syncSnapshot = () => fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
+    void syncSnapshot();
 
     let reconnectTimer: ReturnType<typeof setTimeout>;
     const connect = () => {
+      if (disposed) return;
       const es = new EventSource(`/api/live?channel=${encodeURIComponent(`game:${sessionId}`)}`);
       esRef.current = es;
+      es.onopen = () => { attempts = 0; void syncSnapshot(); };
       es.onmessage = (msg) => {
         try {
           const event = JSON.parse(msg.data) as { type: string; state?: Partial<T>; version?: number };
           if (event.type === "state:updated" && event.state) {
             if (event.version) versionRef.current = event.version;
             _setState((prev) => ({ ...prev, ...event.state }));
+          } else if (event.type === "state:updated" && (!event.version || event.version > versionRef.current)) {
+            void syncSnapshot();
           }
         } catch { /* ping */ }
       };
       es.onerror = () => {
         es.close();
-        reconnectTimer = setTimeout(connect, 3000);
+        attempts += 1;
+        const delay = Math.min(30_000, 1_000 * 2 ** Math.min(attempts, 5)) + Math.floor(Math.random() * 500);
+        reconnectTimer = setTimeout(connect, delay);
       };
     };
     connect();
-    return () => { clearInterval(poll); clearTimeout(reconnectTimer); esRef.current?.close(); };
+    return () => { disposed = true; clearTimeout(reconnectTimer); esRef.current?.close(); };
   }, [sessionId]);
 
   const setState = useCallback((updater: T | ((prev: T) => T)) => {

@@ -3,15 +3,16 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const room = readFileSync(new URL("../app/party/[inviteCode]/PartyRoom.tsx", import.meta.url), "utf8");
-const documented = ["alias","mafia","werewolf","codenames","spyfall","impostor","crocodil","headsup","pictionary","quiplash","fibbage","cardsChaos","truth","never","wouldRather","twoTruths","blankSlate","wavelength","brainBurst","guessSong","bombParty","gartic","bunker","wheel","kissMarry","charades","musicQuiz","trivia"];
+const manifest = readFileSync(new URL("../lib/games/manifest.ts", import.meta.url), "utf8");
+const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
 
-test("all 28 documented game modes are in the live catalogue and renderer", () => {
-  for (const id of documented) {
-    assert.match(room, new RegExp(`id: "${id}"`), `${id} is missing from the catalogue`);
-    assert.match(room, new RegExp(`selectedGame === "${id}"`), `${id} is missing from the renderer`);
-  }
+test("all 32 canonical modes are routed by PartyRoom", () => {
+  assert.equal(ids.length, 32);
+  for (const id of ids) assert.match(room, new RegExp(`selectedGame === "${id}"`), `${id} is missing from the renderer`);
 });
 
-test("catalogue keeps the four additional TUSA modes", () => {
-  for (const id of ["beer", "quiz", "pairs", "uno"]) assert.match(room, new RegExp(`id: "${id}"`));
+test("manifest distinguishes full games from quick tools", () => {
+  assert.match(manifest, /category: "full_game"/);
+  assert.match(manifest, /category: "quick_tool"/);
+  assert.match(manifest, /releaseStatus: "beta"/);
 });

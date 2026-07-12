@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-const widths = [375, 390, 430];
-const publicRoutes = ["/", "/demo", "/partners", "/sign-in"];
+const widths = [320, 360, 375, 390, 412, 430, 768, 1024];
+const publicRoutes = ["/", "/demo", "/partners", "/sign-in", "/games", "/games/word-blast"];
 
 for (const width of widths) {
   for (const route of publicRoutes) {
     test(`${route} stays inside ${width}px`, async ({ browser }) => {
-      const context = await browser.newContext({ viewport: { width, height: 812 }, serviceWorkers: "block" });
+      const context = await browser.newContext({ viewport: { width, height: width >= 768 ? 1024 : 812 }, serviceWorkers: "block" });
       const page = await context.newPage();
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(1_100);

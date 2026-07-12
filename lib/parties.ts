@@ -1178,8 +1178,9 @@ export async function getPendingGameActions(sessionId: string, limit = 200) {
   return rows.map((row) => ({ id: String(row.id), sessionId: String(row.session_id), userId: String(row.clerk_user_id), actionType: String(row.action_type), payload: row.payload, createdAt: new Date(row.created_at as string | Date).toISOString() } as GameAction));
 }
 
-export async function getActiveGameSessions(partyId: string) {
+export async function getActiveGameSessions(partyId: string, userId?: string) {
   await ensurePartySchema();
+  if (userId) await requirePartyMember(partyId, userId);
   const rows = await db()`SELECT * FROM game_sessions WHERE party_id = ${partyId} AND status IN ('lobby', 'active') ORDER BY created_at DESC` as unknown as Record<string, unknown>[];
   return rows.map((row) => ({ id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, participants: (row.participants ?? []) as string[], createdBy: String(row.created_by ?? ""), createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession & { participants: string[] }));
 }
@@ -1193,8 +1194,9 @@ export async function getGameSessionById(sessionId: string) {
 
 export async function joinGameSession(sessionId: string, userId: string) {
   await ensurePartySchema();
-  const [existing] = await db()`SELECT participants FROM game_sessions WHERE id = ${sessionId}` as unknown as { participants: string[] }[];
+  const [existing] = await db()`SELECT participants, party_id FROM game_sessions WHERE id = ${sessionId}` as unknown as { participants: string[]; party_id: string }[];
   if (!existing) return null;
+  await requirePartyMember(String(existing.party_id), userId);
   const current = Array.isArray(existing.participants) ? existing.participants : [];
   if (!current.includes(userId)) {
     current.push(userId);
@@ -1205,8 +1207,9 @@ export async function joinGameSession(sessionId: string, userId: string) {
 
 export async function leaveGameSession(sessionId: string, userId: string) {
   await ensurePartySchema();
-  const [existing] = await db()`SELECT participants FROM game_sessions WHERE id = ${sessionId}` as unknown as { participants: string[] }[];
+  const [existing] = await db()`SELECT participants, party_id FROM game_sessions WHERE id = ${sessionId}` as unknown as { participants: string[]; party_id: string }[];
   if (!existing) return null;
+  await requirePartyMember(String(existing.party_id), userId);
   const current = (Array.isArray(existing.participants) ? existing.participants : []).filter((id) => id !== userId);
   await db()`UPDATE game_sessions SET participants = ${JSON.stringify(current)}::jsonb, updated_at = NOW() WHERE id = ${sessionId}`;
   return getGameSessionById(sessionId);
@@ -1229,6 +1232,8 @@ export async function updateGameSession(sessionId: string, userId: string, updat
   const partyId = await getSessionPartyId(sessionId);
   if (!partyId) return null;
   await requirePartyMember(partyId, userId);
+  const [access] = await db()`SELECT created_by FROM game_sessions WHERE id = ${sessionId}` as unknown as { created_by: string }[];
+  if (!access || String(access.created_by) !== userId) throw new Error("Only the session creator can update game state");
   const status = updates.status;
   const state = updates.state ? JSON.stringify(updates.state) : undefined;
   const rows = updates.expectedVersion !== undefined
@@ -1251,9 +1256,13 @@ export async function addGameScore(sessionId: string, userId: string, score: num
   const partyId = await getSessionPartyId(sessionId);
   if (!partyId) throw new Error("Session not found");
   await requirePartyMember(partyId, userId);
+  const [access] = await db()`SELECT created_by, status FROM game_sessions WHERE id = ${sessionId}` as unknown as { created_by: string; status: string }[];
+  if (!access || String(access.created_by) !== userId) throw new Error("Only the session creator can submit results");
+  if (access.status === "cancelled") throw new Error("Cancelled sessions cannot be scored");
+  const safeScore = Math.min(Math.max(Math.trunc(Number(score) || 0), 0), 100000);
   const mutationId = (metadata?.clientMutationId as string)?.slice(0, 64) ?? null;
   let [row] = await db()`INSERT INTO game_scores (id, session_id, clerk_user_id, score, metadata, client_mutation_id)
-    VALUES (${randomUUID()}, ${sessionId}, ${userId}, ${score}, ${JSON.stringify(metadata ?? {})}::jsonb, ${mutationId})
+    VALUES (${randomUUID()}, ${sessionId}, ${userId}, ${safeScore}, ${JSON.stringify(metadata ?? {})}::jsonb, ${mutationId})
     ON CONFLICT (session_id, client_mutation_id) DO NOTHING
     RETURNING *` as unknown as Record<string, unknown>[];
   if (!row && mutationId) {

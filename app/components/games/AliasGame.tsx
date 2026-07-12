@@ -68,7 +68,7 @@ export default function AliasGame({ partyId, sessionId, onSave, role }: { partyI
   const { state, setState } = useMultiplayerGame<AliasState>(sessionId ?? null, () => ({ running: false, seconds: 60, wordIndex: 0, score: 0, round: 1 }));
   const { running, seconds, wordIndex, score, round } = state;
   const scoreRef = useRef(score);
-  scoreRef.current = score;
+  useEffect(() => { scoreRef.current = score; }, [score]);
 
   useEffect(() => {
     if (!running || !sessionId || !isHost) return;
