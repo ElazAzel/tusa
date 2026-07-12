@@ -42,7 +42,7 @@ const COMMANDS: Record<string, Record<string, z.ZodType>> = {
     vote: target,
   },
   wheel: { addOption: text("text", 80) },
-  wouldRather: { vote: z.object({ choice: z.union([z.literal(0), z.literal(1), z.literal("a"), z.literal("b")]) }).strict() },
+  wouldRather: { vote: z.object({ choice: z.enum(["a", "b"]) }).strict(), reveal: empty, next: empty },
 };
 
 export function parseGameCommand(gameId: string, actionType: string, payload: unknown) {

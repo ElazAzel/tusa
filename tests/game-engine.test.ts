@@ -39,3 +39,25 @@ test("Quiz Battle reuses the engine with a faster deadline and bonus", () => {
   const answer = applyServerGameCommand("quiz", started, "answer", { index: started.correct }, context("guest", 6_000))!;
   assert.equal((answer.state.scores as Record<string, number>).guest, 3);
 });
+
+test("Would You Rather keeps voting and round transitions on the server", () => {
+  const started = initialServerGameState("wouldRather", players, { locale: "ru" }, 1_000)!;
+  assert.equal(started.phase, "vote");
+  assert.equal((started.prompt as { a: string }).a, "Уметь летать");
+
+  const vote = applyServerGameCommand("wouldRather", started, "vote", { choice: "b" }, context("guest", 2_000))!;
+  assert.equal(vote.changed, true);
+  assert.equal((vote.state.votes as Record<string, string>).guest, "b");
+  const duplicate = applyServerGameCommand("wouldRather", vote.state, "vote", { choice: "a" }, context("guest", 2_100))!;
+  assert.equal(duplicate.changed, false);
+  assert.equal((duplicate.state.votes as Record<string, string>).guest, "b");
+
+  const forbidden = applyServerGameCommand("wouldRather", vote.state, "reveal", {}, context("guest", 2_200))!;
+  assert.match(forbidden.error ?? "", /Only the stage/);
+  const reveal = applyServerGameCommand("wouldRather", vote.state, "reveal", {}, context("host", 2_300))!;
+  assert.equal(reveal.state.phase, "reveal");
+  const next = applyServerGameCommand("wouldRather", reveal.state, "next", {}, context("host", 2_400))!;
+  assert.equal(next.state.phase, "vote");
+  assert.equal(next.state.round, 1);
+  assert.deepEqual(next.state.votes, {});
+});
