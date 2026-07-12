@@ -61,3 +61,16 @@ test("Would You Rather keeps voting and round transitions on the server", () => 
   assert.equal(next.state.round, 1);
   assert.deepEqual(next.state.votes, {});
 });
+
+test("Two Truths keeps the lie and votes authoritative", () => {
+  const started = initialServerGameState("twoTruths", players, { locale: "en" }, 1_000)!;
+  const vote = applyServerGameCommand("twoTruths", started, "vote", { index: 2 }, context("guest", 2_000))!;
+  assert.equal((vote.state.votes as Record<string, number>).guest, 2);
+  const duplicate = applyServerGameCommand("twoTruths", vote.state, "vote", { index: 1 }, context("guest", 2_100))!;
+  assert.equal(duplicate.changed, false);
+  const reveal = applyServerGameCommand("twoTruths", vote.state, "reveal", {}, context("host", 2_200))!;
+  assert.equal(reveal.state.phase, "reveal");
+  const next = applyServerGameCommand("twoTruths", reveal.state, "next", {}, context("host", 2_300))!;
+  assert.equal(next.state.round, 1);
+  assert.deepEqual(next.state.votes, {});
+});

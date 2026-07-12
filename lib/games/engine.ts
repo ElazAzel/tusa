@@ -1,5 +1,6 @@
 import { DAILY_TRIVIA } from "./daily-trivia";
 import { WOULD_RATHER_PROMPTS } from "./would-rather-content";
+import { TWO_TRUTHS_ROUNDS } from "./two-truths-content";
 
 export type ServerGameContext = { actorId: string; creatorId: string; participants: string[]; now: number };
 export type ServerGameResult = { state: Record<string, unknown>; changed: boolean; error?: string };
@@ -28,12 +29,36 @@ function triviaQuestion(round: number, locale: "ru" | "en") {
 export function initialServerGameState(gameId: string, participants: string[], config: Record<string, unknown>, now = Date.now()): Record<string, unknown> | null {
   const locale = config.locale === "en" ? "en" : "ru";
   if (gameId === "wouldRather") return { engine: "server-v1", game: "wouldRather", locale, phase: "vote", round: 0, prompt: WOULD_RATHER_PROMPTS[0][locale], votes: {}, players: participants };
+  if (gameId === "twoTruths") return { engine: "server-v1", game: "twoTruths", locale, phase: "vote", round: 0, statements: TWO_TRUTHS_ROUNDS[0][locale], lie: TWO_TRUTHS_ROUNDS[0].lie, votes: {}, players: participants };
   if (gameId !== "trivia" && gameId !== "quiz") return null;
   const game = gameId;
   return { engine: "server-v1", game, locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + (game === "quiz" ? 12_000 : 15_000), scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
+  if (gameId === "twoTruths" && rawState.engine === "server-v1") {
+    const state = rawState as { phase: "vote" | "reveal" | "finished"; round: number; locale: "ru" | "en"; votes: Record<string, number> };
+    if (actionType === "vote") {
+      if (state.phase !== "vote") return { state: rawState, changed: false, error: "Voting is closed." };
+      if (state.votes[context.actorId] !== undefined) return { state: rawState, changed: false };
+      const index = (payload as { index: number }).index;
+      return { changed: true, state: { ...rawState, votes: { ...state.votes, [context.actorId]: index } } };
+    }
+    if (actionType === "reveal") {
+      if (context.actorId !== context.creatorId) return { state: rawState, changed: false, error: "Only the stage can reveal the lie." };
+      if (state.phase !== "vote" || Object.keys(state.votes).length === 0) return { state: rawState, changed: false, error: "No votes to reveal." };
+      return { changed: true, state: { ...rawState, phase: "reveal" } };
+    }
+    if (actionType === "next") {
+      if (context.actorId !== context.creatorId) return { state: rawState, changed: false, error: "Only the stage can advance the game." };
+      if (state.phase !== "reveal") return { state: rawState, changed: false, error: "Reveal the lie first." };
+      const round = state.round + 1;
+      if (round >= TWO_TRUTHS_ROUNDS.length) return { changed: true, state: { ...rawState, phase: "finished" } };
+      const content = TWO_TRUTHS_ROUNDS[round];
+      return { changed: true, state: { ...rawState, phase: "vote", round, statements: content[state.locale], lie: content.lie, votes: {} } };
+    }
+    return { state: rawState, changed: false, error: "Unsupported server game command." };
+  }
   if (gameId === "wouldRather" && rawState.engine === "server-v1") {
     const state = rawState as { phase: "vote" | "reveal" | "finished"; round: number; locale: "ru" | "en"; votes: Record<string, "a" | "b"> };
     if (actionType === "vote") {
