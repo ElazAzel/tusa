@@ -1,6 +1,7 @@
 import { DAILY_TRIVIA } from "./daily-trivia";
 import { WOULD_RATHER_PROMPTS } from "./would-rather-content";
 import { TWO_TRUTHS_ROUNDS } from "./two-truths-content";
+import { PICK_THREE_SETS } from "./pick-three-content";
 
 export type ServerGameContext = { actorId: string; creatorId: string; participants: string[]; now: number };
 export type ServerGameResult = { state: Record<string, unknown>; changed: boolean; error?: string };
@@ -30,12 +31,36 @@ export function initialServerGameState(gameId: string, participants: string[], c
   const locale = config.locale === "en" ? "en" : "ru";
   if (gameId === "wouldRather") return { engine: "server-v1", game: "wouldRather", locale, phase: "vote", round: 0, prompt: WOULD_RATHER_PROMPTS[0][locale], votes: {}, players: participants };
   if (gameId === "twoTruths") return { engine: "server-v1", game: "twoTruths", locale, phase: "vote", round: 0, statements: TWO_TRUTHS_ROUNDS[0][locale], lie: TWO_TRUTHS_ROUNDS[0].lie, votes: {}, players: participants };
+  if (gameId === "kissMarry") return { engine: "server-v1", game: "kissMarry", locale, phase: "vote", round: 0, names: PICK_THREE_SETS[0], votes: {}, players: participants };
   if (gameId !== "trivia" && gameId !== "quiz") return null;
   const game = gameId;
   return { engine: "server-v1", game, locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + (game === "quiz" ? 12_000 : 15_000), scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
+  if (gameId === "kissMarry" && rawState.engine === "server-v1") {
+    const state = rawState as { phase: "vote" | "reveal" | "finished"; round: number; votes: Record<string, number[]> };
+    if (actionType === "vote") {
+      if (state.phase !== "vote") return { state: rawState, changed: false, error: "Voting is closed." };
+      if (state.votes[context.actorId]) return { state: rawState, changed: false };
+      const assignment = (payload as { assignment: number[] }).assignment;
+      if (assignment.length !== 3 || new Set(assignment).size !== 3) return { state: rawState, changed: false, error: "Assign each action exactly once." };
+      return { changed: true, state: { ...rawState, votes: { ...state.votes, [context.actorId]: assignment } } };
+    }
+    if (actionType === "reveal") {
+      if (context.actorId !== context.creatorId) return { state: rawState, changed: false, error: "Only the stage can reveal results." };
+      if (state.phase !== "vote" || Object.keys(state.votes).length === 0) return { state: rawState, changed: false, error: "No votes to reveal." };
+      return { changed: true, state: { ...rawState, phase: "reveal" } };
+    }
+    if (actionType === "next") {
+      if (context.actorId !== context.creatorId) return { state: rawState, changed: false, error: "Only the stage can advance the game." };
+      if (state.phase !== "reveal") return { state: rawState, changed: false, error: "Reveal the results first." };
+      const round = state.round + 1;
+      if (round >= PICK_THREE_SETS.length) return { changed: true, state: { ...rawState, phase: "finished" } };
+      return { changed: true, state: { ...rawState, phase: "vote", round, names: PICK_THREE_SETS[round], votes: {} } };
+    }
+    return { state: rawState, changed: false, error: "Unsupported server game command." };
+  }
   if (gameId === "twoTruths" && rawState.engine === "server-v1") {
     const state = rawState as { phase: "vote" | "reveal" | "finished"; round: number; locale: "ru" | "en"; votes: Record<string, number> };
     if (actionType === "vote") {

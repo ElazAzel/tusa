@@ -3792,6 +3792,25 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .trivia-board .quiz-options button { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 10px; min-height: 68px; text-align: left; }.trivia-board .quiz-options button b { width: 32px; height: 32px; display: grid; place-items: center; border: 2px solid currentColor; border-radius: 8px; font-family: var(--font-mono), monospace; }.trivia-result > p { padding: 15px; border: var(--line); border-radius: 12px; background: var(--lime); color: var(--black); }.trivia-scores { display: grid; gap: 7px; margin: 16px 0; }.trivia-scores p { display: flex; justify-content: space-between; gap: 14px; margin: 0; padding: 10px 12px; border: 2px solid var(--black); border-radius: 9px; background: var(--cream); color: var(--black); }
 @media (prefers-reduced-motion: reduce) { .trivia-head strong.is-ending { animation: none; } }
 
+/* Server-authoritative voting games */
+.pick-three-board { width: min(100%, 900px); margin-inline: auto; }
+.pick-three-board .tt-prompt { max-width: 64ch; margin: -6px 0 20px; color: inherit; font-weight: 750; }
+.kmk-names { display: grid; gap: 14px; margin: 20px 0; }
+.kmk-person { min-width: 0; padding: 16px; border: var(--line); border-radius: 16px; background: var(--white); box-shadow: var(--shadow); color: var(--black); }
+.kmk-name { display: block; overflow-wrap: anywhere; margin-bottom: 12px; font: 800 clamp(18px,3vw,25px)/1.2 var(--font-unbounded), sans-serif; letter-spacing: -.01em; }
+.kmk-choice-row { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+.kmk-choice-row button { min-height: 48px; padding: 9px 8px; border: 2px solid var(--black); border-radius: 10px; background: var(--cream); color: var(--black); font-weight: 850; cursor: pointer; }
+.kmk-choice-row button.selected { background: var(--pink); color: var(--white); box-shadow: 3px 3px 0 var(--black); }
+.kmk-choice-row button:disabled { cursor: default; }
+.kmk-results { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; margin-top: 12px; }
+.kmk-results span { min-width: 0; padding: 8px; border: 2px solid var(--black); border-radius: 9px; background: var(--lime); color: var(--black); font: 750 12px/1.25 var(--font-mono), monospace; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .pick-three-board { padding-inline: 14px; }
+  .kmk-person { padding: 13px; box-shadow: 4px 4px 0 var(--black); }
+  .kmk-choice-row, .kmk-results { grid-template-columns: 1fr; }
+  .kmk-choice-row button { width: 100%; min-height: 48px; text-align: left; }
+}
+
 @media (max-width: 680px) {
   .hero h1, .user-app-hero h1, .party-room-hero h1, .partners-hero h1, .create-copy h1, .profile-editor-card h1, .join-party-card h1 { letter-spacing: -.015em; line-height: 1.03; }
   .party-room-panel h2, .profile-hero h2, .promo-redeem-card h2 { letter-spacing: -.01em; line-height: 1.08; }

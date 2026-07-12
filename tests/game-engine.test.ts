@@ -74,3 +74,15 @@ test("Two Truths keeps the lie and votes authoritative", () => {
   assert.equal(next.state.round, 1);
   assert.deepEqual(next.state.votes, {});
 });
+
+test("Pick Three accepts one complete assignment per player", () => {
+  const started = initialServerGameState("kissMarry", players, { locale: "en" }, 1_000)!;
+  const invalid = applyServerGameCommand("kissMarry", started, "vote", { assignment: [0, 0, 2] }, context("guest", 2_000))!;
+  assert.match(invalid.error ?? "", /exactly once/);
+  const vote = applyServerGameCommand("kissMarry", started, "vote", { assignment: [0, 2, 1] }, context("guest", 2_100))!;
+  assert.deepEqual((vote.state.votes as Record<string, number[]>).guest, [0, 2, 1]);
+  const duplicate = applyServerGameCommand("kissMarry", vote.state, "vote", { assignment: [2, 1, 0] }, context("guest", 2_200))!;
+  assert.equal(duplicate.changed, false);
+  const reveal = applyServerGameCommand("kissMarry", vote.state, "reveal", {}, context("host", 2_300))!;
+  assert.equal(reveal.state.phase, "reveal");
+});
