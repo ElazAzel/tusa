@@ -251,8 +251,6 @@ export default function PartyRoom({ party, actorId }: { party: Party; actorId: s
         const verifiedScore = Number(data.score?.score ?? 0);
         if (verifiedScore > 0) {
           fetch("/api/highlights", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partyId: party.id, sessionId: gameSession, type: "score", data: { score: verifiedScore, game: selectedGame }, thumbnail: "" }) }).catch(() => {});
-          fetch("/api/pass", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "addXp", amount: Math.min(verifiedScore, 50) }) }).catch(() => {});
-          fetch("/api/quests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "track", questId: "playgames", partyId: party.id }) }).catch(() => {});
         }
       }).catch(() => undefined);
   }

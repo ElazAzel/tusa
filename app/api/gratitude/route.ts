@@ -1,41 +1,36 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
+import { z } from "zod";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getGratitudeTips, sendGratitudeTip, requirePartyMember } from "@/lib/parties";
 import { publish } from "@/lib/live";
+import { resolveActor } from "@/lib/guest-session";
 
-const ALLOWED_ORIGINS = ["http://localhost:3000", "https://tusa.game", "https://www.tusa.game"];
-
-function cors(res: NextResponse) { res.headers.set("Access-Control-Allow-Origin", "*"); res.headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS"); res.headers.set("Access-Control-Allow-Headers", "*"); return res; }
-
-export async function OPTIONS() { return cors(NextResponse.json({})); }
+const tipSchema = z.object({ partyId: z.string().uuid(), toUser: z.string().min(1).max(128), amount: z.number().int().min(1).max(100), message: z.string().max(240).optional() }).strict();
 
 export async function GET(request: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return cors(NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 }));
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:gratitude`, 30, 60000);
-  if (!rl.allowed) return cors(NextResponse.json({ error: "Слишком много запросов." }, { status: 429 }));
+  const actor = await resolveActor();
+  if (!actor) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const limit = await distributedRateLimit(`gratitude:read:${actor.id}:${getClientIp(request.headers)}`, 30, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   const partyId = request.nextUrl.searchParams.get("partyId");
-  if (!partyId) return cors(NextResponse.json({ error: "Укажите partyId." }, { status: 400 }));
-  try {
-    const tips = await getGratitudeTips(partyId);
-    return cors(NextResponse.json({ tips }));
-  } catch { return cors(NextResponse.json({ error: "Ошибка загрузки." }, { status: 500 })); }
+  if (!partyId || !z.string().uuid().safeParse(partyId).success) return NextResponse.json({ error: "A valid partyId is required." }, { status: 400 });
+  await requirePartyMember(partyId, actor.id);
+  return NextResponse.json({ tips: await getGratitudeTips(partyId) });
 }
 
 export async function POST(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return cors(NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 }));
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:gratitude`, 10, 60000);
-  if (!rl.allowed) return cors(NextResponse.json({ error: "Слишком много запросов." }, { status: 429 }));
-  const body = await request.json().catch(() => ({}));
-  if (!body.partyId || !body.toUser || !body.amount) return cors(NextResponse.json({ error: "Укажите partyId, toUser и amount." }, { status: 400 }));
+  const actor = await resolveActor();
+  if (!actor) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const limit = await distributedRateLimit(`gratitude:write:${actor.id}:${getClientIp(request.headers)}`, 10, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: "Too many transfers." }, { status: 429 });
+  const parsed = tipSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Invalid transfer.", details: parsed.error.flatten() }, { status: 400 });
   try {
-    await requirePartyMember(body.partyId, userId);
-    await sendGratitudeTip({ partyId: body.partyId, fromUser: userId, toUser: body.toUser, amount: body.amount, message: body.message });
-    publish(`party:${body.partyId}`, { type: "gratitude:sent", fromUser: userId, toUser: body.toUser, amount: body.amount });
-    return cors(NextResponse.json({ sent: true }, { status: 201 }));
-  } catch (e) { return cors(NextResponse.json({ error: e instanceof Error ? e.message : "Ошибка." }, { status: 403 })); }
+    await sendGratitudeTip({ ...parsed.data, fromUser: actor.id });
+    publish(`party:${parsed.data.partyId}`, { type: "gratitude:sent", fromUser: actor.id, toUser: parsed.data.toUser, amount: parsed.data.amount });
+    return NextResponse.json({ sent: true }, { status: 201 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Transfer failed.";
+    return NextResponse.json({ error: message }, { status: /member|yourself/i.test(message) ? 403 : 409 });
+  }
 }
