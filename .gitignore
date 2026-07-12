@@ -25,3 +25,5 @@ next-env.d.ts
 /.rag/
 
 .vercel
+.env.local
+.env.*.local
