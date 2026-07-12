@@ -86,3 +86,13 @@ test("Pick Three accepts one complete assignment per player", () => {
   const reveal = applyServerGameCommand("kissMarry", vote.state, "reveal", {}, context("host", 2_300))!;
   assert.equal(reveal.state.phase, "reveal");
 });
+
+test("Brain Burst uses a ten-second server timer and server scoring", () => {
+  const started = initialServerGameState("brainBurst", players, { locale: "ru" }, 5_000)!;
+  assert.equal(started.deadline, 15_000);
+  assert.equal(started.question, "Столица Казахстана?");
+  const answer = applyServerGameCommand("brainBurst", started, "answer", { index: started.correct }, context("guest", 6_000))!;
+  assert.equal((answer.state.scores as Record<string, number>).guest, 2);
+  const late = applyServerGameCommand("brainBurst", started, "answer", { index: started.correct }, context("guest", 16_000))!;
+  assert.match(late.error ?? "", /deadline/);
+});
