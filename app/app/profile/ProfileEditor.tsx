@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { Party, PromoBenefit, PromoRedemption, UserProfile } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
-import LocaleToggle from "@/app/components/LocaleToggle";
+import ProductHeader from "@/app/components/ProductHeader";
 import { soundTap, soundSuccess, soundReward } from "@/lib/audio";
 
 const badgeFamilies = ["Организатор", "Игрок", "Хроникёр", "Казначей", "Душа компании", "Пунктуальный", "Командный", "Исследователь", "Мемолог", "Голос вечера"];
@@ -94,11 +94,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
 
   return (
     <main className="profile-editor-page">
-      <header>
-        <Link href="/app" onClick={() => haptic()}>{t("backToParties")}</Link>
-        <strong>TUSA<span>.game</span></strong>
-        <LocaleToggle />
-      </header>
+      <ProductHeader backHref="/app" backLabel={t("backToParties")} />
 
       <div className="profile-editor-layout">
         <div>

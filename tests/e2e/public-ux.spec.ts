@@ -33,4 +33,14 @@ test.describe("public product UX", () => {
     }
     await context.close();
   });
+
+  test("sign-up uses the same branded mobile shell", async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: 320, height: 568 }, serviceWorkers: "block" });
+    const page = await context.newPage();
+    await page.goto("/sign-up", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".auth-shell .brand-logo--long")).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+    await context.close();
+  });
 });

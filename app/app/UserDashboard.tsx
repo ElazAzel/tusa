@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Party, UserProfile } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { formatEventDate } from "@/lib/event-format";
 import { soundTap, soundSuccess } from "@/lib/audio";
+import ProductHeader from "@/app/components/ProductHeader";
 
 function Icon({ name }: { name: string }) {
   return <span className="material-symbols-rounded" aria-hidden="true">{name}</span>;
@@ -17,9 +18,6 @@ export default function UserDashboard({ profile, parties }: { profile: UserProfi
   const [copied, setCopied] = useState("");
   const { locale, t } = useLocale();
   const cardsRef = useRef<HTMLDivElement>(null);
-  const startY = useRef(0);
-  const [pulling, setPulling] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
@@ -47,37 +45,12 @@ export default function UserDashboard({ profile, parties }: { profile: UserProfi
     window.setTimeout(() => setCopied(""), 1600);
   }
 
-  function handleTouchStart(e: React.TouchEvent) {
-    if (window.scrollY > 0) return;
-    startY.current = e.touches[0].clientY;
-  }
-
-  function handleTouchMove(e: React.TouchEvent) {
-    if (startY.current === 0) return;
-    const diff = e.touches[0].clientY - startY.current;
-    if (diff > 60 && !refreshing) setPulling(true);
-  }
-
-  async function handleTouchEnd() {
-    startY.current = 0;
-    if (pulling && !refreshing) {
-      setRefreshing(true);
-      soundTap();
-      await new Promise((r) => setTimeout(r, 1200));
-      window.location.reload();
-    }
-    setPulling(false);
-  }
-
   return <main className="user-app-page">
-    <header className="user-app-header">
-      <Link href="/app" className="user-app-brand">TUSA<span>.game</span></Link>
-      <nav>
+    <ProductHeader className="user-app-header" showLocale={false}>
         <Link href="/app/friends">{t("friendsTitle")}</Link>
         <Link href="/app/leaderboard">{t("leaderboardTitle")}</Link>
         <Link href="/app/profile">{t("profile")}</Link>
-      </nav>
-    </header>
+    </ProductHeader>
     <section className="user-app-hero">
       <div>
         <span className="app-kicker">{t("dashKicker")}</span>
