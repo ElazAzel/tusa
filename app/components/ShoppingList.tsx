@@ -7,9 +7,11 @@ function normalize(value: string) {
   return value.toLowerCase().replace(/[^a-zа-яё0-9]/gi, "");
 }
 
-export default function ShoppingList({ partyId }: { partyId: string }) {
+type ShoppingMember = { clerkUserId: string; displayName: string };
+
+export default function ShoppingList({ partyId, members = [], canManage = false }: { partyId: string; members?: ShoppingMember[]; canManage?: boolean }) {
   const { t } = useLocale();
-  const [items, setItems] = useState<Array<{ id: string; text: string; quantity: number; unit: string; buyerName: string; price: number; purchased: boolean }>>([]);
+  const [items, setItems] = useState<Array<{ id: string; text: string; quantity: number; unit: string; buyerId: string; buyerName: string; price: number; purchased: boolean }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,6 +51,10 @@ export default function ShoppingList({ partyId }: { partyId: string }) {
     fetch("/api/shopping", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", itemId, updates: { price: Math.max(0, price) } }) });
   }
 
+  function assignBuyer(itemId: string, buyerId: string) {
+    fetch("/api/shopping", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", itemId, updates: { buyerId } }) }).then(loadItems);
+  }
+
   function remove(itemId: string) {
     fetch("/api/shopping", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", itemId }) })
       .then(loadItems);
@@ -74,7 +80,9 @@ export default function ShoppingList({ partyId }: { partyId: string }) {
             <span className="material-symbols-rounded">check</span>
           </button>
           <div className="shopping-item-main"><strong>{item.text}</strong><span>{item.quantity} {item.unit}</span></div>
-          <span className="shopping-buyer-label">{item.buyerName}</span>
+          <div className="shopping-buyer"><span className="shopping-buyer-label">{item.buyerName}</span>
+            {canManage && <details><summary aria-label={t("shoppingBuyer")}><span className="material-symbols-rounded">person_edit</span></summary><div className="shopping-assignees">{members.map((member) => <button className={item.buyerId === member.clerkUserId ? "is-active" : ""} key={member.clerkUserId} onClick={() => assignBuyer(item.id, member.clerkUserId)} type="button">{member.displayName}</button>)}</div></details>}
+          </div>
           <label><span>{t("shoppingSum")}</span>
             <input aria-label={t("shoppingCost")} min="0" step="100" type="number" value={item.price || ""} onChange={(e) => setPrice(item.id, Number(e.target.value))} />
           </label>

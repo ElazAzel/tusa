@@ -298,7 +298,7 @@ export default function PartyRoom({ party }: { party: Party }) {
       <div className="game-catalogue-grid">
         {gameCatalogue.map((game) => {
           const existingSession = activeSessions.find((s) => s.game === game.id);
-          return <button className={`game-launch-card ${game.tone}`} key={game.id} type="button">
+          return <article className={`game-launch-card ${game.tone}`} key={game.id}>
             <span className="material-symbols-rounded">{game.icon}</span>
             <span className="game-player-count">{game.players}</span>
             <h3>{t(game.titleKey)}</h3>
@@ -309,7 +309,7 @@ export default function PartyRoom({ party }: { party: Party }) {
                 <span className="material-symbols-rounded">login</span> {t("gameJoinSession")}
               </button>}
             </div>
-          </button>;
+          </article>;
         })}
       </div>
 
@@ -327,7 +327,7 @@ export default function PartyRoom({ party }: { party: Party }) {
       </div>}
     </section>)}
     {gameResults && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) closeGameResults(); }}><section aria-modal="true" className="demo-modal game-results-modal" role="dialog"><span className="demo-kicker">{t("gamesResults")}</span><h2>{gameResults.gameTitle}</h2><div className="game-results-list">{gameResults.scores.map((s, i) => <div className={`game-result-row ${s.userId === user?.id ? "is-me" : ""}`} key={s.userId}><span className="game-result-rank">#{i + 1}</span><strong>{s.displayName || s.userId.slice(0, 8)}</strong><span className="game-result-score">{s.score}</span></div>)}</div><button className="demo-action demo-action--lime" onClick={closeGameResults} type="button">{t("gamesBack")}</button></section></div>}
-    {tab === "shop" && <ShoppingList partyId={party.id} />}
+    {tab === "shop" && <ShoppingList partyId={party.id} members={members} canManage={isOwner || party.role === "co_host"} />}
     {tab === "gallery" && <Gallery partyId={party.id} />}
     {tab === "koins" && <Koins partyId={party.id} />}
     {tab === "chat" && <section className="party-room-panel party-chat">

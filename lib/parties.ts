@@ -1111,13 +1111,16 @@ export async function updateShoppingItem(itemId: string, _userId: string, update
   const price = updates.price !== undefined ? Math.max(0, updates.price) : undefined;
   const purchased = updates.purchased;
   const buyerId = updates.buyerId;
+  const buyerProfile = buyerId ? await getProfile(buyerId) : null;
+  const buyerName = buyerProfile?.displayName;
   const [row] = await db()`UPDATE party_shopping_items SET
     text = COALESCE(${text ?? null}, text),
     quantity = COALESCE(${quantity ?? null}, quantity),
     unit = COALESCE(${unit ?? null}, unit),
     price = COALESCE(${price ?? null}, price),
     purchased = COALESCE(${purchased ?? null}, purchased),
-    clerk_user_id = COALESCE(${buyerId ?? null}, clerk_user_id)
+    clerk_user_id = COALESCE(${buyerId ?? null}, clerk_user_id),
+    display_name = COALESCE(${buyerName ?? null}, display_name)
     WHERE id = ${itemId} RETURNING *` as unknown as Record<string, unknown>[];
   return row ? rowToShoppingItem(row) : null;
 }

@@ -1278,6 +1278,7 @@ select:focus-visible {
 
 @media (max-width: 680px) {
   .container { width: min(calc(100% - 28px), var(--max)); }
+  .hero-copy { min-width: 0; max-width: 100%; overflow: hidden; }
   .site-header { position: relative; }
   .header-inner { min-height: 68px; }
   .brand { font-size: 14px; }
@@ -1286,7 +1287,8 @@ select:focus-visible {
   .desktop-label { display: none; }
   .mobile-label { display: inline; }
   .hero-grid { min-height: auto; padding-block: 58px 72px; }
-  .hero h1 { font-size: clamp(46px, 14.2vw, 62px); }
+  .hero h1 { max-width: 100%; font-size: clamp(40px, 12vw, 54px); letter-spacing: -.035em; overflow-wrap: anywhere; }
+  .eyebrows, .hero-lead, .hero-actions { min-width: 0; max-width: 100%; }
   .hero-lead { font-size: 17px; }
   .hero-actions { display: grid; }
   .button { width: 100%; min-height: 56px; }
@@ -2247,6 +2249,12 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .shopping-list--detailed input { width: 100%; min-width: 0; height: 38px; padding: 0 8px; border: 2px solid var(--black); border-radius: 8px; background: var(--white); }
 .shopping-remove { width: 38px; height: 38px; display: grid; place-items: center; border: 2px solid var(--black); border-radius: 9px; background: #ffe4ec; cursor: pointer; }
 .shopping-buyer-label { font-size: 11px; font-weight: 700; color: #64646a; }
+.shopping-buyer { min-width: 0; position: relative; }
+.shopping-buyer details summary { width: 38px; height: 38px; margin-top: 5px; display: grid; place-items: center; border: 2px solid var(--black); border-radius: 9px; background: var(--lime); cursor: pointer; list-style: none; }
+.shopping-buyer details summary::-webkit-details-marker { display: none; }
+.shopping-assignees { position: absolute; z-index: 8; top: calc(100% + 6px); left: 0; width: min(280px,80vw); max-height: 220px; overflow: auto; display: grid; gap: 6px; padding: 9px; border: var(--line); border-radius: 12px; background: var(--white); box-shadow: 5px 5px 0 var(--black); }
+.shopping-assignees button { min-height: 44px; padding: 8px 10px; border: 2px solid var(--black); border-radius: 9px; background: var(--cream); font-weight: 800; text-align: left; cursor: pointer; }
+.shopping-assignees button.is-active { background: var(--lime); }
 .split-card { margin-top: 30px; padding: 26px; border: var(--line); border-radius: 18px; background: var(--blue); box-shadow: 6px 6px 0 var(--black); color: var(--white); }
 .split-head { display: flex; justify-content: space-between; gap: 24px; }
 .split-head h3 { margin: 6px 0 0; font-family: var(--font-unbounded), sans-serif; font-size: 28px; }
@@ -2955,7 +2963,26 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .profile-hero h2 {
   font-family: var(--font-unbounded), sans-serif !important;
   font-weight: 800 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -.025em !important;
+  overflow-wrap: anywhere;
 }
+.party-room-qr__code { background: var(--white); }
+.party-room-qr__code img { mix-blend-mode: normal; border-radius: 0; }
+.party-room-hero h1, .party-room-panel h2 { letter-spacing: -.035em; overflow-wrap: anywhere; }
+
+/* Native popup menus differ per browser. Important profile choices stay fully branded. */
+.brand-choice { min-width: 0; margin: 0; padding: 0; border: 0; }
+.brand-choice legend { margin-bottom: 8px; font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.brand-choice { display: grid; grid-template-columns: repeat(auto-fit,minmax(112px,1fr)); gap: 8px; }
+.brand-choice legend { grid-column: 1 / -1; }
+.brand-choice label { min-width: 0; cursor: pointer; }
+.brand-choice input { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; }
+.brand-choice label > span { min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 10px; border: var(--line); border-radius: 12px; background: var(--white); box-shadow: 3px 3px 0 var(--black); font-size: 12px; font-weight: 850; text-align: center; overflow-wrap: anywhere; }
+.brand-choice input:checked + span { background: var(--lime); transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--black); }
+.brand-choice input:focus-visible + span { outline: 3px solid var(--pink); outline-offset: 2px; }
+.brand-choice input:disabled + span { opacity: .45; cursor: not-allowed; }
+.brand-choice--colors i { width: 18px; height: 18px; flex: 0 0 18px; border: 2px solid var(--black); border-radius: 50%; }
 
 /* ===== BRAND BOOK: Shopping List fixes ===== */
 .shopping-list--detailed > article > label {
@@ -3487,9 +3514,10 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   .leaderboard-page .leaderboard-row { flex-wrap: wrap; gap: 6px; }
   .leaderboard-page .leaderboard-name { min-width: 0; flex: 1; }
   .leaderboard-page .leaderboard-stats { width: 100%; text-align: right; }
-  .party-room-hero > div:last-child { gap: 6px; }
-  .party-room-hero > div:last-child > button { min-height: 38px; padding: 0 10px; font-size: 12px; }
-  .party-member-grid { grid-template-columns: repeat(2, 1fr); }
+  .party-room-page { padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px)); overflow-x: clip; }
+  .party-room-hero > div:last-child { gap: 0; }
+  .party-room-hero > div:last-child > button { min-width: 0; min-height: 48px; padding: 6px 2px; font-size: clamp(8px,2.45vw,10px); line-height: 1.05; overflow-wrap: anywhere; }
+  .party-member-grid { grid-template-columns: 1fr; }
   .game-catalogue-grid { grid-template-columns: 1fr; gap: 10px; }
   .game-launch-card { padding: 14px; }
   .game-launch-card h3 { font-size: 16px; }
@@ -3499,6 +3527,20 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   .active-session-card .demo-action { padding: 5px 10px; font-size: 11px; }
   .party-room-panel { overflow-x: hidden; }
   .payment-assignee-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .party-room-qr { width: 100%; padding: 14px; margin-inline: 0; }
+  .party-room-qr__code { max-width: 248px; padding: 12px; background: var(--white); }
+  .party-room-qr > p { font-size: 17px; letter-spacing: -.02em; line-height: 1.15; overflow-wrap: anywhere; }
+  .party-chat { height: calc(100svh - 170px); min-height: 520px; }
+  .party-chat-stream { padding: 10px; }
+  .party-chat-bubble { max-width: 88%; }
+  .chat-input-bar { position: sticky; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); grid-template-columns: 44px 44px minmax(0,1fr) 48px; gap: 6px; padding-block: 8px; background: var(--white); z-index: 2; }
+  .chat-input-bar > button { min-width: 44px; padding-inline: 7px; }
+  .chat-input-bar > button:last-child { font-size: 0; }
+  .chat-input-bar > button:last-child::after { content: "➜"; font-size: 20px; }
+  .shopping-list--detailed > article { width: 100%; grid-template-columns: 44px minmax(0,1fr) 44px; }
+  .shopping-list--detailed > article > label { min-width: 0; grid-column: 2 / -1; }
+  .shopping-list--detailed input[type="number"] { min-width: 0; max-width: 100%; }
+  .brand-choice { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media (min-width: 601px) and (max-width: 900px) {
   .badge-grid { grid-template-columns: repeat(4, 1fr); }
