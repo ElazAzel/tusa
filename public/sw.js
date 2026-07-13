@@ -1,4 +1,4 @@
-const CACHE = "tusa-game-v4";
+const CACHE = "tusa-game-v5";
 const SHELL = [
   "/offline",
   "/brand/tusa-logo.svg",

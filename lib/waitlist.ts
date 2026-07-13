@@ -58,6 +58,19 @@ function number(value: unknown) {
   return Number(value ?? 0);
 }
 
+export function fallbackWaitlistStats(): WaitlistStats {
+  return {
+    capacity: WAITLIST_CAPACITY_DEFAULT,
+    baseline: WAITLIST_BASELINE_DEFAULT,
+    applications: 0,
+    total: WAITLIST_BASELINE_DEFAULT,
+    remaining: WAITLIST_CAPACITY_DEFAULT - WAITLIST_BASELINE_DEFAULT,
+    statuses: { new: 0, shortlisted: 0, invited: 0, rejected: 0 },
+    betaApplicants: 0,
+    registeredUsers: 0,
+  };
+}
+
 function applicationFromRow(row: ApplicationRow): WaitlistApplication {
   return {
     id: row.id,
@@ -129,6 +142,15 @@ export async function getWaitlistStats(): Promise<WaitlistStats> {
     betaApplicants: number(summary.beta_applicants),
     registeredUsers,
   };
+}
+
+export async function getWaitlistStatsSafe(): Promise<WaitlistStats> {
+  try {
+    return await getWaitlistStats();
+  } catch (error) {
+    console.error("[waitlist] stats fallback", error instanceof Error ? error.message : String(error));
+    return fallbackWaitlistStats();
+  }
 }
 
 export async function listWaitlistApplications(): Promise<WaitlistApplication[]> {
