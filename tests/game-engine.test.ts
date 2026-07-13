@@ -169,3 +169,16 @@ test("Cards of Chaos enforces hands, judge authority, and round scoring", () => 
   const judged = applyServerGameCommand("cardsChaos", second.state, "judge", { winner: "guest" }, ctx("host"))!;
   assert.equal((judged.state.scores as Record<string, number>).guest, 1);
 });
+
+test("Charades rotates active players and keeps turn scoring authoritative", () => {
+  const started = initialServerGameState("charades", players, { locale: "ru" }, 1_000)!;
+  const forbidden = applyServerGameCommand("charades", started, "correct", {}, context("guest", 2_000))!;
+  assert.match(forbidden.error ?? "", /active player/);
+  const correct = applyServerGameCommand("charades", started, "correct", {}, context("host", 2_100))!;
+  assert.equal(correct.state.score, 1);
+  const early = applyServerGameCommand("charades", correct.state, "finalize", {}, context("host", 10_000))!;
+  assert.match(early.error ?? "", /still active/);
+  const result = applyServerGameCommand("charades", correct.state, "finalize", {}, context("host", 62_000))!;
+  const next = applyServerGameCommand("charades", result.state, "next", {}, context("host", 63_000))!;
+  assert.equal(next.state.activePlayer, "guest");
+});

@@ -294,5 +294,6 @@ function sanitizeControllerState(game: string, rawState: Record<string, unknown>
     state.hands = hands[userId] ? { [userId]: hands[userId] } : {};
     if (phase === "play") state.submissions = {};
   }
+  if (game === "charades" && phase === "play" && state.activePlayer !== userId) state.word = "";
   return state;
 }
