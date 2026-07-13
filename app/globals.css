@@ -2927,7 +2927,7 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   font-size: 12px; color: #666; font-weight: 600; text-align: center;
 }
 .party-chat > div:last-child {
-  display: contents;
+  flex-shrink: 0;
 }
 .party-chat input {
   min-height: 48px; border: var(--line); border-radius: 12px;
@@ -3073,12 +3073,6 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
     font-size: 22px;
   }
   .party-room { padding-bottom: 80px !important; }
-  .party-chat > div:last-child {
-    position: fixed; bottom: 60px; left: 0; right: 0;
-    display: grid; grid-template-columns: 1fr auto; gap: 8px;
-    padding: 10px 14px; background: var(--white); border-top: var(--line);
-    z-index: 50;
-  }
 }
 
 /* ===== BRAND BOOK: Party Room Hero ===== */
