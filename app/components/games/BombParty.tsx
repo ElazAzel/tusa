@@ -1,101 +1,56 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStageGame } from "@/app/components/useStageGame";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
 
-const LETTERS_EN = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "R", "S", "T", "W"];
-const LETTERS_RU = ["А", "Б", "В", "Г", "Д", "Е", "Ж", "З", "И", "К", "Л", "М", "Н", "О", "П", "Р", "С", "Т", "Ф", "Х"];
+type GameState = { engine: "server-v1"; phase: "play" | "result" | "finished"; round: number; letter: string; deadline: number; submissions: Record<string, string>; eliminated: string[]; players: string[]; winner?: string | null };
+const initialState = (): GameState => ({ engine: "server-v1", phase: "play", round: 0, letter: "", deadline: 0, submissions: {}, eliminated: [], players: [] });
 
-type GameState = { round: number; phase: "play" | "result"; letter: string; timer: number; submitted: Record<string, boolean>; eliminated: string[] };
-
-function shuffle<T>(arr: T[]): T[] {
-  const r = [...arr];
-  for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; }
-  return r;
-}
-
-export default function BombParty({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+export default function BombParty({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale } = useLocale();
-  const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
-  const letters = useMemo(() => shuffle(locale === "ru" ? LETTERS_RU : LETTERS_EN), [locale]);
   const isHost = role === "stage";
-
-  const stageHook = useStageGame<GameState>(isHost ? (sessionId ?? null) : null, () => ({ round: 0, phase: "play", letter: letters[0], timer: 20, submitted: {}, eliminated: [] }));
-  const controllerHook = useControllerGame<GameState>(!isHost ? (sessionId ?? null) : null, { round: 0, phase: "play", letter: letters[0], timer: 20, submitted: {}, eliminated: [] });
-
-  const state = isHost ? stageHook.state : controllerHook.state;
-  const sendAction = isHost ? stageHook.sendAction : controllerHook.sendAction;
-  const setState = isHost ? stageHook.setState : undefined;
-  const playerActions = isHost ? stageHook.playerActions : [];
-  const clearActions = isHost ? stageHook.clearActions : undefined;
-  const complete = isHost ? stageHook.complete : undefined;
-
+  const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, initialState);
+  const controller = useControllerGame<GameState>(!isHost ? sessionId ?? null : null, initialState());
+  const state = isHost ? stage.state : controller.state;
+  const sendAction = isHost ? stage.sendAction : controller.sendAction;
   const [word, setWord] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [now, setNow] = useState(0);
+  const finalized = useRef(-1);
+  const completed = useRef(false);
+  const copy = locale === "ru" ? { title: "Словесная бомба", round: "Раунд", hint: "Назови уникальное слово на указанную букву до взрыва", placeholder: "Слово на", submit: "Обезвредить", accepted: "Слово принято", alive: "в игре", answered: "ответили", eliminated: "выбыли", next: "Следующий раунд", finish: "Завершить", spectator: "Ты выбыл, но можешь следить за раундом" } : { title: "Word Bomb", round: "Round", hint: "Enter a unique word starting with the letter before the bomb goes off", placeholder: "Word starting with", submit: "Defuse", accepted: "Word accepted", alive: "alive", answered: "answered", eliminated: "eliminated", next: "Next round", finish: "Finish", spectator: "You're out, but you can watch the round" };
 
-  useEffect(() => { setWord(""); setSubmitted(false); }, [state.round]);
-
+  useEffect(() => { setWord(""); setSubmitted(false); finalized.current = -1; }, [state.round]);
+  useEffect(() => { if (state.phase !== "play") return; const timer = window.setInterval(() => setNow(Date.now()), 200); return () => window.clearInterval(timer); }, [state.phase, state.round]);
+  const seconds = now ? Math.max(0, Math.ceil((state.deadline - now) / 1000)) : 20;
+  const alive = state.players.filter((id) => !state.eliminated.includes(id));
+  const everyoneAnswered = alive.length > 0 && alive.every((id) => Object.hasOwn(state.submissions, id));
   useEffect(() => {
-    if (!isHost || state.phase !== "play" || state.timer <= 0) return;
-    const id = setTimeout(() => {
-      setState?.((prev) => {
-        if (prev.timer <= 1) {
-          const allPlayers = new Set([...Object.keys(prev.submitted), ...prev.eliminated]);
-          const notSubmitted = [...allPlayers].filter((id) => !prev.submitted[id]);
-          return { ...prev, timer: 0, phase: "result", eliminated: [...new Set([...prev.eliminated, ...notSubmitted])] };
-        }
-        return { ...prev, timer: prev.timer - 1 };
-      });
-    }, 1000);
-    return () => clearTimeout(id);
-  }, [state.phase, state.timer, isHost, setState]);
-
+    if (!isHost || state.phase !== "play" || (seconds > 0 && !everyoneAnswered) || finalized.current === state.round) return;
+    finalized.current = state.round;
+    sendAction("finalize");
+  }, [everyoneAnswered, isHost, seconds, sendAction, state.phase, state.round]);
   useEffect(() => {
-    if (!isHost || playerActions.length === 0) return;
-    for (const a of playerActions) {
-      if (a.actionType === "submit") { setState?.((prev) => ({ ...prev, submitted: { ...prev.submitted, [a.userId]: true } })); }
-    }
-    clearActions?.();
-  }, [playerActions, isHost, setState, clearActions]);
+    if (!isHost || state.phase !== "finished" || completed.current) return;
+    completed.current = true;
+    stage.complete();
+    onSave(0);
+  }, [isHost, onSave, stage, state.phase]);
 
-  const submit = useCallback(() => {
-    if (!word.trim() || submitted) return;
+  function submit() {
+    const value = word.trim();
+    if (!value || submitted || state.phase !== "play") return;
     setSubmitted(true);
-    sendAction("submit", { word: word.trim() });
-  }, [word, submitted, sendAction]);
+    sendAction("submit", { word: value });
+  }
 
-  const handleKey = useCallback((e: React.KeyboardEvent) => { if (e.key === "Enter") submit(); }, [submit]);
-
-  const nextRound = useCallback(() => {
-    if (!isHost) return;
-    const nextIdx = state.round + 1;
-    const aliveCount = 10 - state.eliminated.length;
-    if (aliveCount <= 1 || nextIdx >= 10) { complete?.(); onSave(aliveCount); return; }
-    setState?.((p) => ({ ...p, round: nextIdx, phase: "play", letter: letters[nextIdx % letters.length], timer: 20, submitted: {} }));
-  }, [state.round, state.eliminated.length, letters, isHost, setState, complete, onSave]);
-
-  const remaining = 10 - state.eliminated.length;
-  const isEliminated = state.eliminated.includes("");
-
-  return <div className="party-game-board game-board-enter">
-    <span className="game-step">{t("round")} {state.round + 1}/10</span>
-    <h3>{t("bpTitle")}</h3>
-    <div className="bp-letter">{state.letter}</div>
-    <div className={`bp-timer ${state.timer <= 5 ? "bp-danger" : ""}`}>{state.timer}s</div>
-    <div className="bp-info"><span>{remaining} {t("alive")}</span><span>{Object.keys(state.submitted).length} {t("submitted")}</span></div>
-    {!isEliminated && state.phase === "play" && <div className="bs-input-group">
-      <input className="bs-input" maxLength={30} onChange={(e) => setWord(e.target.value)} onKeyDown={handleKey} placeholder={t("bpPlaceholder")} value={word} />
-      <button className="demo-action demo-action--lime" disabled={submitted || !word.trim()} onClick={submit} type="button">{submitted ? t("submitted") : t("submit")}</button>
-    </div>}
-    {isEliminated && <p className="controller-answered">{t("youEliminated")}</p>}
-    {state.phase === "result" && <div className="bp-result">
-      {state.eliminated.length > 0 && <p>{t("eliminated")}: {state.eliminated.length}</p>}
-      {isHost && <button className="demo-action demo-action--lime" onClick={nextRound} type="button">{remaining <= 1 || state.round >= 9 ? t("finish") : t("nextRound")}</button>}
-    </div>}
+  return <div className="party-game-board game-board-enter word-bomb-board">
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/10</span><strong className={seconds <= 5 ? "is-ending" : ""}>{seconds}s</strong></div>
+    <h3>{copy.title}</h3><p className="tt-prompt">{copy.hint}</p><div className="bp-letter">{state.letter}</div>
+    <div className="bp-info"><span>{alive.length} {copy.alive}</span><span>{Object.keys(state.submissions).length} {copy.answered}</span></div>
+    {state.phase === "play" && <div className="bs-input-group"><input autoComplete="off" className="bs-input" disabled={submitted} maxLength={40} onChange={(event) => setWord(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submit(); }} placeholder={`${copy.placeholder} ${state.letter}…`} value={word} /><button className="demo-action demo-action--lime" disabled={submitted || !word.trim()} onClick={submit} type="button">{submitted ? copy.accepted : copy.submit}</button></div>}
+    {state.phase === "result" && <div className="trivia-result"><p>{copy.eliminated}: {state.eliminated.length}</p>{isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{alive.length <= 1 || state.round >= 9 ? copy.finish : copy.next}</button>}</div>}
   </div>;
 }
-
-const EN: Record<string, string> = { round: "Round", bpTitle: "Bomb Party", alive: "alive", submitted: "Sent!", eliminated: "Eliminated", finish: "Finish", nextRound: "Next Round", submit: "Submit", youEliminated: "You are eliminated!", bpPlaceholder: "Type a word starting with..." };
-const RU: Record<string, string> = { round: "Раунд", bpTitle: "Бомба", alive: "осталось", submitted: "Отправлено!", eliminated: "Выбыли", finish: "Завершить", nextRound: "Следующий раунд", submit: "Отправить", youEliminated: "Вы выбыли!", bpPlaceholder: "Введите слово на..." };
