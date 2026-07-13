@@ -6,7 +6,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https://img.clerk.com https://*.clerk.accounts.dev",
-  "connect-src 'self' https://*.clerk.accounts.dev wss://*.clerk.accounts.dev https://*.clerk.com wss://*.clerk.com https://clerk-telemetry.com https://*.vercel-insights.com https://vitals.vercel-insights.com https://clerk.tusa.game wss://clerk.tusa.game wss://*.tusa.game",
+  "connect-src 'self' https://*.clerk.accounts.dev wss://*.clerk.accounts.dev https://*.clerk.com wss://*.clerk.com https://*.clerk.dev wss://*.clerk.dev https://*.clerk.services wss://*.clerk.services https://clerk-telemetry.com https://telemetry.clerk.com https://*.vercel-insights.com https://vitals.vercel-insights.com https://*.vercel.app https://clerk.tusa.game wss://clerk.tusa.game wss://*.tusa.game https://*.ably.io wss://*.ably.io https://*.ably-realtime.com wss://*.ably-realtime.com",
   "worker-src 'self' blob:",
   "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.tusa.game https://challenges.cloudflare.com",
   "manifest-src 'self'",

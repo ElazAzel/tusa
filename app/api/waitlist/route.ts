@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
-import { createWaitlistApplication, getWaitlistStats } from "@/lib/waitlist";
+import { createWaitlistApplication, getWaitlistStatsSafe } from "@/lib/waitlist";
 
 export const dynamic = "force-dynamic";
 
@@ -9,14 +9,10 @@ function clean(value: unknown, limit: number) {
 }
 
 export async function GET(request: Request) {
-  try {
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = rateLimit(`api:${ip}:waitlist`, 60, 60000);
-    if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
-    return NextResponse.json(await getWaitlistStats(), { headers: { "Cache-Control": "no-store" } });
-  } catch {
-    return NextResponse.json({ error: "Не удалось загрузить waitlist." }, { status: 503 });
-  }
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`api:${ip}:waitlist`, 60, 60000);
+  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
+  return NextResponse.json(await getWaitlistStatsSafe(), { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {
@@ -35,7 +31,8 @@ export async function POST(request: Request) {
     if (result.kind === "duplicate") return NextResponse.json({ error: "Эта заявка уже есть в списке." }, { status: 409 });
     if (result.kind === "full") return NextResponse.json({ error: "Первая волна уже заполнена.", stats: result.stats }, { status: 409 });
     return NextResponse.json({ application: result.application, stats: result.stats }, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("[waitlist] application failed", error instanceof Error ? error.message : String(error));
     return NextResponse.json({ error: "Не удалось сохранить заявку. Попробуй ещё раз." }, { status: 500 });
   }
 }
