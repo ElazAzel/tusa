@@ -3,6 +3,7 @@ import { WOULD_RATHER_PROMPTS } from "./would-rather-content";
 import { TWO_TRUTHS_ROUNDS } from "./two-truths-content";
 import { PICK_THREE_SETS } from "./pick-three-content";
 import { BRAIN_BURST_QUESTIONS } from "./brain-burst-content";
+import { SAME_WORD_PROMPTS } from "./same-word-content";
 
 export type ServerGameContext = { actorId: string; creatorId: string; participants: string[]; now: number };
 export type ServerGameResult = { state: Record<string, unknown>; changed: boolean; error?: string };
@@ -39,12 +40,37 @@ export function initialServerGameState(gameId: string, participants: string[], c
   if (gameId === "twoTruths") return { engine: "server-v1", game: "twoTruths", locale, phase: "vote", round: 0, statements: TWO_TRUTHS_ROUNDS[0][locale], lie: TWO_TRUTHS_ROUNDS[0].lie, votes: {}, players: participants };
   if (gameId === "kissMarry") return { engine: "server-v1", game: "kissMarry", locale, phase: "vote", round: 0, names: PICK_THREE_SETS[0], votes: {}, players: participants };
   if (gameId === "brainBurst") return { engine: "server-v1", game: "brainBurst", locale, phase: "question", round: 0, ...brainBurstQuestion(0, locale), deadline: now + 10_000, scores: {}, answered: {}, players: participants };
+  if (gameId === "blankSlate") return { engine: "server-v1", game: "blankSlate", locale, phase: "write", round: 0, prompt: SAME_WORD_PROMPTS[locale][0], submissions: {}, roundMatches: 0, totalMatches: 0, players: participants };
   if (gameId !== "trivia" && gameId !== "quiz") return null;
   const game = gameId;
   return { engine: "server-v1", game, locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + (game === "quiz" ? 12_000 : 15_000), scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
+  if (gameId === "blankSlate" && rawState.engine === "server-v1") {
+    const state = rawState as { phase: "write" | "reveal" | "finished"; round: number; locale: "ru" | "en"; submissions: Record<string, string>; totalMatches: number };
+    if (actionType === "submit") {
+      if (state.phase !== "write") return { state: rawState, changed: false, error: "Submissions are closed." };
+      if (state.submissions[context.actorId]) return { state: rawState, changed: false };
+      const answer = (payload as { answer: string }).answer.trim().replace(/\s+/g, " ");
+      return { changed: true, state: { ...rawState, submissions: { ...state.submissions, [context.actorId]: answer } } };
+    }
+    if (actionType === "reveal") {
+      if (context.actorId !== context.creatorId) return { state: rawState, changed: false, error: "Only the stage can reveal answers." };
+      if (state.phase !== "write" || Object.keys(state.submissions).length === 0) return { state: rawState, changed: false, error: "No answers to reveal." };
+      const counts = Object.values(state.submissions).reduce<Record<string, number>>((all, answer) => { const key = answer.toLocaleLowerCase(state.locale); all[key] = (all[key] ?? 0) + 1; return all; }, {});
+      const roundMatches = Object.values(counts).filter((count) => count > 1).reduce((sum, count) => sum + count, 0);
+      return { changed: true, state: { ...rawState, phase: "reveal", roundMatches, totalMatches: state.totalMatches + roundMatches } };
+    }
+    if (actionType === "next") {
+      if (context.actorId !== context.creatorId) return { state: rawState, changed: false, error: "Only the stage can advance the game." };
+      if (state.phase !== "reveal") return { state: rawState, changed: false, error: "Reveal answers first." };
+      const round = state.round + 1;
+      if (round >= SAME_WORD_PROMPTS[state.locale].length) return { changed: true, state: { ...rawState, phase: "finished" } };
+      return { changed: true, state: { ...rawState, phase: "write", round, prompt: SAME_WORD_PROMPTS[state.locale][round], submissions: {}, roundMatches: 0 } };
+    }
+    return { state: rawState, changed: false, error: "Unsupported server game command." };
+  }
   if (gameId === "kissMarry" && rawState.engine === "server-v1") {
     const state = rawState as { phase: "vote" | "reveal" | "finished"; round: number; votes: Record<string, number[]> };
     if (actionType === "vote") {

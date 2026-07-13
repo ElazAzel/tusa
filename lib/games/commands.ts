@@ -7,7 +7,7 @@ const text = (key: string, max = 240) => z.object({ [key]: z.string().trim().min
 const point = z.object({ x: z.number().int().min(0).max(600), y: z.number().int().min(0).max(600), draw: z.boolean() }).strict();
 
 const COMMANDS: Record<string, Record<string, z.ZodType>> = {
-  blankSlate: { submit: text("answer", 120) },
+  blankSlate: { submit: text("answer", 40), reveal: empty, next: empty },
   bombParty: { submit: text("word", 60) },
   brainBurst: { answer: index, reveal: empty, next: empty },
   bunker: { join: empty, vote: target },
