@@ -1,94 +1,47 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStageGame } from "@/app/components/useStageGame";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
 
-const WORDS_EN = ["Pizza", "Rain", "Homework", "Gym", "Wifi", "Monday", "Mirror", "Coffee", "Birthday", "Airport", "Boss", "Umbrella", "Password", "Traffic", "Alarm"];
-const WORDS_RU = ["Пицца", "Домашка", "Дождь", "Спортзал", "Вайфай", "Понедельник", "Зеркало", "Кофе", "День рождения", "Аэропорт", "Начальник", "Зонтик", "Пароль", "Пробки", "Будильник"];
+type GameState = { engine: "server-v1"; phase: "write" | "reveal" | "finished"; round: number; prompt: string; submissions: Record<string, string>; roundMatches: number; totalMatches: number; players: string[] };
+const initialState = (): GameState => ({ engine: "server-v1", phase: "write", round: 0, prompt: "", submissions: {}, roundMatches: 0, totalMatches: 0, players: [] });
 
-type GameState = { round: number; phase: "write" | "reveal"; word: string; submissions: Record<string, string>; words: string[]; totalMatches: number };
-
-function shuffle<T>(arr: T[]): T[] {
-  const r = [...arr];
-  for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; }
-  return r;
-}
-
-export default function BlankSlate({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+export default function BlankSlate({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale } = useLocale();
-  const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
-  const words = useMemo(() => shuffle(locale === "ru" ? WORDS_RU : WORDS_EN), [locale]);
   const isHost = role === "stage";
-
-  const stageHook = useStageGame<GameState>(isHost ? (sessionId ?? null) : null, () => ({ round: 0, phase: "write", word: words[0], submissions: {}, words, totalMatches: 0 }));
-  const controllerHook = useControllerGame<GameState>(!isHost ? (sessionId ?? null) : null, { round: 0, phase: "write", word: words[0], submissions: {}, words, totalMatches: 0 });
-
-  const state = isHost ? stageHook.state : controllerHook.state;
-  const sendAction = isHost ? stageHook.sendAction : controllerHook.sendAction;
-  const setState = isHost ? stageHook.setState : undefined;
-  const playerActions = isHost ? stageHook.playerActions : [];
-  const clearActions = isHost ? stageHook.clearActions : undefined;
-  const complete = isHost ? stageHook.complete : undefined;
-
+  const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, initialState);
+  const controller = useControllerGame<GameState>(!isHost ? sessionId ?? null : null, initialState());
+  const state = isHost ? stage.state : controller.state;
+  const sendAction = isHost ? stage.sendAction : controller.sendAction;
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const completed = useRef(false);
+  const copy = locale === "ru" ? { title: "Одно слово", round: "Раунд", hint: "Напиши первую ассоциацию. Совпадения принесут очки группе.", placeholder: "Твоё слово…", submit: "Отправить", accepted: "Ответ сохранён", reveal: "Открыть ответы", matches: "Совпавших ответов", none: "В этом раунде совпадений нет", next: "Следующий раунд", finish: "Завершить" } : { title: "Same Word", round: "Round", hint: "Write your first association. Matching answers score for the group.", placeholder: "Your word…", submit: "Submit", accepted: "Answer saved", reveal: "Reveal answers", matches: "Matching answers", none: "No matches this round", next: "Next round", finish: "Finish" };
 
   useEffect(() => { setAnswer(""); setSubmitted(false); }, [state.round]);
-
   useEffect(() => {
-    if (!isHost || playerActions.length === 0) return;
-    for (const a of playerActions) {
-      if (a.actionType === "submit") {
-        const ans = (a.payload as { answer: string }).answer.trim();
-        setState?.((prev) => ({ ...prev, submissions: { ...prev.submissions, [a.userId]: ans } }));
-      }
-    }
-    clearActions?.();
-  }, [playerActions, isHost, setState, clearActions]);
-
-  const subs = Object.values(state.submissions);
-  const groups: Record<string, number> = {};
-  for (const s of subs) { const norm = s.toLowerCase().trim(); groups[norm] = (groups[norm] || 0) + 1; }
-  const matches = Object.entries(groups).filter(([, c]) => c > 1);
-  const roundMatchCount = matches.reduce((sum, [, c]) => sum + c, 0);
-
-  const submit = useCallback(() => {
-    if (!answer.trim() || submitted) return;
+    if (!isHost || state.phase !== "finished" || completed.current) return;
+    completed.current = true;
+    stage.complete();
+    onSave(0);
+  }, [isHost, onSave, stage, state.phase]);
+  const entries = useMemo(() => Object.entries(state.submissions), [state.submissions]);
+  const groups = useMemo(() => entries.reduce<Record<string, number>>((all, [, value]) => { if (value) { const key = value.toLocaleLowerCase(locale); all[key] = (all[key] ?? 0) + 1; } return all; }, {}), [entries, locale]);
+  function submit() {
+    const value = answer.trim();
+    if (!value || submitted || state.phase !== "write") return;
     setSubmitted(true);
-    sendAction("submit", { answer: answer.trim() });
-  }, [answer, submitted, sendAction]);
-
-  const handleKey = useCallback((e: React.KeyboardEvent) => { if (e.key === "Enter") submit(); }, [submit]);
-
-  const reveal = useCallback(() => { if (!isHost) return; setState?.((p) => ({ ...p, phase: "reveal" })); }, [isHost, setState]);
-
-  function nextRound() {
-    if (!isHost) return;
-    const nextIdx = state.round + 1;
-    if (nextIdx >= Math.min(words.length, 6)) { complete?.(); onSave(state.totalMatches); return; }
-    setState?.((p) => ({ ...p, round: nextIdx, phase: "write", word: words[nextIdx % words.length], submissions: {}, totalMatches: p.totalMatches + roundMatchCount }));
+    sendAction("submit", { answer: value });
   }
 
-  return <div className="party-game-board game-board-enter">
-    <span className="game-step">{t("round")} {state.round + 1}/6</span>
-    <h3>{t("bsTitle")}</h3>
-    <div className="bs-word">{state.word}</div>
-    {state.phase === "write" && <div className="bs-input-group">
-      <input className="bs-input" maxLength={30} onChange={(e) => setAnswer(e.target.value)} onKeyDown={handleKey} placeholder={t("bsPlaceholder")} value={answer} />
-      <button className="demo-action demo-action--lime" disabled={submitted || !answer.trim()} onClick={submit} type="button">{submitted ? t("submitted") : t("submit")}</button>
-    </div>}
-    <div className="bs-subs">{Object.entries(state.submissions).map(([uid, ans]) => <div key={uid} className={`bs-sub ${state.phase === "reveal" && matches.some(([w]) => w === ans.toLowerCase().trim()) ? "bs-match" : ""}`}>{state.phase === "reveal" ? ans : "•••"}</div>)}</div>
-    {isHost && <div className="game-primary-actions">
-      {state.phase === "write" && subs.length > 0 && <button className="demo-action demo-action--lime" onClick={reveal} type="button">{t("reveal")}</button>}
-      {state.phase === "reveal" && <>
-        {matches.length > 0 ? <p className="bs-result">{t("matches")}: {matches.map(([w, c]) => `"${w}" ×${c}`).join(", ")}</p> : <p className="bs-result">{t("noMatches")}</p>}
-        <button className="demo-action demo-action--lime" onClick={nextRound} type="button">{state.round >= Math.min(words.length, 6) - 1 ? t("finish") : t("nextRound")}</button>
-      </>}
-    </div>}
+  return <div className="party-game-board game-board-enter same-word-board">
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/6</span><span className="multiplayer-badge">LIVE · {entries.length}/{Math.max(entries.length, state.players.length)}</span></div>
+    <h3>{copy.title}</h3><p className="tt-prompt">{copy.hint}</p><div className="bs-word">{state.prompt}</div>
+    {state.phase === "write" && <div className="bs-input-group"><label><span className="sr-only">{copy.placeholder}</span><input autoComplete="off" className="bs-input" disabled={submitted} maxLength={40} onChange={(event) => setAnswer(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submit(); }} placeholder={copy.placeholder} value={answer} /></label><button className="demo-action demo-action--lime" disabled={submitted || !answer.trim()} onClick={submit} type="button">{submitted ? copy.accepted : copy.submit}</button></div>}
+    <div className="bs-subs">{entries.map(([userId, value]) => <div className={`bs-sub ${state.phase === "reveal" && groups[value.toLocaleLowerCase(locale)] > 1 ? "bs-match" : ""}`} key={userId}>{state.phase === "reveal" ? value : "•••"}</div>)}</div>
+    {state.phase === "reveal" && <div className="trivia-result"><p>{state.roundMatches > 0 ? `${copy.matches}: ${state.roundMatches}` : copy.none}</p>{isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 5 ? copy.finish : copy.next}</button>}</div>}
+    {isHost && state.phase === "write" && entries.length > 0 && <button className="demo-action demo-action--lime" onClick={() => sendAction("reveal")} type="button">{copy.reveal}</button>}
   </div>;
 }
-
-const EN: Record<string, string> = { round: "Round", bsTitle: "Blank Slate", bsPlaceholder: "Type your word...", submit: "Submit", submitted: "Sent!", reveal: "Reveal Answers", matches: "Matches", noMatches: "No matches this round", finish: "Finish", nextRound: "Next Round" };
-const RU: Record<string, string> = { round: "Раунд", bsTitle: "Пустая Слева", bsPlaceholder: "Введите слово...", submit: "Отправить", submitted: "Отправлено!", reveal: "Показать ответы", matches: "Совпадения", noMatches: "Нет совпадений в этом раунде", finish: "Завершить", nextRound: "Следующий раунд" };

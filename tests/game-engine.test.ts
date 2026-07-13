@@ -96,3 +96,14 @@ test("Brain Burst uses a ten-second server timer and server scoring", () => {
   const late = applyServerGameCommand("brainBurst", started, "answer", { index: started.correct }, context("guest", 16_000))!;
   assert.match(late.error ?? "", /deadline/);
 });
+
+test("Same Word keeps submissions private and scores matching answers", () => {
+  const started = initialServerGameState("blankSlate", players, { locale: "en" }, 1_000)!;
+  const host = applyServerGameCommand("blankSlate", started, "submit", { answer: " cheese " }, context("host", 2_000))!;
+  const guest = applyServerGameCommand("blankSlate", host.state, "submit", { answer: "Cheese" }, context("guest", 2_100))!;
+  const duplicate = applyServerGameCommand("blankSlate", guest.state, "submit", { answer: "bread" }, context("guest", 2_200))!;
+  assert.equal(duplicate.changed, false);
+  const reveal = applyServerGameCommand("blankSlate", guest.state, "reveal", {}, context("host", 2_300))!;
+  assert.equal(reveal.state.roundMatches, 2);
+  assert.equal(reveal.state.totalMatches, 2);
+});
