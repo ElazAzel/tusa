@@ -2570,6 +2570,7 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   .demo-content { padding-inline: 10px; }
   .demo-tab-panel { padding-inline: 13px; }
   .demo-hero-card { padding-inline: 20px; }
+  .party-game-board { min-height: 440px; padding: 20px 12px; }
   .game-catalogue-grid { grid-template-columns: 1fr; }
   .gallery-grid,
   .gallery-grid--real { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
@@ -3117,7 +3118,7 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   max-width: 100%;
 }
-.game-launch-card p { margin: 0; font-size: 13px; color: #555; line-height: 1.4; }
+.game-launch-card p { margin: 0; font-size: 13px; color: #292929; line-height: 1.4; }
 .game-launch-card strong {
   margin-top: auto; display: flex; align-items: center; gap: 6px;
   font-size: 13px; font-weight: 800; color: var(--pink);
@@ -3230,9 +3231,9 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   transform: translate(2px, 2px); box-shadow: 0 0 0 #000;
 }
 .payment-assignee-btn.is-active {
-  background: var(--pink); color: var(--black);
+  background: var(--pink); color: var(--white);
 }
-.payment-assignee-btn.is-active strong { color: var(--black); }
+.payment-assignee-btn.is-active strong { color: var(--white); }
 .payment-assignee-btn > .material-symbols-rounded { font-size: 28px; }
 .payment-assignee-btn > strong { font-size: 13px; }
 .payment-assignee-btn > span { font-size: 11px; color: var(--muted); }
@@ -3796,7 +3797,7 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .daily-quiz-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
 .daily-quiz-options button { min-height: 76px; display: grid; grid-template-columns: 36px 1fr; align-items: center; gap: 10px; padding: 12px; border: var(--line); border-radius: 14px; background: var(--white); box-shadow: var(--shadow); color: var(--black); cursor: pointer; text-align: left; font-weight: 850; }
 .daily-quiz-options button:active { transform: translate(3px,3px); box-shadow: none; }
-.daily-quiz-options b { width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid var(--black); border-radius: 9px; background: var(--lime); font-family: var(--font-mono), monospace; }
+.daily-quiz-options b { width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid var(--black); border-radius: 9px; background: var(--lime); color: var(--black); font-family: var(--font-mono), monospace; }
 .daily-quiz-result { display: grid; justify-items: center; gap: 10px; padding: 36px 20px; border: var(--line); border-radius: 18px; background: var(--lime); box-shadow: var(--shadow); color: var(--black); text-align: center; }
 .daily-quiz-result .material-symbols-rounded { font-size: 54px; }.daily-quiz-result h3 { margin: 0; }.daily-quiz-result strong { font: 900 30px var(--font-mono), monospace; }
 .daily-leaderboard { display: grid; gap: 7px; margin-top: 26px; }.daily-leaderboard h4 { margin: 0 0 5px; font: 850 16px var(--font-unbounded), sans-serif; }.daily-leaderboard > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 12px; border: 2px solid var(--black); border-radius: 10px; background: var(--cream); font-size: 13px; font-weight: 800; }
@@ -3804,7 +3805,7 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 @media (max-width: 560px) { .daily-quiz-options { grid-template-columns: 1fr; }.daily-quiz-options button { min-height: 64px; }.daily-quiz h3 { font-size: 25px; line-height: 1.2; } }
 
 /* Server-authoritative Trivia controller/stage */
-.trivia-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }.trivia-head strong { font: 900 34px var(--font-mono), monospace; color: var(--lime); }.trivia-head strong.is-ending { color: var(--red); animation: pulse .7s ease-in-out infinite alternate; }
+.trivia-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }.trivia-head strong { font: 900 34px var(--font-mono), monospace; color: var(--black); background: var(--lime); padding: 2px 12px; border-radius: 999px; }.trivia-head strong.is-ending { color: var(--white); background: var(--red); animation: pulse .7s ease-in-out infinite alternate; }
 .trivia-board .quiz-options button { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 10px; min-height: 68px; text-align: left; }.trivia-board .quiz-options button b { width: 32px; height: 32px; display: grid; place-items: center; border: 2px solid currentColor; border-radius: 8px; font-family: var(--font-mono), monospace; }.trivia-result > p { padding: 15px; border: var(--line); border-radius: 12px; background: var(--lime); color: var(--black); }.trivia-scores { display: grid; gap: 7px; margin: 16px 0; }.trivia-scores p { display: flex; justify-content: space-between; gap: 14px; margin: 0; padding: 10px 12px; border: 2px solid var(--black); border-radius: 9px; background: var(--cream); color: var(--black); }
 @media (prefers-reduced-motion: reduce) { .trivia-head strong.is-ending { animation: none; } }
 
@@ -3876,6 +3877,7 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .more-modal-close { border: none; background: none; cursor: pointer; padding: 4px; color: var(--black); }
 .more-modal-close .material-symbols-rounded { font-size: 24px; }
 .more-modal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 600px) { .more-modal { padding: 16px; } .more-modal-grid { grid-template-columns: repeat(2, 1fr); } }
 .more-modal-grid > button {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 16px 8px; border: 2px solid var(--black); border-radius: 12px;
