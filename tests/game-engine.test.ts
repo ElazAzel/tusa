@@ -107,3 +107,15 @@ test("Same Word keeps submissions private and scores matching answers", () => {
   assert.equal(reveal.state.roundMatches, 2);
   assert.equal(reveal.state.totalMatches, 2);
 });
+
+test("Word Bomb validates letters, uniqueness, deadlines, and elimination", () => {
+  const started = initialServerGameState("bombParty", players, { locale: "en" }, 1_000)!;
+  const wrong = applyServerGameCommand("bombParty", started, "submit", { word: "apple" }, context("guest", 2_000))!;
+  assert.match(wrong.error ?? "", /start with C/);
+  const valid = applyServerGameCommand("bombParty", started, "submit", { word: "Cloud" }, context("guest", 2_100))!;
+  assert.equal((valid.state.submissions as Record<string, string>).guest, "Cloud");
+  const duplicateWord = applyServerGameCommand("bombParty", valid.state, "submit", { word: "cloud" }, context("host", 2_200))!;
+  assert.match(duplicateWord.error ?? "", /already used/);
+  const finalized = applyServerGameCommand("bombParty", valid.state, "finalize", {}, context("host", 22_000))!;
+  assert.deepEqual(finalized.state.eliminated, ["host"]);
+});

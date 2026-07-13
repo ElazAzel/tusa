@@ -4,6 +4,7 @@ import { TWO_TRUTHS_ROUNDS } from "./two-truths-content";
 import { PICK_THREE_SETS } from "./pick-three-content";
 import { BRAIN_BURST_QUESTIONS } from "./brain-burst-content";
 import { SAME_WORD_PROMPTS } from "./same-word-content";
+import { WORD_BOMB_LETTERS } from "./word-bomb-content";
 
 export type ServerGameContext = { actorId: string; creatorId: string; participants: string[]; now: number };
 export type ServerGameResult = { state: Record<string, unknown>; changed: boolean; error?: string };
@@ -41,12 +42,44 @@ export function initialServerGameState(gameId: string, participants: string[], c
   if (gameId === "kissMarry") return { engine: "server-v1", game: "kissMarry", locale, phase: "vote", round: 0, names: PICK_THREE_SETS[0], votes: {}, players: participants };
   if (gameId === "brainBurst") return { engine: "server-v1", game: "brainBurst", locale, phase: "question", round: 0, ...brainBurstQuestion(0, locale), deadline: now + 10_000, scores: {}, answered: {}, players: participants };
   if (gameId === "blankSlate") return { engine: "server-v1", game: "blankSlate", locale, phase: "write", round: 0, prompt: SAME_WORD_PROMPTS[locale][0], submissions: {}, roundMatches: 0, totalMatches: 0, players: participants };
+  if (gameId === "bombParty") return { engine: "server-v1", game: "bombParty", locale, phase: "play", round: 0, letter: WORD_BOMB_LETTERS[locale][0], deadline: now + 20_000, submissions: {}, usedWords: [], eliminated: [], players: participants };
   if (gameId !== "trivia" && gameId !== "quiz") return null;
   const game = gameId;
   return { engine: "server-v1", game, locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + (game === "quiz" ? 12_000 : 15_000), scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
+  if (gameId === "bombParty" && rawState.engine === "server-v1") {
+    const state = rawState as { phase: "play" | "result" | "finished"; round: number; locale: "ru" | "en"; letter: string; deadline: number; submissions: Record<string, string>; usedWords: string[]; eliminated: string[] };
+    const alive = context.participants.filter((id) => !state.eliminated.includes(id));
+    if (actionType === "submit") {
+      if (state.phase !== "play" || context.now > state.deadline) return { state: rawState, changed: false, error: "This round is closed." };
+      if (!alive.includes(context.actorId)) return { state: rawState, changed: false, error: "Eliminated players cannot submit." };
+      if (state.submissions[context.actorId]) return { state: rawState, changed: false };
+      const word = (payload as { word: string }).word.trim().replace(/\s+/g, " ");
+      const normalized = word.toLocaleLowerCase(state.locale);
+      if (word.length < 2 || !word.toLocaleUpperCase(state.locale).startsWith(state.letter)) return { state: rawState, changed: false, error: `The word must start with ${state.letter}.` };
+      if (state.usedWords.includes(normalized) || Object.values(state.submissions).some((value) => value.toLocaleLowerCase(state.locale) === normalized)) return { state: rawState, changed: false, error: "That word was already used." };
+      return { changed: true, state: { ...rawState, submissions: { ...state.submissions, [context.actorId]: word } } };
+    }
+    if (actionType === "finalize") {
+      if (context.actorId !== context.creatorId) return { state: rawState, changed: false, error: "Only the stage can close the round." };
+      const everyoneAnswered = alive.length > 0 && alive.every((id) => state.submissions[id]);
+      if (state.phase !== "play" || (context.now < state.deadline && !everyoneAnswered)) return { state: rawState, changed: false, error: "The round is still active." };
+      const eliminated = [...new Set([...state.eliminated, ...alive.filter((id) => !state.submissions[id])])];
+      const usedWords = [...state.usedWords, ...Object.values(state.submissions).map((word) => word.toLocaleLowerCase(state.locale))];
+      return { changed: true, state: { ...rawState, phase: "result", eliminated, usedWords } };
+    }
+    if (actionType === "next") {
+      if (context.actorId !== context.creatorId) return { state: rawState, changed: false, error: "Only the stage can advance the game." };
+      if (state.phase !== "result") return { state: rawState, changed: false, error: "Close the current round first." };
+      const survivors = context.participants.filter((id) => !state.eliminated.includes(id));
+      const round = state.round + 1;
+      if (survivors.length <= 1 || round >= WORD_BOMB_LETTERS[state.locale].length) return { changed: true, state: { ...rawState, phase: "finished", winner: survivors[0] ?? null } };
+      return { changed: true, state: { ...rawState, phase: "play", round, letter: WORD_BOMB_LETTERS[state.locale][round], deadline: context.now + 20_000, submissions: {} } };
+    }
+    return { state: rawState, changed: false, error: "Unsupported server game command." };
+  }
   if (gameId === "blankSlate" && rawState.engine === "server-v1") {
     const state = rawState as { phase: "write" | "reveal" | "finished"; round: number; locale: "ru" | "en"; submissions: Record<string, string>; totalMatches: number };
     if (actionType === "submit") {
