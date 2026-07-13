@@ -155,3 +155,17 @@ test("Fake Fact protects the truth and scores correct and deceptive votes", () =
   const reveal = applyServerGameCommand("fibbage", truthVote.state, "reveal", {}, context("host", 2_500))!;
   assert.equal((reveal.state.scores as Record<string, number>).guest, 200);
 });
+
+test("Cards of Chaos enforces hands, judge authority, and round scoring", () => {
+  const cardPlayers = ["host", "guest", "third"];
+  const ctx = (actorId: string) => ({ actorId, creatorId: "host", participants: cardPlayers, now: 2_000 });
+  const started = initialServerGameState("cardsChaos", cardPlayers, { locale: "en" }, 1_000)!;
+  const hands = started.hands as Record<string, string[]>;
+  const judgeSubmit = applyServerGameCommand("cardsChaos", started, "submit", { card: hands.host[0] }, ctx("host"))!;
+  assert.match(judgeSubmit.error ?? "", /judge cannot/);
+  const first = applyServerGameCommand("cardsChaos", started, "submit", { card: hands.guest[0] }, ctx("guest"))!;
+  const second = applyServerGameCommand("cardsChaos", first.state, "submit", { card: hands.third[0] }, ctx("third"))!;
+  assert.equal(second.state.phase, "judge");
+  const judged = applyServerGameCommand("cardsChaos", second.state, "judge", { winner: "guest" }, ctx("host"))!;
+  assert.equal((judged.state.scores as Record<string, number>).guest, 1);
+});

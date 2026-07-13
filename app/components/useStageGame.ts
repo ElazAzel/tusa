@@ -24,13 +24,14 @@ export function useStageGame<T extends Record<string, unknown>>(
   useEffect(() => {
     if (!sessionId) { _setState(initialState); return; }
 
-    const applySnapshot = (data: { session?: { state?: Partial<T>; version?: number; participants?: string[] }; actions?: PlayerAction[] }) => {
+    const applySnapshot = (data: { viewerId?: string; session?: { state?: Partial<T>; version?: number; participants?: string[] }; actions?: PlayerAction[] }) => {
         const snap = data.session?.state;
         if (snap && Object.keys(snap).length > 0) {
           const snapshotVersion = data.session?.version;
           if (snapshotVersion) versionRef.current = snapshotVersion;
           _setState((prev) => {
             const merged = { ...prev, ...snap } as T;
+            if (data.viewerId) (merged as Record<string, unknown>).viewerId = data.viewerId;
             const participants = data.session?.participants ?? [];
             if (participants.length && Array.isArray(merged.players)) {
               const currentPlayers = merged.players as unknown[];
