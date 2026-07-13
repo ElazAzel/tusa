@@ -11,6 +11,7 @@ import { FAKE_FACT_QUESTIONS } from "./fake-fact-content";
 import { CHAOS_CARDS, CHAOS_PROMPTS } from "./cards-chaos-content";
 import { CHARADES_WORDS } from "./charades-content";
 import { FOREHEAD_GUESS_WORDS } from "./forehead-guess-content";
+import { IMPOSTOR_WORDS } from "./impostor-content";
 import { LOST_LOCATION_ROUNDS } from "./lost-location-content";
 import { MIME_RIOT_WORDS } from "./mime-riot-content";
 
@@ -77,12 +78,61 @@ export function initialServerGameState(gameId: string, participants: string[], c
   if (gameId === "crocodil") return { engine: "server-v1", game: "crocodil", locale, phase: "play", round: 0, teams: mimeTeams(participants), activeTeam: "A", activePlayer: mimeActivePlayer(participants, 0), deadline: now + 60_000, wordIndex: 0, word: MIME_RIOT_WORDS[locale][0], scores: { A: 0, B: 0 }, roundScore: 0, players: participants };
   if (gameId === "headsup") return { engine: "server-v1", game: "headsup", locale, phase: "play", round: 0, activePlayer: participants[0] ?? "", deadline: now + 60_000, wordIndex: 0, word: FOREHEAD_GUESS_WORDS[locale][0], score: 0, roundScore: 0, skipped: 0, players: participants };
   if (gameId === "spyfall") return { engine: "server-v1", game: "spyfall", locale, phase: "qa", round: 0, location: LOST_LOCATION_ROUNDS[0][locale], spyId: participants[Math.abs(now) % Math.max(1, participants.length)] ?? "", turnIndex: 0, votes: {}, spyGuess: "", accusedId: "", outcome: "", scores: {}, players: participants };
+  if (gameId === "impostor") return { engine: "server-v1", game: "impostor", locale, phase: "clue", round: 0, word: IMPOSTOR_WORDS[locale][0], impostorId: participants[Math.abs(now) % Math.max(1, participants.length)] ?? "", clues: {}, votes: {}, guess: "", accusedId: "", outcome: "", scores: {}, players: participants };
   if (gameId !== "trivia" && gameId !== "quiz") return null;
   const game = gameId;
   return { engine: "server-v1", game, locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + (game === "quiz" ? 12_000 : 15_000), scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
+  if (gameId === "impostor" && rawState.engine === "server-v1") {
+    const state = rawState as { phase: "clue" | "vote" | "reveal" | "finished"; round: number; locale: "ru" | "en"; word: string; impostorId: string; clues: Record<string, string>; votes: Record<string, string>; scores: Record<string, number> };
+    if (actionType === "clue") {
+      if (state.phase !== "clue") return { state: rawState, changed: false, error: "Clues are closed." };
+      if (state.clues[context.actorId]) return { state: rawState, changed: false };
+      const clue = (payload as { clue: string }).clue.trim();
+      return { changed: true, state: { ...rawState, clues: { ...state.clues, [context.actorId]: clue } } };
+    }
+    if (actionType === "openVote") {
+      if (context.actorId !== context.creatorId || state.phase !== "clue") return { state: rawState, changed: false, error: "Only the stage can open voting." };
+      if (Object.keys(state.clues).length < Math.min(2, context.participants.length)) return { state: rawState, changed: false, error: "At least two clues are required." };
+      return { changed: true, state: { ...rawState, phase: "vote", votes: {} } };
+    }
+    if (actionType === "guess") {
+      if (state.phase !== "clue" && state.phase !== "vote") return { state: rawState, changed: false, error: "The round is already revealed." };
+      if (context.actorId !== state.impostorId) return { state: rawState, changed: false, error: "Only the impostor can guess the word." };
+      const guess = (payload as { word: string }).word.trim();
+      const correct = guess.toLocaleLowerCase(state.locale) === state.word.toLocaleLowerCase(state.locale);
+      if (!correct) return { changed: true, state: { ...rawState, guess } };
+      return { changed: true, state: { ...rawState, phase: "reveal", guess, outcome: "impostor", scores: { ...state.scores, [state.impostorId]: (state.scores[state.impostorId] ?? 0) + 3 } } };
+    }
+    if (actionType === "vote") {
+      if (state.phase !== "vote") return { state: rawState, changed: false, error: "Voting is closed." };
+      if (state.votes[context.actorId]) return { state: rawState, changed: false };
+      const targetId = (payload as { target: string }).target;
+      if (!context.participants.includes(targetId)) return { state: rawState, changed: false, error: "Choose a player in this session." };
+      return { changed: true, state: { ...rawState, votes: { ...state.votes, [context.actorId]: targetId } } };
+    }
+    if (actionType === "reveal") {
+      if (context.actorId !== context.creatorId || state.phase !== "vote") return { state: rawState, changed: false, error: "Only the stage can reveal voting." };
+      if (!Object.keys(state.votes).length) return { state: rawState, changed: false, error: "No votes to reveal." };
+      const tally: Record<string, number> = {};
+      Object.values(state.votes).forEach((id) => { tally[id] = (tally[id] ?? 0) + 1; });
+      const accusedId = Object.entries(tally).sort(([, a], [, b]) => b - a)[0]?.[0] ?? "";
+      const crewWin = accusedId === state.impostorId;
+      const scores = { ...state.scores };
+      if (crewWin) context.participants.filter((id) => id !== state.impostorId).forEach((id) => { scores[id] = (scores[id] ?? 0) + 1; });
+      else scores[state.impostorId] = (scores[state.impostorId] ?? 0) + 2;
+      return { changed: true, state: { ...rawState, phase: "reveal", accusedId, outcome: crewWin ? "crew" : "impostor", scores } };
+    }
+    if (actionType === "next") {
+      if (context.actorId !== context.creatorId || state.phase !== "reveal") return { state: rawState, changed: false, error: "Only the stage can start the next round." };
+      const round = state.round + 1;
+      if (round >= 5) return { changed: true, state: { ...rawState, phase: "finished" } };
+      return { changed: true, state: { ...rawState, phase: "clue", round, word: IMPOSTOR_WORDS[state.locale][round % IMPOSTOR_WORDS[state.locale].length], impostorId: context.participants[round % context.participants.length] ?? "", clues: {}, votes: {}, guess: "", accusedId: "", outcome: "", players: context.participants } };
+    }
+    return { state: rawState, changed: false, error: "Unsupported server game command." };
+  }
   if (gameId === "spyfall" && rawState.engine === "server-v1") {
     const state = rawState as { phase: "qa" | "vote" | "reveal" | "finished"; round: number; locale: "ru" | "en"; location: string; spyId: string; turnIndex: number; votes: Record<string, string>; scores: Record<string, number> };
     if (actionType === "openVote") {

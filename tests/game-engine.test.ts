@@ -229,3 +229,19 @@ test("Lost Location keeps spy identity private and resolves votes server-side", 
   assert.equal(reveal.state.outcome, "citizens");
   assert.equal((reveal.state.scores as Record<string, number>).host, 1);
 });
+
+test("Impostor keeps the word private and resolves clues and votes on the server", () => {
+  const started = initialServerGameState("impostor", players, { locale: "en" }, 1_001)!;
+  assert.equal(started.impostorId, "guest");
+  const clue = applyServerGameCommand("impostor", started, "clue", { clue: "round" }, context("host", 2_000))!;
+  assert.equal((clue.state.clues as Record<string, string>).host, "round");
+  const secondClue = applyServerGameCommand("impostor", clue.state, "clue", { clue: "space" }, context("guest", 2_050))!;
+  const wrongGuess = applyServerGameCommand("impostor", secondClue.state, "guess", { word: "Pizza" }, context("host", 2_100))!;
+  assert.match(wrongGuess.error ?? "", /Only the impostor/);
+  const opened = applyServerGameCommand("impostor", secondClue.state, "openVote", {}, context("host", 2_200))!;
+  assert.equal(opened.state.phase, "vote");
+  const vote = applyServerGameCommand("impostor", opened.state, "vote", { target: "guest" }, context("host", 2_300))!;
+  const reveal = applyServerGameCommand("impostor", vote.state, "reveal", {}, context("host", 2_400))!;
+  assert.equal(reveal.state.outcome, "crew");
+  assert.equal((reveal.state.scores as Record<string, number>).host, 1);
+});

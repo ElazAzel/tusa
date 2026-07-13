@@ -26,7 +26,7 @@ const COMMANDS: Record<string, Record<string, z.ZodType>> = {
   },
   guessSong: { guess: text("title", 120) },
   headsup: { correct: empty, skip: empty, finalize: empty, next: empty },
-  impostor: { clue: text("clue", 80), guess: text("word", 80), vote: target },
+  impostor: { clue: text("clue", 80), openVote: empty, guess: text("word", 80), vote: target, reveal: empty, next: empty },
   kissMarry: {
     vote: z.object({ assignment: z.array(z.number().int().min(0).max(2)).length(3).refine((value) => new Set(value).size === 3, "Each action must be used once.") }).strict(),
     reveal: empty,
