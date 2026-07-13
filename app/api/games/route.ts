@@ -263,7 +263,7 @@ function sanitizeControllerState(game: string, rawState: Record<string, unknown>
   }
   if (game === "spyfall" && phase !== "reveal") {
     const isSpy = state.spyId === userId;
-    state.location = isSpy ? "" : state.location;
+    state.location = !userId || isSpy ? "" : state.location;
     state.spyId = isSpy ? userId : null;
   }
   if (game === "codenames" && phase !== "reveal") {

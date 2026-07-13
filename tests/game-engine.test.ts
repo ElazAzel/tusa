@@ -216,3 +216,16 @@ test("Forehead Guess hides scoring from the active player and rotates turns", ()
   assert.equal(next.state.activePlayer, "guest");
   assert.equal(next.state.roundScore, 0);
 });
+
+test("Lost Location keeps spy identity private and resolves votes server-side", () => {
+  const started = initialServerGameState("spyfall", players, { locale: "en" }, 1_001)!;
+  assert.equal(started.spyId, "guest");
+  const opened = applyServerGameCommand("spyfall", started, "openVote", {}, context("host", 2_000))!;
+  assert.equal(opened.state.phase, "vote");
+  const wrongGuess = applyServerGameCommand("spyfall", opened.state, "spyGuess", { location: "Beach" }, context("host", 2_100))!;
+  assert.match(wrongGuess.error ?? "", /Only the spy/);
+  const vote = applyServerGameCommand("spyfall", opened.state, "vote", { target: "guest" }, context("host", 2_200))!;
+  const reveal = applyServerGameCommand("spyfall", vote.state, "reveal", {}, context("host", 2_300))!;
+  assert.equal(reveal.state.outcome, "citizens");
+  assert.equal((reveal.state.scores as Record<string, number>).host, 1);
+});
