@@ -119,3 +119,15 @@ test("Word Bomb validates letters, uniqueness, deadlines, and elimination", () =
   const finalized = applyServerGameCommand("bombParty", valid.state, "finalize", {}, context("host", 22_000))!;
   assert.deepEqual(finalized.state.eliminated, ["host"]);
 });
+
+test("Spectrum hides authority on the server and scores the team average", () => {
+  const started = initialServerGameState("wavelength", players, { locale: "en" }, 1_003)!;
+  assert.equal(started.target, 4);
+  const clue = applyServerGameCommand("wavelength", started, "clue", { text: "A warm shower" }, context("host", 2_000))!;
+  const hostGuess = applyServerGameCommand("wavelength", clue.state, "guess", { value: 4 }, context("host", 2_100))!;
+  assert.match(hostGuess.error ?? "", /cannot guess/);
+  const guess = applyServerGameCommand("wavelength", clue.state, "guess", { value: 4 }, context("guest", 2_200))!;
+  const reveal = applyServerGameCommand("wavelength", guess.state, "reveal", {}, context("host", 2_300))!;
+  assert.equal(reveal.state.roundScore, 4);
+  assert.equal(reveal.state.teamScore, 4);
+});

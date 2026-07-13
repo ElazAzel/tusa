@@ -5,6 +5,7 @@ import { PICK_THREE_SETS } from "./pick-three-content";
 import { BRAIN_BURST_QUESTIONS } from "./brain-burst-content";
 import { SAME_WORD_PROMPTS } from "./same-word-content";
 import { WORD_BOMB_LETTERS } from "./word-bomb-content";
+import { SPECTRUM_PAIRS } from "./spectrum-content";
 
 export type ServerGameContext = { actorId: string; creatorId: string; participants: string[]; now: number };
 export type ServerGameResult = { state: Record<string, unknown>; changed: boolean; error?: string };
@@ -43,12 +44,43 @@ export function initialServerGameState(gameId: string, participants: string[], c
   if (gameId === "brainBurst") return { engine: "server-v1", game: "brainBurst", locale, phase: "question", round: 0, ...brainBurstQuestion(0, locale), deadline: now + 10_000, scores: {}, answered: {}, players: participants };
   if (gameId === "blankSlate") return { engine: "server-v1", game: "blankSlate", locale, phase: "write", round: 0, prompt: SAME_WORD_PROMPTS[locale][0], submissions: {}, roundMatches: 0, totalMatches: 0, players: participants };
   if (gameId === "bombParty") return { engine: "server-v1", game: "bombParty", locale, phase: "play", round: 0, letter: WORD_BOMB_LETTERS[locale][0], deadline: now + 20_000, submissions: {}, usedWords: [], eliminated: [], players: participants };
+  if (gameId === "wavelength") return { engine: "server-v1", game: "wavelength", locale, phase: "clue", round: 0, pair: SPECTRUM_PAIRS[locale][0], target: (Math.abs(now) % 10) + 1, clue: "", guesses: {}, teamScore: 0, roundScore: 0, players: participants };
   if (gameId !== "trivia" && gameId !== "quiz") return null;
   const game = gameId;
   return { engine: "server-v1", game, locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + (game === "quiz" ? 12_000 : 15_000), scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
+  if (gameId === "wavelength" && rawState.engine === "server-v1") {
+    const state = rawState as { phase: "clue" | "guess" | "reveal" | "finished"; round: number; locale: "ru" | "en"; target: number; guesses: Record<string, number>; teamScore: number };
+    if (actionType === "clue") {
+      if (context.actorId !== context.creatorId || state.phase !== "clue") return { state: rawState, changed: false, error: "Only the stage can submit the clue." };
+      const clue = (payload as { text: string }).text.trim();
+      return { changed: true, state: { ...rawState, phase: "guess", clue } };
+    }
+    if (actionType === "guess") {
+      if (state.phase !== "guess") return { state: rawState, changed: false, error: "Guessing is closed." };
+      if (context.actorId === context.creatorId) return { state: rawState, changed: false, error: "The clue giver cannot guess." };
+      if (state.guesses[context.actorId] !== undefined) return { state: rawState, changed: false };
+      return { changed: true, state: { ...rawState, guesses: { ...state.guesses, [context.actorId]: (payload as { value: number }).value } } };
+    }
+    if (actionType === "reveal") {
+      if (context.actorId !== context.creatorId || state.phase !== "guess") return { state: rawState, changed: false, error: "Only the stage can reveal the target." };
+      const guesses = Object.values(state.guesses);
+      if (!guesses.length) return { state: rawState, changed: false, error: "No guesses to reveal." };
+      const average = guesses.reduce((sum, value) => sum + value, 0) / guesses.length;
+      const distance = Math.abs(average - state.target);
+      const roundScore = distance <= .5 ? 4 : distance <= 1.5 ? 3 : distance <= 2.5 ? 2 : distance <= 3.5 ? 1 : 0;
+      return { changed: true, state: { ...rawState, phase: "reveal", average, roundScore, teamScore: state.teamScore + roundScore } };
+    }
+    if (actionType === "next") {
+      if (context.actorId !== context.creatorId || state.phase !== "reveal") return { state: rawState, changed: false, error: "Only the stage can advance after reveal." };
+      const round = state.round + 1;
+      if (round >= SPECTRUM_PAIRS[state.locale].length) return { changed: true, state: { ...rawState, phase: "finished" } };
+      return { changed: true, state: { ...rawState, phase: "clue", round, pair: SPECTRUM_PAIRS[state.locale][round], target: ((state.target + round * 3) % 10) + 1, clue: "", guesses: {}, roundScore: 0, average: null } };
+    }
+    return { state: rawState, changed: false, error: "Unsupported server game command." };
+  }
   if (gameId === "bombParty" && rawState.engine === "server-v1") {
     const state = rawState as { phase: "play" | "result" | "finished"; round: number; locale: "ru" | "en"; letter: string; deadline: number; submissions: Record<string, string>; usedWords: string[]; eliminated: string[] };
     const alive = context.participants.filter((id) => !state.eliminated.includes(id));
