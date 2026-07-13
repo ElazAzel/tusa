@@ -7,6 +7,7 @@ import { SAME_WORD_PROMPTS } from "./same-word-content";
 import { WORD_BOMB_LETTERS } from "./word-bomb-content";
 import { SPECTRUM_PAIRS } from "./spectrum-content";
 import { PUNCHLINE_PROMPTS } from "./punchline-content";
+import { FAKE_FACT_QUESTIONS } from "./fake-fact-content";
 
 export type ServerGameContext = { actorId: string; creatorId: string; participants: string[]; now: number };
 export type ServerGameResult = { state: Record<string, unknown>; changed: boolean; error?: string };
@@ -47,12 +48,58 @@ export function initialServerGameState(gameId: string, participants: string[], c
   if (gameId === "bombParty") return { engine: "server-v1", game: "bombParty", locale, phase: "play", round: 0, letter: WORD_BOMB_LETTERS[locale][0], deadline: now + 20_000, submissions: {}, usedWords: [], eliminated: [], players: participants };
   if (gameId === "wavelength") return { engine: "server-v1", game: "wavelength", locale, phase: "clue", round: 0, pair: SPECTRUM_PAIRS[locale][0], target: (Math.abs(now) % 10) + 1, clue: "", guesses: {}, teamScore: 0, roundScore: 0, players: participants };
   if (gameId === "quiplash") return { engine: "server-v1", game: "quiplash", locale, phase: "answer", round: 0, prompt: PUNCHLINE_PROMPTS[locale][0], submissions: {}, votes: {}, scores: {}, players: participants };
+  if (gameId === "fibbage") return { engine: "server-v1", game: "fibbage", locale, phase: "answer", round: 0, ...FAKE_FACT_QUESTIONS[0][locale], submissions: {}, choices: [], choiceOwners: {}, truthChoiceId: "", votes: {}, scores: {}, players: participants };
   if (gameId !== "trivia" && gameId !== "quiz") return null;
   const game = gameId;
   return { engine: "server-v1", game, locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + (game === "quiz" ? 12_000 : 15_000), scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
+  if (gameId === "fibbage" && rawState.engine === "server-v1") {
+    const state = rawState as { phase: "answer" | "vote" | "reveal" | "finished"; round: number; locale: "ru" | "en"; truth: string; submissions: Record<string, string>; choices: Array<{ id: string; text: string }>; choiceOwners: Record<string, string>; truthChoiceId: string; votes: Record<string, string>; scores: Record<string, number> };
+    if (actionType === "answer") {
+      if (state.phase !== "answer") return { state: rawState, changed: false, error: "Answers are closed." };
+      if (state.submissions[context.actorId]) return { state: rawState, changed: false };
+      const answer = (payload as { text: string }).text.trim();
+      const normalized = answer.toLocaleLowerCase(state.locale);
+      if (normalized === state.truth.toLocaleLowerCase(state.locale)) return { state: rawState, changed: false, error: "That is the real answer. Try a lie." };
+      if (Object.values(state.submissions).some((value) => value.toLocaleLowerCase(state.locale) === normalized)) return { state: rawState, changed: false, error: "That answer is already in play." };
+      return { changed: true, state: { ...rawState, submissions: { ...state.submissions, [context.actorId]: answer } } };
+    }
+    if (actionType === "openVote") {
+      if (context.actorId !== context.creatorId || state.phase !== "answer") return { state: rawState, changed: false, error: "Only the stage can open voting." };
+      if (Object.keys(state.submissions).length < 2) return { state: rawState, changed: false, error: "At least two lies are required." };
+      const answers = Object.entries(state.submissions);
+      const truthPosition = (state.round * 2 + 1) % (answers.length + 1);
+      const source = [...answers.map(([owner, text]) => ({ owner, text }))];
+      source.splice(truthPosition, 0, { owner: "truth", text: state.truth });
+      const choices = source.map((item, index) => ({ id: `option-${state.round}-${index}`, text: item.text }));
+      const choiceOwners = Object.fromEntries(choices.map((choice, index) => [choice.id, source[index].owner]));
+      const truthChoiceId = choices.find((choice) => choiceOwners[choice.id] === "truth")!.id;
+      return { changed: true, state: { ...rawState, phase: "vote", choices, choiceOwners, truthChoiceId } };
+    }
+    if (actionType === "vote") {
+      if (state.phase !== "vote" || state.votes[context.actorId]) return { state: rawState, changed: false, error: state.phase !== "vote" ? "Voting is closed." : undefined };
+      const targetId = (payload as { target: string }).target;
+      const owner = state.choiceOwners[targetId];
+      if (!owner || owner === context.actorId) return { state: rawState, changed: false, error: "Choose the truth or another player's lie." };
+      return { changed: true, state: { ...rawState, votes: { ...state.votes, [context.actorId]: targetId } } };
+    }
+    if (actionType === "reveal") {
+      if (context.actorId !== context.creatorId || state.phase !== "vote") return { state: rawState, changed: false, error: "Only the stage can reveal the truth." };
+      if (!Object.keys(state.votes).length) return { state: rawState, changed: false, error: "No votes to reveal." };
+      const scores = { ...state.scores };
+      Object.entries(state.votes).forEach(([voter, target]) => { const owner = state.choiceOwners[target]; if (target === state.truthChoiceId) scores[voter] = (scores[voter] ?? 0) + 200; else if (owner) scores[owner] = (scores[owner] ?? 0) + 100; });
+      return { changed: true, state: { ...rawState, phase: "reveal", scores } };
+    }
+    if (actionType === "next") {
+      if (context.actorId !== context.creatorId || state.phase !== "reveal") return { state: rawState, changed: false, error: "Only the stage can advance after reveal." };
+      const round = state.round + 1;
+      if (round >= FAKE_FACT_QUESTIONS.length) return { changed: true, state: { ...rawState, phase: "finished" } };
+      return { changed: true, state: { ...rawState, phase: "answer", round, ...FAKE_FACT_QUESTIONS[round][state.locale], submissions: {}, choices: [], choiceOwners: {}, truthChoiceId: "", votes: {} } };
+    }
+    return { state: rawState, changed: false, error: "Unsupported server game command." };
+  }
   if (gameId === "quiplash" && rawState.engine === "server-v1") {
     const state = rawState as { phase: "answer" | "vote" | "reveal" | "finished"; round: number; locale: "ru" | "en"; submissions: Record<string, string>; votes: Record<string, string>; scores: Record<string, number> };
     if (actionType === "answer") {

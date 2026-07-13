@@ -143,3 +143,15 @@ test("Punchline keeps answers server-owned and prevents self voting", () => {
   const reveal = applyServerGameCommand("quiplash", vote.state, "reveal", {}, context("host", 2_500))!;
   assert.equal((reveal.state.scores as Record<string, number>).host, 100);
 });
+
+test("Fake Fact protects the truth and scores correct and deceptive votes", () => {
+  const started = initialServerGameState("fibbage", players, { locale: "en" }, 1_000)!;
+  const truthLeak = applyServerGameCommand("fibbage", started, "answer", { text: "11" }, context("guest", 2_000))!;
+  assert.match(truthLeak.error ?? "", /real answer/);
+  const first = applyServerGameCommand("fibbage", started, "answer", { text: "Nine" }, context("host", 2_100))!;
+  const second = applyServerGameCommand("fibbage", first.state, "answer", { text: "Twelve" }, context("guest", 2_200))!;
+  const opened = applyServerGameCommand("fibbage", second.state, "openVote", {}, context("host", 2_300))!;
+  const truthVote = applyServerGameCommand("fibbage", opened.state, "vote", { target: opened.state.truthChoiceId }, context("guest", 2_400))!;
+  const reveal = applyServerGameCommand("fibbage", truthVote.state, "reveal", {}, context("host", 2_500))!;
+  assert.equal((reveal.state.scores as Record<string, number>).guest, 200);
+});
