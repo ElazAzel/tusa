@@ -295,6 +295,7 @@ function sanitizeControllerState(game: string, rawState: Record<string, unknown>
     if (phase === "play") state.submissions = {};
   }
   if (game === "crocodil" && phase === "play" && state.activePlayer !== userId) state.word = "";
+  if (game === "headsup" && phase === "play" && (!userId || state.activePlayer === userId)) state.word = "";
   if (game === "charades" && phase === "play" && state.activePlayer !== userId) state.word = "";
   return state;
 }

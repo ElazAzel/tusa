@@ -25,7 +25,7 @@ const COMMANDS: Record<string, Record<string, z.ZodType>> = {
     stroke: z.object({ points: z.array(point).min(1).max(32) }).strict(),
   },
   guessSong: { guess: text("title", 120) },
-  headsup: { correct: empty, skip: empty, setActive: empty },
+  headsup: { correct: empty, skip: empty, finalize: empty, next: empty },
   impostor: { clue: text("clue", 80), guess: text("word", 80), vote: target },
   kissMarry: {
     vote: z.object({ assignment: z.array(z.number().int().min(0).max(2)).length(3).refine((value) => new Set(value).size === 3, "Each action must be used once.") }).strict(),

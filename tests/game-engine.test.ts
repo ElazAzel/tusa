@@ -199,3 +199,20 @@ test("Mime Riot keeps team turns and active player prompts server-side", () => {
   assert.equal(next.state.activeTeam, "B");
   assert.equal(next.state.activePlayer, "guest");
 });
+
+test("Forehead Guess hides scoring from the active player and rotates turns", () => {
+  const started = initialServerGameState("headsup", players, { locale: "en" }, 1_000)!;
+  assert.equal(started.activePlayer, "host");
+  const activeScore = applyServerGameCommand("headsup", started, "correct", {}, context("host", 2_000))!;
+  assert.match(activeScore.error ?? "", /active player/);
+  const correct = applyServerGameCommand("headsup", started, "correct", {}, context("guest", 2_100))!;
+  assert.equal(correct.state.score, 1);
+  assert.equal(correct.state.roundScore, 1);
+  const skip = applyServerGameCommand("headsup", correct.state, "skip", {}, context("guest", 2_200))!;
+  assert.equal(skip.state.skipped, 1);
+  const result = applyServerGameCommand("headsup", skip.state, "finalize", {}, context("host", 62_000))!;
+  assert.equal(result.state.phase, "result");
+  const next = applyServerGameCommand("headsup", result.state, "next", {}, context("host", 63_000))!;
+  assert.equal(next.state.activePlayer, "guest");
+  assert.equal(next.state.roundScore, 0);
+});

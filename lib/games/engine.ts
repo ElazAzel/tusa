@@ -10,6 +10,7 @@ import { PUNCHLINE_PROMPTS } from "./punchline-content";
 import { FAKE_FACT_QUESTIONS } from "./fake-fact-content";
 import { CHAOS_CARDS, CHAOS_PROMPTS } from "./cards-chaos-content";
 import { CHARADES_WORDS } from "./charades-content";
+import { FOREHEAD_GUESS_WORDS } from "./forehead-guess-content";
 import { MIME_RIOT_WORDS } from "./mime-riot-content";
 
 export type ServerGameContext = { actorId: string; creatorId: string; participants: string[]; now: number };
@@ -73,12 +74,48 @@ export function initialServerGameState(gameId: string, participants: string[], c
   if (gameId === "cardsChaos") return { engine: "server-v1", game: "cardsChaos", locale, phase: "play", round: 0, prompt: CHAOS_PROMPTS[locale][0], judgeId: participants[0] ?? "", hands: dealChaosHands(participants, locale, 0), submissions: {}, winner: "", scores: {}, players: participants };
   if (gameId === "charades") return { engine: "server-v1", game: "charades", locale, phase: "play", round: 0, activePlayer: participants[0] ?? "", deadline: now + 60_000, wordIndex: 0, word: CHARADES_WORDS[locale][0], score: 0, roundScore: 0, players: participants };
   if (gameId === "crocodil") return { engine: "server-v1", game: "crocodil", locale, phase: "play", round: 0, teams: mimeTeams(participants), activeTeam: "A", activePlayer: mimeActivePlayer(participants, 0), deadline: now + 60_000, wordIndex: 0, word: MIME_RIOT_WORDS[locale][0], scores: { A: 0, B: 0 }, roundScore: 0, players: participants };
+  if (gameId === "headsup") return { engine: "server-v1", game: "headsup", locale, phase: "play", round: 0, activePlayer: participants[0] ?? "", deadline: now + 60_000, wordIndex: 0, word: FOREHEAD_GUESS_WORDS[locale][0], score: 0, roundScore: 0, skipped: 0, players: participants };
   if (gameId !== "trivia" && gameId !== "quiz") return null;
   const game = gameId;
   return { engine: "server-v1", game, locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + (game === "quiz" ? 12_000 : 15_000), scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
+  if (gameId === "headsup" && rawState.engine === "server-v1") {
+    const state = rawState as { phase: "play" | "result" | "finished"; round: number; locale: "ru" | "en"; activePlayer: string; deadline: number; wordIndex: number; score: number; roundScore: number; skipped: number };
+    if (actionType === "correct" || actionType === "skip") {
+      if (state.phase !== "play" || context.now > state.deadline) return { state: rawState, changed: false, error: "This turn is closed." };
+      if (context.actorId === state.activePlayer) return { state: rawState, changed: false, error: "The active player cannot see or score their own word." };
+      if (!context.participants.includes(context.actorId)) return { state: rawState, changed: false, error: "Only session participants can score the turn." };
+      const wordIndex = state.wordIndex + 1;
+      const scored = actionType === "correct" ? 1 : 0;
+      return {
+        changed: true,
+        state: {
+          ...rawState,
+          wordIndex,
+          word: FOREHEAD_GUESS_WORDS[state.locale][wordIndex % FOREHEAD_GUESS_WORDS[state.locale].length],
+          score: state.score + scored,
+          roundScore: state.roundScore + scored,
+          skipped: state.skipped + (actionType === "skip" ? 1 : 0),
+          lastAction: actionType,
+        },
+      };
+    }
+    if (actionType === "finalize") {
+      if (context.actorId !== context.creatorId || state.phase !== "play") return { state: rawState, changed: false, error: "Only the stage can close the turn." };
+      if (context.now < state.deadline) return { state: rawState, changed: false, error: "The turn is still active." };
+      return { changed: true, state: { ...rawState, phase: "result" } };
+    }
+    if (actionType === "next") {
+      if (context.actorId !== context.creatorId || state.phase !== "result") return { state: rawState, changed: false, error: "Only the stage can advance after results." };
+      const round = state.round + 1;
+      if (round >= 5) return { changed: true, state: { ...rawState, phase: "finished" } };
+      const wordIndex = state.wordIndex + 1;
+      return { changed: true, state: { ...rawState, phase: "play", round, activePlayer: context.participants[round % context.participants.length] ?? "", deadline: context.now + 60_000, wordIndex, word: FOREHEAD_GUESS_WORDS[state.locale][wordIndex % FOREHEAD_GUESS_WORDS[state.locale].length], roundScore: 0, skipped: 0, lastAction: "", players: context.participants } };
+    }
+    return { state: rawState, changed: false, error: "Unsupported server game command." };
+  }
   if (gameId === "crocodil" && rawState.engine === "server-v1") {
     const state = rawState as { phase: "play" | "result" | "finished"; round: number; locale: "ru" | "en"; activeTeam: "A" | "B"; activePlayer: string; deadline: number; wordIndex: number; scores: Record<"A" | "B", number>; roundScore: number };
     if (actionType === "correct" || actionType === "pass") {

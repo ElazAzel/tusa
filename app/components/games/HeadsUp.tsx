@@ -1,90 +1,89 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useStageGame } from "@/app/components/useStageGame";
+import { useEffect, useRef, useState } from "react";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
+import { useStageGame } from "@/app/components/useStageGame";
 
-const WORDS_EN = ["Elephant", "Pizza", "Karaoke", "Unicorn", "Ninja", "Sushi", "Volcano", "Penguin", "Batman", "Yoga", "Chandelier", "Tornado", "Giraffe", "Disco", "Lobster", "Robot", "Cactus", "Dinosaur", "Mermaid", "Yeti", "Zombie", "T-Rex", "Vampire", "Alien", "Ghost", "Pirate", "Snowman", "Caveman", "Gladiator"];
-const WORDS_RU = ["Слон", "Пицца", "Караоке", "Единорог", "Ниндзя", "Суши", "Вулкан", "Пингвин", "Бэтмен", "Йога", "Люстра", "Торнадо", "Жираф", "Диско", "Лобстер", "Робот", "Кактус", "Динозавр", "Русалка", "Йети", "Зомби", "Ти-Рекс", "Вампир", "Инопланетянин", "Призрак", "Пират", "Снеговик", "Пещерный человек", "Гладиатор"];
+type GameState = {
+  engine: "server-v1";
+  viewerId?: string;
+  phase: "play" | "result" | "finished";
+  round: number;
+  activePlayer: string;
+  deadline: number;
+  word: string;
+  score: number;
+  roundScore: number;
+  skipped: number;
+  lastAction?: "correct" | "skip" | "";
+  players: string[];
+};
 
-type GameState = { round: number; phase: "play" | "result"; words: string[]; currentIndex: number; score: number; activePlayer: string; timer: number; direction: "correct" | "skip" | null };
+const emptyState = (): GameState => ({
+  engine: "server-v1",
+  phase: "play",
+  round: 0,
+  activePlayer: "",
+  deadline: 0,
+  word: "",
+  score: 0,
+  roundScore: 0,
+  skipped: 0,
+  lastAction: "",
+  players: [],
+});
 
-function shuffle<T>(arr: T[]): T[] {
-  const r = [...arr]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r;
-}
-
-export default function HeadsUp({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+export default function HeadsUp({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale } = useLocale();
-  const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
-  const words = useMemo(() => shuffle(locale === "ru" ? WORDS_RU : WORDS_EN), [locale]);
   const isHost = role === "stage";
-
-  const stageHook = useStageGame<GameState>(isHost ? (sessionId ?? null) : null, () => ({ round: 0, phase: "play", words, currentIndex: 0, score: 0, activePlayer: "", timer: 60, direction: null }));
-  const controllerHook = useControllerGame<GameState>(!isHost ? (sessionId ?? null) : null, { round: 0, phase: "play", words, currentIndex: 0, score: 0, activePlayer: "", timer: 60, direction: null });
-
-  const state = isHost ? stageHook.state : controllerHook.state;
-  const sendAction = isHost ? stageHook.sendAction : controllerHook.sendAction;
-  const setState = isHost ? stageHook.setState : undefined;
-  const playerActions = isHost ? stageHook.playerActions : [];
-  const clearActions = isHost ? stageHook.clearActions : undefined;
-
-  const [isActive, setIsActive] = useState(false);
-  useEffect(() => { setIsActive(false); }, [state.round]);
-  const complete = isHost ? stageHook.complete : undefined;
-
-  useEffect(() => {
-    if (!isHost || playerActions.length === 0) return;
-    for (const a of playerActions) {
-      if (a.actionType === "correct" && state.phase === "play") setState?.((prev) => ({ ...prev, score: prev.score + 1, currentIndex: prev.currentIndex + 1, direction: "correct" }));
-      if (a.actionType === "skip" && state.phase === "play") setState?.((prev) => ({ ...prev, currentIndex: prev.currentIndex + 1, direction: "skip" }));
-      if (a.actionType === "setActive" && state.phase === "play") setState?.((prev) => ({ ...prev, activePlayer: a.userId }));
-    }
-    clearActions?.();
-  }, [playerActions, state.phase, isHost, setState, clearActions]);
+  const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, emptyState);
+  const controller = useControllerGame<GameState>(!isHost ? sessionId ?? null : null, emptyState());
+  const state = isHost ? stage.state : controller.state;
+  const sendAction = isHost ? stage.sendAction : controller.sendAction;
+  const [now, setNow] = useState(0);
+  const finalized = useRef(-1);
+  const completed = useRef(false);
+  const me = state.viewerId ?? "";
+  const isActive = me === state.activePlayer;
+  const canScore = state.phase === "play" && !isActive && Boolean(state.word);
+  const copy = locale === "ru"
+    ? { title: "Forehead Guess", round: "Раунд", active: "Угадывает", hidden: "Держи телефон у лба. Слово видят остальные.", word: "Слово для подсказок", explain: "Объясняйте без однокоренных слов и без показа экрана.", correct: "Угадал", skip: "Пас", turn: "За ход", total: "Всего", skipped: "Пасов", next: "Следующий игрок", finish: "Завершить" }
+    : { title: "Forehead Guess", round: "Round", active: "Guessing", hidden: "Hold the phone to your forehead. Everyone else sees the word.", word: "Word to explain", explain: "Give clues without saying the root word or showing the screen.", correct: "Correct", skip: "Pass", turn: "This turn", total: "Total", skipped: "Passes", next: "Next player", finish: "Finish" };
 
   useEffect(() => {
-    if (!isHost || state.phase !== "play" || state.timer <= 0 || !state.activePlayer) return;
-    const id = setTimeout(() => setState?.((p) => ({ ...p, timer: p.timer - 1 })), 1000);
-    return () => clearTimeout(id);
-  }, [state.phase, state.timer, state.activePlayer, isHost, setState]);
+    if (state.phase !== "play") return;
+    const timer = window.setInterval(() => setNow(Date.now()), 200);
+    return () => window.clearInterval(timer);
+  }, [state.phase, state.round]);
+
+  const seconds = now ? Math.max(0, Math.ceil((state.deadline - now) / 1000)) : 60;
 
   useEffect(() => {
-    if (!isHost) return;
-    if (state.phase === "play" && state.timer === 0) setState?.((p) => ({ ...p, phase: "result" }));
-  }, [state.timer, state.phase, isHost, setState]);
+    if (!isHost || state.phase !== "play" || seconds > 0 || finalized.current === state.round) return;
+    finalized.current = state.round;
+    sendAction("finalize");
+  }, [isHost, seconds, sendAction, state.phase, state.round]);
 
-  const currentWord = state.words[state.currentIndex % state.words.length] || "—";
-  const totalWords = Math.min(state.words.length, 10);
+  useEffect(() => {
+    if (!isHost || state.phase !== "finished" || completed.current) return;
+    completed.current = true;
+    stage.complete();
+    onSave(state.score);
+  }, [isHost, onSave, stage, state.phase, state.score]);
 
-  const correct = useCallback(() => sendAction("correct"), [sendAction]);
-  const skip = useCallback(() => sendAction("skip"), [sendAction]);
-  const setActivePlayer = useCallback(() => { setIsActive(true); sendAction("setActive"); }, [sendAction]);
+  const activeLabel = state.activePlayer ? state.activePlayer.slice(-8) : "stage";
 
-  const finish = useCallback(() => { if (!isHost) return; complete?.(); onSave(state.score); }, [isHost, complete, onSave, state.score]);
-  const reset = useCallback(() => { if (!isHost) return; setState?.({ round: state.round + 1, phase: "play", words: shuffle(locale === "ru" ? WORDS_RU : WORDS_EN), currentIndex: 0, score: 0, activePlayer: "", timer: 60, direction: null }); }, [state.round, locale, isHost, setState]);
-
-  return <div className="party-game-board game-board-enter">
-    <span className="game-step">{t("round")} {state.round + 1}</span>
-    <div style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 10 ? "var(--red)" : "var(--lime)", margin: "8px 0" }}>{state.timer}s</div>
-    {state.phase === "play" && <div>
-      <p style={{ color: "var(--gray)", marginBottom: 4 }}>{t("currentWord")}</p>
-      <div style={{ fontSize: 28, fontWeight: 700, background: "var(--dark)", borderRadius: 12, padding: 16, textAlign: "center" }}>{currentWord}</div>
-      <p style={{ color: "var(--gray)", marginTop: 8 }}>{t("score")}: {state.score} | {t("word")} {state.currentIndex + 1}/{totalWords}</p>
-      {state.direction && <p style={{ color: state.direction === "correct" ? "var(--lime)" : "var(--red)", fontWeight: 700, marginTop: 4 }}>{state.direction === "correct" ? `✓ ${t("correct")}` : `⏭ ${t("skipped")}`}</p>}
-      {state.activePlayer && <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-        <button className="demo-action demo-action--lime" onClick={correct} type="button" style={{ flex: 1, fontSize: 18, padding: "14px 0" }}>✓ {t("correct")}</button>
-        <button className="demo-action demo-action--white" onClick={skip} type="button" style={{ flex: 1, fontSize: 18, padding: "14px 0" }}>⏭ {t("skip")}</button>
-      </div>}
-      {!state.activePlayer && !isActive && <button className="demo-action demo-action--lime" onClick={setActivePlayer} type="button" style={{ marginTop: 12 }}>{t("startClueing")}</button>}
-      {isHost && !state.activePlayer && <button className="demo-action demo-action--lime" onClick={() => setState?.((p) => ({ ...p, activePlayer: "host" }))} type="button" style={{ marginTop: 12 }}>{t("startRound")}</button>}
-    </div>}
-    {state.phase === "result" && <div style={{ textAlign: "center" }}>
-      <p style={{ fontSize: 32, fontWeight: 700, color: "var(--lime)" }}>{state.score} {t("pts")}</p>
-      {isHost && <><button className="demo-action demo-action--lime" onClick={reset} type="button" style={{ marginTop: 8 }}>{t("playAgain")}</button><button className="demo-action demo-action--white" onClick={finish} type="button" style={{ marginTop: 8 }}>{t("finish")}</button></>}
-    </div>}
+  return <div className="party-game-board game-board-enter charades-board">
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/5</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}s</strong></div>
+    <h3>{copy.title}</h3>
+    <p>{copy.active}: <b>{activeLabel}</b></p>
+    {state.phase === "play" && <>
+      {isActive ? <div className="charades-secret"><span>{copy.word}</span><strong>••••••</strong><p>{copy.hidden}</p></div> : <div className="charades-secret"><span>{copy.word}</span><strong>{state.word || "..."}</strong><p>{copy.explain}</p></div>}
+      <div className="charades-score"><span>{copy.turn}: <b>{state.roundScore}</b></span><span>{copy.total}: <b>{state.score}</b></span><span>{copy.skipped}: <b>{state.skipped}</b></span></div>
+      {state.lastAction && <p className={state.lastAction === "correct" ? "controller-answered is-correct" : "controller-answered"}>{state.lastAction === "correct" ? copy.correct : copy.skip}</p>}
+      {canScore && <div className="game-primary-actions"><button className="demo-action demo-action--lime" onClick={() => sendAction("correct")} type="button">{copy.correct}</button><button className="demo-action demo-action--white" onClick={() => sendAction("skip")} type="button">{copy.skip}</button></div>}
+    </>}
+    {state.phase === "result" && <div className="trivia-result"><p>{copy.turn}: <b>{state.roundScore}</b> · {copy.total}: <b>{state.score}</b></p>{isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 4 ? copy.finish : copy.next}</button>}</div>}
   </div>;
 }
-
-const EN: Record<string, string> = { round: "Round", currentWord: "Team sees this word:", score: "Score", word: "Word", correct: "Correct!", skipped: "Skipped", pts: "pts", startRound: "Start Round", playAgain: "Play Again", finish: "Finish", startClueing: "Start Clueing" };
-const RU: Record<string, string> = { round: "Раунд", currentWord: "Команда видит слово:", score: "Счёт", word: "Слово", correct: "Верно!", skipped: "Пропущено", pts: "очк", startRound: "Начать раунд", playAgain: "Ещё раз", finish: "Завершить", startClueing: "Начать подсказки" };
