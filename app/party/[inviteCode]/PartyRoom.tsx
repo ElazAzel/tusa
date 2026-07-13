@@ -493,17 +493,18 @@ export default function PartyRoom({ party, actorId }: { party: Party; actorId: s
         }) : <p className="party-chat-system">{t("roomChatEmpty")}</p>}
         <div ref={chatEndRef} />
       </div>
-      {showVoice && <VoiceRecorder onSend={sendVoice} onCancel={() => setShowVoice(false)} />}
       {showStickers && <StickerPicker onSelect={sendSticker} onClose={() => setShowStickers(false)} />}
       <div className="chat-input-bar">
-        <button className="chat-tool-btn" onClick={() => { setShowStickers(!showStickers); setShowVoice(false); }} type="button" title={t("chatStickers")}>
-          <span className="material-symbols-rounded">emoji_emotions</span>
+        {showVoice && <VoiceRecorder onSend={sendVoice} onCancel={() => setShowVoice(false)} />}
+        <div className="chat-input-wrap">
+          <button className="chat-emoji-btn" onClick={() => { setShowStickers(!showStickers); setShowVoice(false); }} type="button" title={t("chatStickers")} tabIndex={-1}>
+            <span className="material-symbols-rounded">emoji_emotions</span>
+          </button>
+          <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t("chatType")} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
+        </div>
+        <button className={message.trim() ? "has-text" : ""} onClick={message.trim() ? send : () => { setShowVoice(!showVoice); setShowStickers(false); }} type="button" title={message.trim() ? t("chatSend") : t("chatVoice")}>
+          <span className="material-symbols-rounded">{message.trim() ? "send" : "mic"}</span>
         </button>
-        <button className="chat-tool-btn" onClick={() => { setShowVoice(!showVoice); setShowStickers(false); }} type="button" title={t("chatVoice")}>
-          <span className="material-symbols-rounded">mic</span>
-        </button>
-        <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t("chatType")} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
-        <button onClick={send}>{t("chatSend")}</button>
       </div>
     </section>}
     {editing && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(false); }}><section aria-modal="true" className="demo-modal" role="dialog"><span className="demo-kicker">{t("eventHubSettingsTitle")}</span><h2>{party.title}</h2><form onSubmit={saveEdit}><label>{t("createName")}<input name="title" defaultValue={party.title} required /></label><div className="form-split"><label>{t("createDate")}<input name="date" className="event-date-input" defaultValue={eventDateInputValue(party.date)} placeholder="DD.MM.YYYY" inputMode="numeric" pattern="\d{2}\.\d{2}\.\d{4}" title="DD.MM.YYYY" required /></label><label>{t("createTime")}<input name="time" className="event-time-input" defaultValue={party.time} placeholder="21:00" inputMode="numeric" pattern="\d{2}:\d{2}" title="HH:MM" required /></label></div><label>{t("createVenue")}<input name="venue" defaultValue={party.venue} required /></label>        <label>{t("createFormat")}<span className="brand-select"><select name="category" defaultValue={party.category}><option>House Party</option><option>After-work</option><option>Trip</option><option>Birthday</option><option>Game night</option></select></span></label><label>{t("createDetails")}<textarea name="description" defaultValue={party.description} /></label><button type="submit">{t("profileSave")}</button></form></section></div>}
