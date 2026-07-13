@@ -1970,3 +1970,22 @@ export async function getAdminParties() {
     createdAt: new Date(row.created_at as string | Date).toISOString(),
   }));
 }
+
+export async function cleanupOldData(): Promise<{ deleted: { gameActions: number; gameSessions: number; chatMessages: number; analytics: number; koins: number } }> {
+  await ensurePartySchema();
+  const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  const gameActions = await db()`DELETE FROM game_actions WHERE created_at < ${cutoff}::timestamptz` as unknown as { count: number };
+  const gameSessions = await db()`DELETE FROM game_sessions WHERE created_at < ${cutoff}::timestamptz` as unknown as { count: number };
+  const chatMessages = await db()`DELETE FROM chat_messages WHERE created_at < ${cutoff}::timestamptz` as unknown as { count: number };
+  const analytics = await db()`DELETE FROM analytics_events WHERE created_at < ${cutoff}::timestamptz` as unknown as { count: number };
+  const koins = await db()`DELETE FROM koins_transactions WHERE created_at < ${cutoff}::timestamptz` as unknown as { count: number };
+  return {
+    deleted: {
+      gameActions: asNumber(gameActions.count),
+      gameSessions: asNumber(gameSessions.count),
+      chatMessages: asNumber(chatMessages.count),
+      analytics: asNumber(analytics.count),
+      koins: asNumber(koins.count),
+    },
+  };
+}

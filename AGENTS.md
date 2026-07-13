@@ -1,6 +1,6 @@
 # TUSA.game — AI Context & Orchestration Hub
 
-> Multiplayer party platform · Next.js 16 · React 19 · TypeScript · Clerk · Neon Postgres · SSE realtime · 53 routes · 28 games · 32 modes
+> Multiplayer party platform · Next.js 16 · React 19 · TypeScript · Clerk · Neon Postgres · SSE realtime · 53 routes · 32 games · 32 modes
 
 ---
 

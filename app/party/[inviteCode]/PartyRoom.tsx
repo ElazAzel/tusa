@@ -415,7 +415,7 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
     </section>}
 
     {tab === "games" && (selectedGame ? renderGame() : <section className="party-room-panel">
-      <div className="demo-panel-title"><div><span>{t("gamesCatalogue")}</span><h2>{t("gamesTitle")}</h2></div><span className="demo-chip">{t("gamesCatalogue").split(" ")[0]?.replace(/\D/g, "") || "28"}{t("gamesSessions")}</span></div>
+      <div className="demo-panel-title"><div><span>{t("gamesCatalogue")}</span><h2>{t("gamesTitle")}</h2></div><span className="demo-chip">{gameCatalogue.length}{t("gamesSessions")}</span></div>
 
       <div className="game-catalogue-grid">
         {gameCatalogue.map((game) => {
@@ -425,6 +425,8 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
             <span className="game-player-count">{formatPlayerRange(game)}</span>
             <h3>{t(game.titleKey)}</h3>
             <p>{t(game.descKey)}</p>
+            {game.category === "quick_tool" && <strong>{t("partyTool")}</strong>}
+            <span className="game-status">{game.releaseStatus === "beta" ? "beta" : "✓"}</span>
             <div className="game-card-actions">
               <button className="game-launch-btn" onClick={() => launchGame(game.id)} type="button">{t("gamesLaunch")} <span className="material-symbols-rounded">arrow_forward</span></button>
               {existingSession && <button className="game-join-btn" onClick={() => joinSession(existingSession.id, game.id)} type="button">

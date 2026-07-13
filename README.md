@@ -6,7 +6,7 @@ https://tusa.game
 
 ## Что готово
 
-- **28 multiplayer-игр** с архитектурой Stage+Controller (хост = stage, игроки = controllers);
+- **32 multiplayer-режима** с архитектурой Stage+Controller (хост = stage, игроки = controllers);
 - адаптивный лендинг в визуальной системе TUSA.game;
 - официальные логотипы (`public/brand/`);
 - Event Hub: создание, редактирование, дублирование, удаление, RSVP, роли, заметки, QR;
@@ -58,6 +58,10 @@ https://tusa.game
 | 26 | Random Pair | Random partner generator |
 | 27 | Uno Tracker | Card score tracker |
 | 28 | Quiz Battle | Multiplayer quiz |
+| 29 | Cards of Chaos | Card-based challenge with judge voting |
+| 30 | Pictionary | Draw and guess |
+| 31 | Gartic Phone | Telephone-style drawing chain |
+| 32 | Music Quiz | Progressive clue music quiz (wraps Guess the Song) |
 
 ## Архитектура
 
