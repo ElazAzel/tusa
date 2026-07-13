@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseGameCommand as sdkParse } from "./sdk";
 
 const empty = z.object({}).strict();
 const index = z.object({ index: z.number().int().min(0).max(200) }).strict();
@@ -50,6 +51,8 @@ const COMMANDS: Record<string, Record<string, z.ZodType>> = {
 };
 
 export function parseGameCommand(gameId: string, actionType: string, payload: unknown) {
+  const sdkResult = sdkParse(gameId, actionType, payload);
+  if (sdkResult) return sdkResult;
   const schema = COMMANDS[gameId]?.[actionType];
   if (!schema) return { success: false as const, error: `Command ${actionType} is not allowed for ${gameId}.` };
   const parsed = schema.safeParse(payload ?? {});

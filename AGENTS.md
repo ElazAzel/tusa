@@ -182,7 +182,10 @@ Full strategy: `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` (18 sections, ~2500 lines)
 | Task | Files |
 |---|---|
 | Add new game | `app/components/games/NewGame.tsx`, `lib/i18n.ts`, `app/party/[inviteCode]/PartyRoom.tsx` |
+| Add game to SDK | `lib/games/definitions/GameName.ts`, `lib/games/sdk.ts` (register) |
 | Fix game bug | `app/components/games/GameName.tsx` |
+| Fix game engine | `lib/games/definitions/GameName.ts`, `lib/games/engine.ts` |
+| Game SDK | `lib/games/definition.ts`, `lib/games/sdk.ts`, `lib/games/definitions/*.ts` |
 | Add API endpoint | `app/api/new-endpoint/route.ts` |
 | Modify chat | `app/api/chat/route.ts`, `app/party/[inviteCode]/PartyRoom.tsx` |
 | CSS changes | `app/globals.css` |

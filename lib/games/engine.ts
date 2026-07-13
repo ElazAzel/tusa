@@ -1,3 +1,4 @@
+import { createInitialState as sdkCreate, applyCommand as sdkApply } from "./sdk";
 import { DAILY_TRIVIA } from "./daily-trivia";
 import { WOULD_RATHER_PROMPTS } from "./would-rather-content";
 import { TWO_TRUTHS_ROUNDS } from "./two-truths-content";
@@ -63,6 +64,8 @@ function mimeActivePlayer(players: string[], round: number) {
 }
 
 export function initialServerGameState(gameId: string, participants: string[], config: Record<string, unknown>, now = Date.now()): Record<string, unknown> | null {
+  const sdkResult = sdkCreate(gameId, participants, config, now);
+  if (sdkResult) return sdkResult;
   const locale = config.locale === "en" ? "en" : "ru";
   if (gameId === "wouldRather") return { engine: "server-v1", game: "wouldRather", locale, phase: "vote", round: 0, prompt: WOULD_RATHER_PROMPTS[0][locale], votes: {}, players: participants };
   if (gameId === "twoTruths") return { engine: "server-v1", game: "twoTruths", locale, phase: "vote", round: 0, statements: TWO_TRUTHS_ROUNDS[0][locale], lie: TWO_TRUTHS_ROUNDS[0].lie, votes: {}, players: participants };
@@ -85,6 +88,8 @@ export function initialServerGameState(gameId: string, participants: string[], c
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
+  const sdkResult = sdkApply(gameId, rawState, actionType, payload, context);
+  if (sdkResult) return sdkResult;
   if (gameId === "impostor" && rawState.engine === "server-v1") {
     const state = rawState as { phase: "clue" | "vote" | "reveal" | "finished"; round: number; locale: "ru" | "en"; word: string; impostorId: string; clues: Record<string, string>; votes: Record<string, string>; scores: Record<string, number> };
     if (actionType === "clue") {
