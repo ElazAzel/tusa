@@ -70,6 +70,8 @@ export type Party = {
   role?: PartyRole;
   createdAt: string;
   adultOnly: boolean;
+  theme: Record<string, string>;
+  ownedThemes: string[];
 };
 
 export type PromoCode = {
@@ -137,6 +139,8 @@ function partyFromRow(row: Record<string, unknown>): Party {
     role: row.role === "owner" || row.role === "co_host" || row.role === "guest" ? row.role : undefined,
     createdAt: iso(row.created_at as string | Date),
     adultOnly: row.adult_only !== false,
+    theme: (() => { try { const raw = row.theme; return typeof raw === "string" ? JSON.parse(raw) : raw ?? {}; } catch { return {}; } })(),
+    ownedThemes: (() => { try { const raw = row.owned_themes; const arr = typeof raw === "string" ? JSON.parse(raw) : raw; return Array.isArray(arr) ? arr : ["lime"]; } catch { return ["lime"]; } })(),
   };
 }
 
@@ -208,6 +212,7 @@ export function ensurePartyV2() {
   await sql`CREATE TABLE IF NOT EXISTS social_quest_progress (id UUID PRIMARY KEY, quest_id TEXT NOT NULL REFERENCES social_quests(id) ON DELETE CASCADE, party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE, clerk_user_id TEXT NOT NULL, progress INTEGER NOT NULL DEFAULT 0, target INTEGER NOT NULL DEFAULT 1, claimed BOOLEAN NOT NULL DEFAULT FALSE, completed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (quest_id, party_id, clerk_user_id))`;
   await sql`CREATE TABLE IF NOT EXISTS daily_challenges (id UUID PRIMARY KEY, game TEXT NOT NULL, date DATE NOT NULL DEFAULT CURRENT_DATE, config JSONB NOT NULL DEFAULT '{}'::jsonb, active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (game, date))`;
   await sql`CREATE TABLE IF NOT EXISTS daily_challenge_scores (id UUID PRIMARY KEY, challenge_id UUID NOT NULL REFERENCES daily_challenges(id) ON DELETE CASCADE, clerk_user_id TEXT NOT NULL, score INTEGER NOT NULL DEFAULT 0, played_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (challenge_id, clerk_user_id))`;
+  await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS owned_themes JSONB NOT NULL DEFAULT '["lime"]'::jsonb`;
   await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS highlight_count INTEGER NOT NULL DEFAULT 0`;
   await sql`CREATE TABLE IF NOT EXISTS friend_lists (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, clerk_user_id TEXT NOT NULL REFERENCES user_profiles(clerk_user_id), name TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now(), updated_at TIMESTAMPTZ DEFAULT now())`;
   await sql`CREATE TABLE IF NOT EXISTS friend_list_members (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, list_id UUID NOT NULL REFERENCES friend_lists(id) ON DELETE CASCADE, friend_id TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now(), UNIQUE(list_id, friend_id))`;
@@ -566,6 +571,7 @@ export function ensurePartySchema() {
   await sql`CREATE TABLE IF NOT EXISTS social_quest_progress (id UUID PRIMARY KEY, quest_id TEXT NOT NULL REFERENCES social_quests(id) ON DELETE CASCADE, party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE, clerk_user_id TEXT NOT NULL, progress INTEGER NOT NULL DEFAULT 0, target INTEGER NOT NULL DEFAULT 1, claimed BOOLEAN NOT NULL DEFAULT FALSE, completed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (quest_id, party_id, clerk_user_id))`;
   await sql`CREATE TABLE IF NOT EXISTS daily_challenges (id UUID PRIMARY KEY, game TEXT NOT NULL, date DATE NOT NULL DEFAULT CURRENT_DATE, config JSONB NOT NULL DEFAULT '{}'::jsonb, active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (game, date))`;
   await sql`CREATE TABLE IF NOT EXISTS daily_challenge_scores (id UUID PRIMARY KEY, challenge_id UUID NOT NULL REFERENCES daily_challenges(id) ON DELETE CASCADE, clerk_user_id TEXT NOT NULL, score INTEGER NOT NULL DEFAULT 0, played_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (challenge_id, clerk_user_id))`;
+  await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS owned_themes JSONB NOT NULL DEFAULT '["lime"]'::jsonb`;
   await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS highlight_count INTEGER NOT NULL DEFAULT 0`;
   })().catch((error) => {
     schemaPromise = null;
@@ -1893,12 +1899,25 @@ export async function claimQuestReward(questId: string, partyId: string, userId:
   }
   return { claimed: true, koins: asNumber(quest[0].reward_koins), xp: asNumber(quest[0].reward_xp) };
 }
-export async function updatePartyTheme(partyId: string, userId: string, theme: Record<string, string>) {
+const THEME_COSTS: Record<string, number> = { lime: 0, pink: 50, blue: 50, dark: 100, cream: 100, red: 200 };
+
+export async function updatePartyTheme(partyId: string, userId: string, theme: Record<string, string>, themeId?: string) {
   await ensurePartySchema();
-  const [party] = await db()`SELECT owner_id FROM parties WHERE id = ${partyId} LIMIT 1` as unknown as Record<string, unknown>[];
+  const [party] = await db()`SELECT owner_id, owned_themes FROM parties WHERE id = ${partyId} LIMIT 1` as unknown as Record<string, unknown>[];
   if (!party || String(party.owner_id) !== userId) throw new Error("Only owner can change theme");
-  await db()`UPDATE parties SET theme = ${JSON.stringify(theme)}::jsonb WHERE id = ${partyId}`;
-  return theme;
+  let owned = (() => { try { const raw = party.owned_themes; const arr = typeof raw === "string" ? JSON.parse(raw) : raw; return Array.isArray(arr) ? arr : ["lime"]; } catch { return ["lime"]; } })();
+  if (themeId && themeId !== "lime" && !owned.includes(themeId)) {
+    const cost = THEME_COSTS[themeId] ?? 50;
+    const [profile] = await db()`SELECT koins_balance FROM user_profiles WHERE clerk_user_id = ${userId} LIMIT 1` as unknown as { koins_balance: number }[];
+    const balance = profile ? Number(profile.koins_balance) : 0;
+    if (balance < cost) throw new Error(`Need ${cost} KOINS to unlock this theme`);
+    owned = [...owned, themeId];
+    await db()`UPDATE parties SET theme = ${JSON.stringify(theme)}::jsonb, owned_themes = ${JSON.stringify(owned)}::jsonb WHERE id = ${partyId}`;
+    await addKoinsTransaction(userId, partyId, -cost, `Theme unlock: ${themeId}`);
+  } else {
+    await db()`UPDATE parties SET theme = ${JSON.stringify(theme)}::jsonb WHERE id = ${partyId}`;
+  }
+  return { theme, ownedThemes: owned };
 }
 export async function scheduleParty(partyId: string, userId: string, scheduledAt: string) {
   await ensurePartySchema();

@@ -21,7 +21,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const party = await getPartyByInvite(inviteCode);
     if (!party) return cors(NextResponse.json({ error: "Туса не найдена." }, { status: 404 }));
-    const theme = await updatePartyTheme(party.id, userId, body.theme);
-    return cors(NextResponse.json({ theme }));
+    const result = await updatePartyTheme(party.id, userId, body.theme, body.themeId);
+    return cors(NextResponse.json(result));
   } catch (e) { return cors(NextResponse.json({ error: e instanceof Error ? e.message : "Ошибка." }, { status: 403 })); }
 }

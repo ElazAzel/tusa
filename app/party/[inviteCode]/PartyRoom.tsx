@@ -82,6 +82,7 @@ export default function PartyRoom({ party, actorId }: { party: Party; actorId: s
   const [rsvpFilter, setRsvpFilter] = useState<"all" | RsvpStatus>("all");
   const [gameResults, setGameResults] = useState<{ scores: GameScore[]; gameTitle: string } | null>(null);
   const [rsvpCounts, setRsvpCounts] = useState(party.rsvpCounts);
+  const [themeId, setThemeId] = useState(party.theme?.id ?? "lime");
   const router = useRouter();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatStreamRef = useRef<HTMLDivElement>(null);
@@ -456,7 +457,7 @@ export default function PartyRoom({ party, actorId }: { party: Party; actorId: s
     {tab === "highlights" && <Highlights partyId={party.id} />}
     {tab === "gratitude" && <Gratitude partyId={party.id} members={members.map((m) => ({ id: m.clerkUserId, displayName: m.displayName }))} />}
     {tab === "daily" && <DailyChallenge partyId={party.id} />}
-    {tab === "theme" && <RoomTheme inviteCode={party.inviteCode} currentTheme="lime" onThemeChange={(th) => {}} />}
+    {tab === "theme" && <RoomTheme inviteCode={party.inviteCode} currentTheme={themeId} ownedThemes={party.ownedThemes} onThemeChange={(th) => setThemeId(th)} />}
     {tab === "chat" && <section className="party-room-panel party-chat">
       <h2>{t("roomChatTitle")}</h2>
       <div className="party-chat-stream" ref={chatStreamRef}>

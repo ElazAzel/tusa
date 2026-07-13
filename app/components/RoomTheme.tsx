@@ -12,23 +12,31 @@ const THEMES = [
   { id: "red", name: "Red", bg: "#f87171", accent: "#000", cost: 200 },
 ];
 
-export default function RoomTheme({ partyId, currentTheme, onThemeChange, inviteCode }: { partyId?: string; currentTheme?: string; onThemeChange?: (theme: string) => void; inviteCode: string }) {
-  const { locale, t } = useLocale();
+export default function RoomTheme({ currentTheme, onThemeChange, inviteCode, ownedThemes: initialOwned }: { currentTheme?: string; onThemeChange?: (theme: string) => void; inviteCode: string; ownedThemes?: string[] }) {
+  const { t } = useLocale();
   const [selected, setSelected] = useState(currentTheme || "lime");
-  const [owned, setOwned] = useState<Set<string>>(new Set(["lime"]));
+  const [owned, setOwned] = useState<Set<string>>(new Set(initialOwned ?? ["lime"]));
   const [applying, setApplying] = useState(false);
+  const [error, setError] = useState("");
 
   const apply = useCallback(async (id: string) => {
     setApplying(true);
-    await fetch(`/api/parties/${inviteCode}/theme`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: { bg: THEMES.find((t) => t.id === id)?.bg, accent: THEMES.find((t) => t.id === id)?.accent } }) });
-    setSelected(id);
-    setOwned((prev) => new Set(prev).add(id));
-    onThemeChange?.(id);
+    setError("");
+    const theme = THEMES.find((th) => th.id === id);
+    try {
+      const res = await fetch(`/api/parties/${inviteCode}/theme`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: { bg: theme?.bg, accent: theme?.accent, id }, themeId: id }) });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Error"); return; }
+      if (data.ownedThemes) setOwned(new Set(data.ownedThemes));
+      setSelected(id);
+      onThemeChange?.(id);
+    } catch { setError("Network error"); }
     setApplying(false);
   }, [inviteCode, onThemeChange]);
 
   return <div className="party-game-board game-board-enter">
     <span className="game-step">{t("themeTitle")}</span>
+    {error && <p style={{ color: "var(--red)", marginTop: 8 }}>{error}</p>}
     <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginTop: 8 }}>
       {THEMES.map((th) => {
         const isOwned = owned.has(th.id);
