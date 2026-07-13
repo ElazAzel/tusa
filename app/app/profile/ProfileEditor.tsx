@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { Party, PromoBenefit, PromoRedemption, UserProfile } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import ProductHeader from "@/app/components/ProductHeader";
-import { soundTap, soundSuccess, soundReward } from "@/lib/audio";
+import { soundTap, soundSuccess } from "@/lib/audio";
 import CosmeticsCustomizer from "./CosmeticsCustomizer";
 
 const badgeFamilies = ["Организатор", "Игрок", "Хроникёр", "Казначей", "Душа компании", "Пунктуальный", "Командный", "Исследователь", "Мемолог", "Голос вечера"];

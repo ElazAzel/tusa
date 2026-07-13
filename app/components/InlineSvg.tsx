@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 const svgCache = new Map<string, string>();
 
 export default function InlineSvg({ url, className }: { url: string; className?: string }) {
-  const [svg, setSvg] = useState<string | null>(svgCache.get(url) ?? null);
+  const [svg, setSvg] = useState<string | null>(() => svgCache.get(url) ?? null);
 
   useEffect(() => {
-    if (svgCache.has(url)) { setSvg(svgCache.get(url)!); return; }
+    if (svgCache.has(url)) return;
     let cancelled = false;
     fetch(url)
       .then((r) => r.text())

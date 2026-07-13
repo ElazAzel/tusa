@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import type { CosmeticsItem, ProfileCosmetics } from "@/lib/parties";
+import type { CosmeticsItem, ProfileCosmetics, PromoBenefitType } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { soundTap, soundSuccess } from "@/lib/audio";
 import InlineSvg from "@/app/components/InlineSvg";
@@ -14,7 +14,7 @@ const TYPE_TO_FIELD: Record<string, keyof ProfileCosmetics> = {
   badge: "badge",
 };
 
-const TYPE_TO_UNLOCK: Record<string, string> = {
+const TYPE_TO_UNLOCK: Record<string, PromoBenefitType> = {
   cover: "profile_cover",
   avatarFrame: "avatar_frame",
   chatEffect: "chat_effect",
@@ -68,8 +68,7 @@ export default function CosmeticsCustomizer({
   const field = activeTab;
   const items = grouped[activeTab] || [];
   const unlockType = TYPE_TO_UNLOCK[activeTab];
-  const unlocked = profileCosmetics.unlocked.includes(unlockType as any);
-  const equipped = profileCosmetics[field];
+  const unlocked = profileCosmetics.unlocked.includes(unlockType);
 
   const handleSelect = useCallback((item: CosmeticsItem) => {
     soundTap();
@@ -86,7 +85,7 @@ export default function CosmeticsCustomizer({
     const changed: Record<string, string> = {};
     for (const key of CATEGORY_TABS) {
       const unlock = TYPE_TO_UNLOCK[key];
-      const isUnlocked = profileCosmetics.unlocked.includes(unlock as any);
+      const isUnlocked = profileCosmetics.unlocked.includes(unlock);
       if (isUnlocked) {
         changed[key] = preview[key] as string;
       }
@@ -139,7 +138,7 @@ export default function CosmeticsCustomizer({
                   onClick={() => { soundTap(); setActiveTab(tab); }}
                 >
                   {categoryLabels[tab]?.[locale] || tab}
-                  {profileCosmetics.unlocked.includes(TYPE_TO_UNLOCK[tab] as any) && (
+                  {profileCosmetics.unlocked.includes(TYPE_TO_UNLOCK[tab]) && (
                     <span className="cosmetics-tab-unlocked-dot" />
                   )}
                 </button>
@@ -151,8 +150,6 @@ export default function CosmeticsCustomizer({
               {items.map((item) => {
                 const isEquipped = preview[field] === item.value;
                 const isLocked = !unlocked && !["none", "newcomer"].includes(item.slug);
-                const isDefaultItem = item.slug === "none" || item.slug === "newcomer" || item.slug === "black" || item.slug === "lime";
-                const canEquip = unlocked || isDefaultItem;
                 return (
                   <button
                     key={item.id}
