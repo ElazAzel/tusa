@@ -182,3 +182,20 @@ test("Charades rotates active players and keeps turn scoring authoritative", () 
   const next = applyServerGameCommand("charades", result.state, "next", {}, context("host", 63_000))!;
   assert.equal(next.state.activePlayer, "guest");
 });
+
+test("Mime Riot keeps team turns and active player prompts server-side", () => {
+  const mimePlayers = ["host", "guest", "third", "fourth"];
+  const ctx = (actorId: string, now: number) => ({ actorId, creatorId: "host", participants: mimePlayers, now });
+  const started = initialServerGameState("crocodil", mimePlayers, { locale: "en" }, 1_000)!;
+  assert.equal(started.activeTeam, "A");
+  assert.equal(started.activePlayer, "host");
+  const blocked = applyServerGameCommand("crocodil", started, "correct", {}, ctx("guest", 2_000))!;
+  assert.match(blocked.error ?? "", /active player/);
+  const correct = applyServerGameCommand("crocodil", started, "correct", {}, ctx("host", 2_100))!;
+  assert.equal((correct.state.scores as Record<string, number>).A, 1);
+  const result = applyServerGameCommand("crocodil", correct.state, "finalize", {}, ctx("host", 62_000))!;
+  assert.equal(result.state.phase, "result");
+  const next = applyServerGameCommand("crocodil", result.state, "next", {}, ctx("host", 63_000))!;
+  assert.equal(next.state.activeTeam, "B");
+  assert.equal(next.state.activePlayer, "guest");
+});

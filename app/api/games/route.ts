@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       const publicSession = sanitizeControllerSession(responseSession, "");
       publish(`game:${body.sessionId}`, { type: "session:started", session: publicSession });
       publish(`party:${session.partyId}`, { type: "session:updated", session: publicSession });
-      return NextResponse.json({ session: responseSession });
+      return NextResponse.json({ session: sanitizeControllerSession(responseSession, userId) });
     }
 
     if (body.action === "leave") {
@@ -202,14 +202,14 @@ export async function GET(request: NextRequest) {
         getGameScores(sessionId),
         session.createdBy === userId ? getPendingGameActions(sessionId) : Promise.resolve([]),
       ]);
-      const safeSession = session.createdBy === userId ? session : sanitizeControllerSession(session, userId);
+      const safeSession = sanitizeControllerSession(session, userId);
       return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant, viewerId: userId });
     }
 
     if (partyId) {
       if (!z.string().uuid().safeParse(partyId).success) return apiError("Invalid partyId.", 400);
       const sessions = await getActiveGameSessions(partyId, userId);
-      return NextResponse.json({ sessions: sessions.map((session) => session.createdBy === userId ? session : sanitizeControllerSession(session, userId)) });
+      return NextResponse.json({ sessions: sessions.map((session) => sanitizeControllerSession(session, userId)) });
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Game request failed.";
@@ -294,6 +294,7 @@ function sanitizeControllerState(game: string, rawState: Record<string, unknown>
     state.hands = hands[userId] ? { [userId]: hands[userId] } : {};
     if (phase === "play") state.submissions = {};
   }
+  if (game === "crocodil" && phase === "play" && state.activePlayer !== userId) state.word = "";
   if (game === "charades" && phase === "play" && state.activePlayer !== userId) state.word = "";
   return state;
 }
