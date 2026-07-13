@@ -245,6 +245,13 @@ function sanitizeControllerState(game: string, rawState: Record<string, unknown>
     const submissions = (state.submissions ?? {}) as Record<string, string>;
     state.submissions = Object.fromEntries(Object.keys(submissions).map((id) => [id, id === userId ? submissions[id] : ""]));
   }
+  if (game === "fibbage") {
+    if (phase !== "reveal" && phase !== "finished") { state.truth = ""; delete state.truthChoiceId; delete state.choiceOwners; }
+    if (phase === "answer") {
+      const submissions = (state.submissions ?? {}) as Record<string, string>;
+      state.submissions = Object.fromEntries(Object.keys(submissions).map((id) => [id, id === userId ? submissions[id] : ""]));
+    }
+  }
   if ((game === "werewolf" || game === "mafia") && phase !== "reveal") {
     const roles = (state.roles ?? {}) as Record<string, unknown>;
     state.roles = roles[userId] ? { [userId]: roles[userId] } : {};

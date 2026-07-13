@@ -1,132 +1,37 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStageGame } from "@/app/components/useStageGame";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
 
-const QUESTIONS_EN: { q: string; truth: string }[] = [
-  { q: "How many time zones does Russia have?", truth: "11" },
-  { q: "What is the national animal of Scotland?", truth: "Unicorn" },
-  { q: "How many bones are in a giraffe's neck?", truth: "7" },
-  { q: "What country has the most islands?", truth: "Sweden" },
-  { q: "What color is an ostrich's eye?", truth: "Orange" },
-  { q: "How many hearts does an octopus have?", truth: "3" },
-  { q: "What is the driest continent?", truth: "Antarctica" },
-  { q: "How long is a elephant's pregnancy?", truth: "22 months" },
-  { q: "What is the smallest country in the world?", truth: "Vatican City" },
-  { q: "What year was the first iPhone released?", truth: "2007" },
-];
+type GameState = { engine: "server-v1"; phase: "answer" | "vote" | "reveal" | "finished"; round: number; question: string; truth: string; submissions: Record<string, string>; choices: Array<{ id: string; text: string }>; truthChoiceId?: string; choiceOwners?: Record<string, string>; votes: Record<string, string>; scores: Record<string, number>; players: string[] };
+const initialState = (): GameState => ({ engine: "server-v1", phase: "answer", round: 0, question: "", truth: "", submissions: {}, choices: [], votes: {}, scores: {}, players: [] });
 
-const QUESTIONS_RU: { q: string; truth: string }[] = [
-  { q: "Сколько часовых поясов в России?", truth: "11" },
-  { q: "Какое национальное животное Шотландии?", truth: "Единорог" },
-  { q: "Сколько костей в шее жирафа?", truth: "7" },
-  { q: "В какой стране больше всего островов?", truth: "Швеция" },
-  { q: "Какого цвета глаз у страуса?", truth: "Оранжевый" },
-  { q: "Сколько сердец у осьминога?", truth: "3" },
-  { q: "Какой континент самый засушливый?", truth: "Антарктида" },
-  { q: "Сколько длится беременность слона?", truth: "22 месяца" },
-  { q: "Какая самая маленькая страна в мире?", truth: "Ватикан" },
-  { q: "В каком году вышел первый iPhone?", truth: "2007" },
-];
-
-type Submission = { userId: string; answer: string };
-type GameState = { round: number; phase: "answer" | "vote" | "reveal"; question: string; truth: string; submissions: Submission[]; votes: Record<string, string>; scores: Record<string, number> };
-
-export default function Fibbage({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+export default function Fibbage({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale } = useLocale();
-  const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
-  const questions = useMemo(() => locale === "ru" ? QUESTIONS_RU : QUESTIONS_EN, [locale]);
   const isHost = role === "stage";
-
-  const stageHook = useStageGame<GameState>(isHost ? (sessionId ?? null) : null, () => ({ round: 0, phase: "answer", question: questions[0].q, truth: questions[0].truth, submissions: [], votes: {}, scores: {} }));
-  const controllerHook = useControllerGame<GameState>(!isHost ? (sessionId ?? null) : null, { round: 0, phase: "answer", question: questions[0].q, truth: questions[0].truth, submissions: [], votes: {}, scores: {} });
-
-  const state = isHost ? stageHook.state : controllerHook.state;
-  const sendAction = isHost ? stageHook.sendAction : controllerHook.sendAction;
-  const setState = isHost ? stageHook.setState : undefined;
-  const playerActions = isHost ? stageHook.playerActions : [];
-  const clearActions = isHost ? stageHook.clearActions : undefined;
-  const complete = isHost ? stageHook.complete : undefined;
-
+  const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, initialState);
+  const controller = useControllerGame<GameState>(!isHost ? sessionId ?? null : null, initialState());
+  const state = isHost ? stage.state : controller.state;
+  const sendAction = isHost ? stage.sendAction : controller.sendAction;
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [votedFor, setVotedFor] = useState<string | null>(null);
+  const [voted, setVoted] = useState(false);
+  const completed = useRef(false);
+  const copy = locale === "ru" ? { title: "Фейковый факт", round: "Раунд", hint: "Напиши правдоподобный, но неверный ответ", placeholder: "Твоя версия…", submit: "Отправить ложь", accepted: "Ложь сохранена", open: "Открыть варианты", vote: "Где настоящий ответ?", voted: "Выбор принят", reveal: "Раскрыть правду", truth: "Настоящий ответ", tricked: "обманули", points: "очк.", next: "Следующий раунд", finish: "Завершить" } : { title: "Fake Fact", round: "Round", hint: "Write a convincing but incorrect answer", placeholder: "Your fake answer…", submit: "Submit lie", accepted: "Lie saved", open: "Open choices", vote: "Which answer is real?", voted: "Choice locked", reveal: "Reveal truth", truth: "Real answer", tricked: "fooled", points: "pts", next: "Next round", finish: "Finish" };
 
-  useEffect(() => { setAnswer(""); setSubmitted(false); setVotedFor(null); }, [state.round, state.phase]);
+  useEffect(() => { setAnswer(""); setSubmitted(false); setVoted(false); }, [state.round, state.phase]);
+  useEffect(() => { if (!isHost || state.phase !== "finished" || completed.current) return; completed.current = true; stage.complete(); onSave(0); }, [isHost, onSave, stage, state.phase]);
+  const entries = useMemo(() => Object.entries(state.submissions), [state.submissions]);
+  const tally = useMemo(() => Object.values(state.votes).reduce<Record<string, number>>((all, id) => { all[id] = (all[id] ?? 0) + 1; return all; }, {}), [state.votes]);
+  function submit() { const text = answer.trim(); if (!text || submitted) return; setSubmitted(true); sendAction("answer", { text }); }
 
-  useEffect(() => {
-    if (!isHost || playerActions.length === 0) return;
-    for (const a of playerActions) {
-      if (a.actionType === "answer" && state.phase === "answer") {
-        const { text } = a.payload as { text: string };
-        setState?.((prev) => ({ ...prev, submissions: [...prev.submissions.filter((s) => s.userId !== a.userId), { userId: a.userId, answer: text }] }));
-      }
-      if (a.actionType === "vote" && state.phase === "vote") {
-        const { target } = a.payload as { target: string };
-        setState?.((prev) => ({ ...prev, votes: { ...prev.votes, [a.userId]: target } }));
-      }
-    }
-    clearActions?.();
-  }, [playerActions, state.phase, isHost, setState, clearActions]);
-
-  const allVoted = useMemo(() => {
-    const voterCount = Object.keys(state.votes).length;
-    return voterCount >= 2 && voterCount >= state.submissions.length - 1;
-  }, [state.votes, state.submissions]);
-
-  const submitAnswer = useCallback(() => {
-    if (!answer.trim() || submitted) return;
-    setSubmitted(true);
-    sendAction("answer", { text: answer.trim() });
-  }, [answer, submitted, sendAction]);
-
-  const vote = useCallback((target: string) => {
-    if (votedFor) return;
-    setVotedFor(target);
-    sendAction("vote", { target });
-  }, [votedFor, sendAction]);
-
-  const reveal = useCallback(() => {
-    if (!isHost) return;
-    const newScores = { ...state.scores };
-    for (const voter of Object.keys(state.votes)) {
-      const picked = state.votes[voter];
-      if (picked !== "truth") newScores[picked] = (newScores[picked] || 0) + 1;
-    }
-    setState?.((prev) => ({ ...prev, phase: "reveal", scores: newScores }));
-  }, [state.votes, state.scores, isHost, setState]);
-
-  const next = useCallback(() => {
-    if (!isHost) return;
-    const nextRound = state.round + 1;
-    if (nextRound >= Math.min(questions.length, 6)) { complete?.(); const top = Object.values(state.scores).reduce((a, b) => Math.max(a, b), 0); onSave(top); return; }
-    setState?.({ round: nextRound, phase: "answer", question: questions[nextRound].q, truth: questions[nextRound].truth, submissions: [], votes: {}, scores: state.scores });
-  }, [state.round, state.scores, questions, isHost, setState, complete, onSave]);
-
-  return <div className="party-game-board game-board-enter">
-    <span className="game-step">{t("round")} {state.round + 1}/{Math.min(questions.length, 6)}</span>
+  return <div className="party-game-board game-board-enter fake-fact-board">
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/6</span><span className="multiplayer-badge">LIVE · {entries.length}/{Math.max(entries.length, state.players.length)}</span></div>
     <h3>{state.question}</h3>
-    {state.phase === "answer" && <div>
-      <input className="bs-input" maxLength={80} value={answer} onChange={(e) => setAnswer(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitAnswer()} placeholder={t("liePlaceholder")} style={{ width: "100%", marginTop: 12, padding: 10, borderRadius: 8 }} />
-      <button className="demo-action demo-action--lime" disabled={submitted || !answer.trim()} onClick={submitAnswer} type="button" style={{ marginTop: 8 }}>{submitted ? t("submitted") : t("submit")}</button>
-      <p style={{ color: "var(--gray)", marginTop: 8 }}>{t("waitingAnswers")} ({state.submissions.length})</p>
-    </div>}
-    {state.phase === "vote" && <div>
-      <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("votePrompt")}</p>
-      {state.submissions.map((s) => (
-        <button key={s.userId} type="button" disabled={votedFor !== null} onClick={() => vote(s.userId)} style={{ display: "block", width: "100%", textAlign: "left", background: votedFor === s.userId ? "var(--lime)" : "var(--dark)", color: votedFor === s.userId ? "var(--black)" : "var(--white)", borderRadius: 8, padding: "10px 14px", marginBottom: 6, border: "none", fontWeight: 600, fontSize: 14, cursor: votedFor ? "default" : "pointer", wordBreak: "break-word", overflowWrap: "anywhere" }}>{s.answer}</button>
-      ))}
-      {isHost && allVoted && <button className="demo-action demo-action--lime" onClick={reveal} type="button" style={{ marginTop: 8 }}>{t("reveal")}</button>}
-    </div>}
-    {state.phase === "reveal" && <div>
-      <p style={{ fontSize: 20, fontWeight: 700, color: "var(--lime)", marginBottom: 8 }}>{t("truth")}: {state.truth}</p>
-      {state.submissions.map((s) => { const votes = Object.values(state.votes).filter((v) => v === s.userId).length; return <div key={s.userId} style={{ background: "var(--dark)", borderRadius: 8, padding: "10px 14px", marginBottom: 6 }}>{s.answer} — {votes} {t("tricked")}</div>; })}
-      {isHost && <button className="demo-action demo-action--lime" onClick={next} type="button" style={{ marginTop: 8 }}>{state.round >= Math.min(questions.length, 6) - 1 ? t("finish") : t("next")}</button>}
-    </div>}
+    {state.phase === "answer" && <div className="spectrum-form"><p>{copy.hint}</p><input autoComplete="off" className="bs-input" disabled={submitted} maxLength={100} onChange={(event) => setAnswer(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submit(); }} placeholder={copy.placeholder} value={answer} /><button className="demo-action demo-action--lime" disabled={submitted || !answer.trim()} onClick={submit} type="button">{submitted ? copy.accepted : copy.submit}</button>{isHost && entries.length >= 2 && <button className="demo-action demo-action--white" onClick={() => sendAction("openVote")} type="button">{copy.open}</button>}</div>}
+    {state.phase === "vote" && <div className="punchline-answers"><p>{copy.vote}</p>{state.choices.map((choice) => <button disabled={voted} key={choice.id} onClick={() => { setVoted(true); sendAction("vote", { target: choice.id }); }} type="button">{choice.text}</button>)}{voted && <p className="controller-answered">{copy.voted}</p>}{isHost && Object.keys(state.votes).length > 0 && <button className="demo-action demo-action--lime" onClick={() => sendAction("reveal")} type="button">{copy.reveal}</button>}</div>}
+    {state.phase === "reveal" && <div className="punchline-answers">{state.choices.map((choice) => { const owner = state.choiceOwners?.[choice.id]; const isTruth = choice.id === state.truthChoiceId; return <article className={isTruth ? "fake-fact-truth" : ""} key={choice.id}><p>{isTruth ? `${copy.truth}: ` : ""}{choice.text}</p><strong>{tally[choice.id] ?? 0} {isTruth ? copy.points : copy.tricked}{owner && owner !== "truth" ? ` · ${state.scores[owner] ?? 0} ${copy.points}` : ""}</strong></article>; })}{isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 5 ? copy.finish : copy.next}</button>}</div>}
   </div>;
 }
-
-const EN: Record<string, string> = { round: "Round", waitingAnswers: "Write your lie…", votePrompt: "Pick the real answer!", reveal: "Reveal", truth: "Truth", tricked: "tricked", finish: "Finish", next: "Next", liePlaceholder: "Type a convincing lie…", submit: "Submit", submitted: "Sent!" };
-const RU: Record<string, string> = { round: "Раунд", waitingAnswers: "Напиши свою ложь…", votePrompt: "Угадай правильный ответ!", reveal: "Показать", truth: "Правда", tricked: "обвели вокруг пальца", finish: "Завершить", next: "Далее", liePlaceholder: "Напиши правдоподобную ложь…", submit: "Отправить", submitted: "Отправлено!" };
