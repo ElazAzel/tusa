@@ -3412,6 +3412,8 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .game-result-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: var(--border); border-radius: 99px; background: var(--white); }
 .game-result-row.is-me { background: var(--lime); }
 .game-result-rank { font: 800 14px var(--font-mono),monospace; color: var(--muted); min-width: 24px; }
+.guest-signup-prompt { margin-top: 14px; font-size: 13px; font-weight: 700; }
+.guest-signup-prompt a { color: var(--blue); text-underline-offset: 3px; }
 .spectator-banner { display: flex; align-items: center; gap: 9px; margin: 14px 0; padding: 12px 14px; border: var(--line); border-radius: 12px; background: var(--lime); box-shadow: 3px 3px 0 var(--black); color: var(--black); }
 .is-spectating .spectator-board button,
 .is-spectating .spectator-board input,

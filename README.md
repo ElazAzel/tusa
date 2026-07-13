@@ -66,11 +66,13 @@ https://tusa.game
 - **CSS-дизайн-система** — переменные `--lime`, `--blue`, `--pink`, brutal shadows, без runtime UI-зависимостей
 - **Clerk** — авторизация (Google, Apple)
 - **Neon Postgres** — БД через `@neondatabase/serverless`
-- **SSE** через `/api/live` — real-time для multiplayer
+- **SSE** через `/api/live` + **Ably** (production) — real-time для multiplayer
 - **Stage+Controller** — `useStageGame`, `useControllerGame`, `useMultiplayerGame` generic hooks
 - **Version locking** — optimistic concurrency через `version` column + 409 Conflict
-- **Idempotency** — `client_mutation_id` unique constraint на `chat_messages` + `game_scores`
-- **Rate limiting** — in-memory throttle на всех 25 API endpoints
+- **Idempotency** — `client_mutation_id` unique constraint на `game_actions` + `chat_messages` + `game_scores`
+- **Rate limiting** — distributed (Upstash Redis) + in-memory fallback на всех 39 API endpoints
+- **Guest sessions** — HMAC-SHA256 signed cookie-based guest identity без Clerk
+- **Server-authoritative game engine** — 24 из 32 игр с серверным reducer, Zod-валидацией команд и приватным состоянием
 - **Auth guards** — `requirePartyMember()` / `requireOwner()` в 13 уязвимых функциях
 - **SSE reconnect** — все hooks переподключаются через 3s при ошибке
 - **Web Audio API** — синтезированные звуки (без внешних файлов)
@@ -113,6 +115,10 @@ Production: `https://tusa.game`
 
 - Stripe оплата — нужен Stripe account + webhook endpoint;
 - Push notifications — нужны VAPID keys + service worker handler;
-- Redis/KV layer — для cross-instance pub/sub (пока in-memory SSE);
-- Custom domain — `tusa.game` требует DNS настройки для Vercel;
-- UnoTracker — локальный useState (pass-the-device, не multiplayer).
+- Ably + Upstash Redis — опциональны, без них realtime и rate limiting падают на in-memory (single-instance);
+- 6 игр используют client-side state (alias, mafia, truth, never, beer, randomPair, bunker);
+- Analytics — не настроены (нет Sentry, нет типизированных событий);
+- E2E — только Chromium, нет мультиплеерных тестов;
+- Database — runtime DDL вместо versioned migrations;
+- Content moderation — не реализована;
+- SEO — нет URL-based локализации (`/en/games/...`).

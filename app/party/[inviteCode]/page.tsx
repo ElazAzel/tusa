@@ -13,5 +13,5 @@ export default async function PartyRoomPage({ params }: { params: Promise<{ invi
   await syncProfile({ id: actor.id, displayName: actor.displayName, imageUrl: actor.imageUrl });
   const party = await joinParty(actor.id, inviteCode);
   if (!party) redirect(actor.kind === "guest" ? `/join/${inviteCode}` : "/app");
-  return <PartyRoom party={party} actorId={actor.id} />;
+  return <PartyRoom party={party} actorId={actor.id} actorKind={actor.kind} />;
 }

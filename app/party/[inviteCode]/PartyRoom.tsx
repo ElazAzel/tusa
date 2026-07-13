@@ -61,7 +61,7 @@ import { GAME_MANIFEST, formatPlayerRange, isGameId, type GameId } from "@/lib/g
 
 const gameCatalogue = GAME_MANIFEST;
 
-export default function PartyRoom({ party, actorId }: { party: Party; actorId: string }) {
+export default function PartyRoom({ party, actorId, actorKind }: { party: Party; actorId: string; actorKind?: string }) {
   const [tab, setTab] = useState<"space" | "games" | "chat" | "shop" | "gallery" | "koins" | "pass" | "quests" | "highlights" | "gratitude" | "theme" | "daily">("space");
   const [moreOpen, setMoreOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -448,7 +448,7 @@ export default function PartyRoom({ party, actorId }: { party: Party; actorId: s
         </div>
       </div>}
     </section>)}
-    {gameResults && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) closeGameResults(); }}><section aria-modal="true" className="demo-modal game-results-modal" role="dialog"><span className="demo-kicker">{t("gamesResults")}</span><h2>{gameResults.gameTitle}</h2><div className="game-results-list">{gameResults.scores.map((s, i) => <div className={`game-result-row ${s.userId === actorId ? "is-me" : ""}`} key={s.userId}><span className="game-result-rank">#{i + 1}</span><strong>{s.displayName || s.userId.slice(0, 8)}</strong><span className="game-result-score">{s.score}</span></div>)}</div><button className="demo-action demo-action--lime" onClick={closeGameResults} type="button">{t("gamesBack")}</button></section></div>}
+    {gameResults && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) closeGameResults(); }}><section aria-modal="true" className="demo-modal game-results-modal" role="dialog"><span className="demo-kicker">{t("gamesResults")}</span><h2>{gameResults.gameTitle}</h2><div className="game-results-list">{gameResults.scores.map((s, i) => <div className={`game-result-row ${s.userId === actorId ? "is-me" : ""}`} key={s.userId}><span className="game-result-rank">#{i + 1}</span><strong>{s.displayName || s.userId.slice(0, 8)}</strong><span className="game-result-score">{s.score}</span></div>)}</div><button className="demo-action demo-action--lime" onClick={closeGameResults} type="button">{t("gamesBack")}</button>{actorKind === "guest" && <p className="guest-signup-prompt"><Link href={`/sign-up?redirect_url=/party/${party.inviteCode}`}>{t("guestSignupPrompt")}</Link></p>}</section></div>}
     {tab === "shop" && <ShoppingList partyId={party.id} members={members} canManage={isOwner || party.role === "co_host"} />}
     {tab === "gallery" && <Gallery partyId={party.id} />}
     {tab === "koins" && <Koins partyId={party.id} />}
