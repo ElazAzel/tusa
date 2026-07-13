@@ -203,7 +203,7 @@ export async function GET(request: NextRequest) {
         session.createdBy === userId ? getPendingGameActions(sessionId) : Promise.resolve([]),
       ]);
       const safeSession = session.createdBy === userId ? session : sanitizeControllerSession(session, userId);
-      return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant });
+      return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant, viewerId: userId });
     }
 
     if (partyId) {

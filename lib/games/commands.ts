@@ -11,7 +11,7 @@ const COMMANDS: Record<string, Record<string, z.ZodType>> = {
   bombParty: { submit: text("word", 40), finalize: empty, next: empty },
   brainBurst: { answer: index, reveal: empty, next: empty },
   bunker: { join: empty, vote: target },
-  cardsChaos: { submit: text("card", 240), judge: z.object({ winner: z.string().min(1).max(128) }).strict() },
+  cardsChaos: { submit: text("card", 120), judge: z.object({ winner: z.string().min(1).max(128) }).strict(), next: empty },
   charades: { correct: empty, skip: empty, setActive: empty },
   codenames: {
     setSpymaster: z.object({ tm: z.enum(["a", "b"]) }).strict(),

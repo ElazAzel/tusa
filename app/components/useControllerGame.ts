@@ -17,12 +17,13 @@ export function useControllerGame<T extends Record<string, unknown>>(
 
     let disposed = false;
     let attempts = 0;
-    const applySnapshot = (data: { session?: { state?: Partial<T>; participants?: string[]; version?: number } }) => {
+    const applySnapshot = (data: { viewerId?: string; session?: { state?: Partial<T>; participants?: string[]; version?: number } }) => {
         const snap = data.session?.state;
         if (snap && Object.keys(snap).length > 0) {
           if (data.session?.version) versionRef.current = data.session.version;
           setState((prev) => {
             const merged = { ...prev, ...snap } as T;
+            if (data.viewerId) (merged as Record<string, unknown>).viewerId = data.viewerId;
             const participants = data.session?.participants ?? [];
             if (participants.length && Array.isArray(merged.players)) (merged as Record<string, unknown>).players = participants;
             return merged;

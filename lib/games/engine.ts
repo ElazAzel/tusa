@@ -8,6 +8,7 @@ import { WORD_BOMB_LETTERS } from "./word-bomb-content";
 import { SPECTRUM_PAIRS } from "./spectrum-content";
 import { PUNCHLINE_PROMPTS } from "./punchline-content";
 import { FAKE_FACT_QUESTIONS } from "./fake-fact-content";
+import { CHAOS_CARDS, CHAOS_PROMPTS } from "./cards-chaos-content";
 
 export type ServerGameContext = { actorId: string; creatorId: string; participants: string[]; now: number };
 export type ServerGameResult = { state: Record<string, unknown>; changed: boolean; error?: string };
@@ -38,6 +39,11 @@ function brainBurstQuestion(round: number, locale: "ru" | "en") {
   return { question: question.prompt[locale], options: question.options[locale], correct: question.correct };
 }
 
+function dealChaosHands(players: string[], locale: "ru" | "en", round: number) {
+  const cards = CHAOS_CARDS[locale];
+  return Object.fromEntries(players.map((id, player) => [id, Array.from({ length: 4 }, (_, slot) => cards[(round * 5 + player * 3 + slot) % cards.length])]));
+}
+
 export function initialServerGameState(gameId: string, participants: string[], config: Record<string, unknown>, now = Date.now()): Record<string, unknown> | null {
   const locale = config.locale === "en" ? "en" : "ru";
   if (gameId === "wouldRather") return { engine: "server-v1", game: "wouldRather", locale, phase: "vote", round: 0, prompt: WOULD_RATHER_PROMPTS[0][locale], votes: {}, players: participants };
@@ -49,12 +55,41 @@ export function initialServerGameState(gameId: string, participants: string[], c
   if (gameId === "wavelength") return { engine: "server-v1", game: "wavelength", locale, phase: "clue", round: 0, pair: SPECTRUM_PAIRS[locale][0], target: (Math.abs(now) % 10) + 1, clue: "", guesses: {}, teamScore: 0, roundScore: 0, players: participants };
   if (gameId === "quiplash") return { engine: "server-v1", game: "quiplash", locale, phase: "answer", round: 0, prompt: PUNCHLINE_PROMPTS[locale][0], submissions: {}, votes: {}, scores: {}, players: participants };
   if (gameId === "fibbage") return { engine: "server-v1", game: "fibbage", locale, phase: "answer", round: 0, ...FAKE_FACT_QUESTIONS[0][locale], submissions: {}, choices: [], choiceOwners: {}, truthChoiceId: "", votes: {}, scores: {}, players: participants };
+  if (gameId === "cardsChaos") return { engine: "server-v1", game: "cardsChaos", locale, phase: "play", round: 0, prompt: CHAOS_PROMPTS[locale][0], judgeId: participants[0] ?? "", hands: dealChaosHands(participants, locale, 0), submissions: {}, winner: "", scores: {}, players: participants };
   if (gameId !== "trivia" && gameId !== "quiz") return null;
   const game = gameId;
   return { engine: "server-v1", game, locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + (game === "quiz" ? 12_000 : 15_000), scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
+  if (gameId === "cardsChaos" && rawState.engine === "server-v1") {
+    const state = rawState as { phase: "play" | "judge" | "result" | "finished"; round: number; locale: "ru" | "en"; judgeId: string; hands: Record<string, string[]>; submissions: Record<string, string>; scores: Record<string, number> };
+    if (actionType === "submit") {
+      if (state.phase !== "play") return { state: rawState, changed: false, error: "Card submissions are closed." };
+      if (context.actorId === state.judgeId) return { state: rawState, changed: false, error: "The judge cannot submit a card." };
+      if (state.submissions[context.actorId]) return { state: rawState, changed: false };
+      const card = (payload as { card: string }).card;
+      if (!state.hands[context.actorId]?.includes(card)) return { state: rawState, changed: false, error: "That card is not in your hand." };
+      const submissions = { ...state.submissions, [context.actorId]: card };
+      const expected = context.participants.filter((id) => id !== state.judgeId);
+      const phase = expected.length > 0 && expected.every((id) => submissions[id]) ? "judge" : "play";
+      return { changed: true, state: { ...rawState, phase, submissions } };
+    }
+    if (actionType === "judge") {
+      if (state.phase !== "judge" || context.actorId !== state.judgeId) return { state: rawState, changed: false, error: "Only the current judge can choose a winner." };
+      const winner = (payload as { winner: string }).winner;
+      if (!state.submissions[winner]) return { state: rawState, changed: false, error: "Choose a submitted card." };
+      return { changed: true, state: { ...rawState, phase: "result", winner, scores: { ...state.scores, [winner]: (state.scores[winner] ?? 0) + 1 } } };
+    }
+    if (actionType === "next") {
+      if (state.phase !== "result" || context.actorId !== context.creatorId) return { state: rawState, changed: false, error: "Only the stage can advance after judging." };
+      const round = state.round + 1;
+      if (round >= CHAOS_PROMPTS[state.locale].length) return { changed: true, state: { ...rawState, phase: "finished" } };
+      const judgeId = context.participants[round % context.participants.length];
+      return { changed: true, state: { ...rawState, phase: "play", round, prompt: CHAOS_PROMPTS[state.locale][round], judgeId, hands: dealChaosHands(context.participants, state.locale, round), submissions: {}, winner: "" } };
+    }
+    return { state: rawState, changed: false, error: "Unsupported server game command." };
+  }
   if (gameId === "fibbage" && rawState.engine === "server-v1") {
     const state = rawState as { phase: "answer" | "vote" | "reveal" | "finished"; round: number; locale: "ru" | "en"; truth: string; submissions: Record<string, string>; choices: Array<{ id: string; text: string }>; choiceOwners: Record<string, string>; truthChoiceId: string; votes: Record<string, string>; scores: Record<string, number> };
     if (actionType === "answer") {
