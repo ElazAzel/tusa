@@ -11,6 +11,7 @@ import { FAKE_FACT_QUESTIONS } from "./fake-fact-content";
 import { CHAOS_CARDS, CHAOS_PROMPTS } from "./cards-chaos-content";
 import { CHARADES_WORDS } from "./charades-content";
 import { FOREHEAD_GUESS_WORDS } from "./forehead-guess-content";
+import { LOST_LOCATION_ROUNDS } from "./lost-location-content";
 import { MIME_RIOT_WORDS } from "./mime-riot-content";
 
 export type ServerGameContext = { actorId: string; creatorId: string; participants: string[]; now: number };
@@ -75,12 +76,55 @@ export function initialServerGameState(gameId: string, participants: string[], c
   if (gameId === "charades") return { engine: "server-v1", game: "charades", locale, phase: "play", round: 0, activePlayer: participants[0] ?? "", deadline: now + 60_000, wordIndex: 0, word: CHARADES_WORDS[locale][0], score: 0, roundScore: 0, players: participants };
   if (gameId === "crocodil") return { engine: "server-v1", game: "crocodil", locale, phase: "play", round: 0, teams: mimeTeams(participants), activeTeam: "A", activePlayer: mimeActivePlayer(participants, 0), deadline: now + 60_000, wordIndex: 0, word: MIME_RIOT_WORDS[locale][0], scores: { A: 0, B: 0 }, roundScore: 0, players: participants };
   if (gameId === "headsup") return { engine: "server-v1", game: "headsup", locale, phase: "play", round: 0, activePlayer: participants[0] ?? "", deadline: now + 60_000, wordIndex: 0, word: FOREHEAD_GUESS_WORDS[locale][0], score: 0, roundScore: 0, skipped: 0, players: participants };
+  if (gameId === "spyfall") return { engine: "server-v1", game: "spyfall", locale, phase: "qa", round: 0, location: LOST_LOCATION_ROUNDS[0][locale], spyId: participants[Math.abs(now) % Math.max(1, participants.length)] ?? "", turnIndex: 0, votes: {}, spyGuess: "", accusedId: "", outcome: "", scores: {}, players: participants };
   if (gameId !== "trivia" && gameId !== "quiz") return null;
   const game = gameId;
   return { engine: "server-v1", game, locale, phase: "question", round: 0, ...triviaQuestion(0, locale), deadline: now + (game === "quiz" ? 12_000 : 15_000), scores: {}, answered: {}, players: participants } satisfies TriviaState & { players: string[] };
 }
 
 export function applyServerGameCommand(gameId: string, rawState: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext): ServerGameResult | null {
+  if (gameId === "spyfall" && rawState.engine === "server-v1") {
+    const state = rawState as { phase: "qa" | "vote" | "reveal" | "finished"; round: number; locale: "ru" | "en"; location: string; spyId: string; turnIndex: number; votes: Record<string, string>; scores: Record<string, number> };
+    if (actionType === "openVote") {
+      if (context.actorId !== context.creatorId || state.phase !== "qa") return { state: rawState, changed: false, error: "Only the stage can open voting." };
+      return { changed: true, state: { ...rawState, phase: "vote", votes: {} } };
+    }
+    if (actionType === "vote") {
+      if (state.phase !== "vote") return { state: rawState, changed: false, error: "Voting is closed." };
+      if (state.votes[context.actorId]) return { state: rawState, changed: false };
+      const targetId = (payload as { target: string }).target;
+      if (!context.participants.includes(targetId)) return { state: rawState, changed: false, error: "Choose a player in this session." };
+      return { changed: true, state: { ...rawState, votes: { ...state.votes, [context.actorId]: targetId } } };
+    }
+    if (actionType === "spyGuess") {
+      if (state.phase !== "qa" && state.phase !== "vote") return { state: rawState, changed: false, error: "The round is already revealed." };
+      if (context.actorId !== state.spyId) return { state: rawState, changed: false, error: "Only the spy can guess the location." };
+      const guess = (payload as { location: string }).location.trim();
+      const correct = guess.toLocaleLowerCase(state.locale) === state.location.toLocaleLowerCase(state.locale);
+      if (!correct) return { changed: true, state: { ...rawState, spyGuess: guess } };
+      return { changed: true, state: { ...rawState, phase: "reveal", spyGuess: guess, outcome: "spy", scores: { ...state.scores, [state.spyId]: (state.scores[state.spyId] ?? 0) + 3 } } };
+    }
+    if (actionType === "reveal") {
+      if (context.actorId !== context.creatorId || state.phase !== "vote") return { state: rawState, changed: false, error: "Only the stage can reveal voting." };
+      if (!Object.keys(state.votes).length) return { state: rawState, changed: false, error: "No votes to reveal." };
+      const tally: Record<string, number> = {};
+      Object.values(state.votes).forEach((id) => { tally[id] = (tally[id] ?? 0) + 1; });
+      const accusedId = Object.entries(tally).sort(([, a], [, b]) => b - a)[0]?.[0] ?? "";
+      const citizensWin = accusedId === state.spyId;
+      const scores = { ...state.scores };
+      if (citizensWin) context.participants.filter((id) => id !== state.spyId).forEach((id) => { scores[id] = (scores[id] ?? 0) + 1; });
+      else scores[state.spyId] = (scores[state.spyId] ?? 0) + 2;
+      return { changed: true, state: { ...rawState, phase: "reveal", accusedId, outcome: citizensWin ? "citizens" : "spy", scores } };
+    }
+    if (actionType === "next") {
+      if (context.actorId !== context.creatorId || state.phase !== "reveal") return { state: rawState, changed: false, error: "Only the stage can start the next round." };
+      const round = state.round + 1;
+      if (round >= 5) return { changed: true, state: { ...rawState, phase: "finished" } };
+      const location = LOST_LOCATION_ROUNDS[round % LOST_LOCATION_ROUNDS.length][state.locale];
+      return { changed: true, state: { ...rawState, phase: "qa", round, location, spyId: context.participants[round % context.participants.length] ?? "", turnIndex: round % Math.max(1, context.participants.length), votes: {}, spyGuess: "", accusedId: "", outcome: "", players: context.participants } };
+    }
+    return { state: rawState, changed: false, error: "Unsupported server game command." };
+  }
   if (gameId === "headsup" && rawState.engine === "server-v1") {
     const state = rawState as { phase: "play" | "result" | "finished"; round: number; locale: "ru" | "en"; activePlayer: string; deadline: number; wordIndex: number; score: number; roundScore: number; skipped: number };
     if (actionType === "correct" || actionType === "skip") {
