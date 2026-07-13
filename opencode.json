@@ -1,0 +1,42 @@
+{
+  "agent": {
+    "description": "TUSA.game AI assistant — multiplayer party platform (Next.js 16, React 19, TypeScript, Clerk, Neon Postgres, SSE)",
+    "mode": "code",
+    "instructions": [
+      "Read AGENTS.md before making any changes — it is the orchestration hub with all project context.",
+      "Run `npm run build` and `npm test` before committing any changes.",
+      "Run `npm run rag:build` after any code change to keep the RAG index fresh.",
+      "Use RAG search (`npm run rag:search \"query\"`) to find relevant code before editing.",
+      "Prefer editing existing files over creating new ones unless explicitly required.",
+      "Follow the Files to Touch table in AGENTS.md to find the right file for each task.",
+      "Never add comments unless asked — match existing code style (no comments).",
+      "Never commit unless explicitly asked by the user."
+    ],
+    "skills": {
+      "add-game": {
+        "description": "Add a new multiplayer game to the platform",
+        "path": ".opencode/skills/add-game.md"
+      },
+      "fix-game-bug": {
+        "description": "Debug and fix a game component or engine issue",
+        "path": ".opencode/skills/fix-game-bug.md"
+      },
+      "rag-index": {
+        "description": "Rebuild or search the RAG index",
+        "path": ".opencode/skills/rag-index.md"
+      }
+    },
+    "entrypoints": [
+      "AGENTS.md",
+      "README.md",
+      "lib/games/engine.ts",
+      "app/api/games/route.ts",
+      "lib/parties.ts",
+      "app/globals.css"
+    ],
+    "test_command": "npm test",
+    "build_command": "npm run build",
+    "lint_command": "npm run lint",
+    "typecheck_command": "npm run typecheck"
+  }
+}

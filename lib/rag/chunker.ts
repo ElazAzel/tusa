@@ -3,7 +3,8 @@ import * as path from "node:path";
 import type { Chunk, ChunkType } from "./types.js";
 
 const ROOT = process.cwd();
-const SKIP_DIRS = new Set(["node_modules", ".next", "dist", ".git", ".vercel", "coverage"]);
+const SKIP_DIRS = new Set(["node_modules", ".next", "dist", ".git", ".vercel", "coverage", "tmp"]);
+const INCLUDE_DIRS = new Set([".opencode"]);
 const INDEX_FILES = new Set(["index.ts", "index.tsx", "index.js", "index.jsx", "page.tsx", "page.ts", "layout.tsx", "layout.ts", "route.ts", "route.ts", "proxy.ts", "middleware.ts"]);
 const MAX_CHUNK_LINES = 300;
 const MIN_CHUNK_LINES = 5;
@@ -15,6 +16,7 @@ function nextId(): string {
 
 function shouldSkip(dir: string): boolean {
   const base = path.basename(dir);
+  if (INCLUDE_DIRS.has(base)) return false;
   return SKIP_DIRS.has(base) || base.startsWith(".");
 }
 
@@ -48,9 +50,13 @@ function extractExports(content: string): string[] {
 
 function inferType(filePath: string, name: string, content: string): ChunkType {
   const rel = path.relative(ROOT, filePath).replace(/\\/g, "/");
-  if (rel.endsWith(".md")) return "docs";
+  if (rel.endsWith(".md")) {
+    if (rel === "AGENTS.md" || rel === "opencode.json") return "config";
+    return "docs";
+  }
   if (rel.endsWith(".css")) return "css";
   if (rel.match(/\.(json|ya?ml|env|config)\./)) return "config";
+  if (rel.includes(".opencode/skills/")) return "config";
   if (rel.includes("app/api/") || rel.includes("route.ts")) return "route";
   if (rel.includes("app/components/games/")) return "game";
   if (name.startsWith("use") && name.length > 3 && name[3] === name[3].toUpperCase()) return "hook";

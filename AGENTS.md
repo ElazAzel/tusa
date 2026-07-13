@@ -1,221 +1,221 @@
-# AGENTS.md — TUSA.game AI Context
+# TUSA.game — AI Context & Orchestration Hub
 
-## Project Overview
+> Multiplayer party platform · Next.js 16 · React 19 · TypeScript · Clerk · Neon Postgres · SSE realtime · 53 routes · 28 games · 32 modes
 
-TUSA.game is a real-time party platform with 28 multiplayer games, a PWA experience, and mobile-first design. Built with Next.js 16, React 19, TypeScript, Clerk auth, Neon Postgres, and SSE real-time.
-
-53 routes, 0 build errors. Deployed at https://tusa.game.
+---
 
 ## Quick Start
 
 ```bash
-npm install          # install dependencies
-npm run dev          # start dev server (localhost:3000)
+npm install          # dependencies
+npm run dev          # dev server (localhost:3000)
 npm run build        # production build
-npx next build       # verify build
+npm test             # 29 tests (must pass before commit)
+npm run lint         # 0 errors required
+npm run rag:build    # rebuild RAG index after changes
 ```
 
-## Architecture
+---
+
+## Architecture (TL;DR)
 
 ```
-proxy.ts              — Clerk middleware + auth redirect + i18n routing
-next.config.ts        — CSP + security headers
+proxy.ts             ← Clerk auth + i18n routing (middleware)
+next.config.ts        ← CSP + security headers
 lib/
-  live.ts             — SSE event bus (in-memory, needs Redis for multi-instance)
-  rate-limit.ts       — In-memory throttle (wired to all 25 API routes)
-  parties.ts          — All DB functions + ensurePartySchema() + idempotent mutations
-  i18n.ts             — 32 modes × title/desc keys + game UI strings (RU/EN)
-  audio.ts            — Web Audio API sound effects
-  confetti.ts         — Canvas confetti
-  rag/                — RAG indexing + search system (527 chunks, 10k terms)
+  live.ts             ← SSE event bus (Ably prod / in-memory dev)
+  parties.ts          ← All DB functions (raw SQL via @neondatabase/serverless)
+  games/engine.ts     ← Monolithic server game reducer (legacy, 560 lines)
+  games/sdk.ts        ← Game SDK registry (definitions dispatch)
+  games/definition.ts ← GameDefinition<TState> type system
+  games/definitions/  ← Individual game definitions (7 migrated, 12 pending)
+  games/commands.ts   ← Zod validation schemas + SDK dispatch
+  games/scoring.ts    ← Server-only score derivation
+  i18n.ts             ← 32 modes × RU/EN UI strings
+  audio.ts            ← Web Audio API sound effects
+  confetti.ts         ← Canvas confetti
+  rag/                ← RAG indexing + TF-IDF search (911 chunks)
+  rate-limit.ts       ← Throttle (Upstash Redis prod / in-memory dev)
+  guest-session.ts    ← HMAC guest auth (import "server-only")
 app/
-  api/
-    games/route.ts    — Game sessions + playerAction + version locking + party SSE publish
-    chat/route.ts     — Chat with retry logic + idempotency (clientMutationId)
-    live/route.ts     — SSE streaming endpoint
+  api/games/route.ts  ← Game sessions + player actions + SSE publish + version locking
+  api/chat/route.ts   ← Chat with retry + idempotency
+  api/live/route.ts   ← SSE streaming endpoint
   components/
-    useGameRole.ts    — useGameRole(participants, userId) → "stage" | "controller"
-    useStageGame.ts   — Stage hook: state restore from DB, setState, playerActions, clearActions, complete
-    useControllerGame.ts — Controller hook: state restore from DB, sendAction(type, payload)
-    useMultiplayerGame.ts — Generic typed multiplayer hook with state restore
-    useLiveStream.ts  — SSE hook with reconnect (3s retry)
-    games/            — 28 game components
-  party/[inviteCode]/
-    PartyRoom.tsx     — Main room: manifest-driven 32-mode catalogue, game routing, chat, party realtime channel
-app/globals.css       — ~3600 lines: brand CSS, game boards, mobile responsive, .games-grid, .faq-*
+    useStageGame.ts   ← Stage hook (processes playerActions, restores state from DB)
+    useControllerGame.ts ← Controller hook (sendAction, restores state from DB)
+    useLiveStream.ts  ← SSE hook with 3s reconnect
+    useGameRole.ts    ← "stage" | "controller" detection
+    games/*.tsx       ← 28 game components
+  party/[inviteCode]/PartyRoom.tsx ← Main room (manifest-driven game catalogue)
+app/globals.css       ← ~3980 lines brand CSS, brutal design, mobile-first
 ```
 
-## Stage+Controller Architecture
+---
+
+## For LLMs / Bots
+
+### How to read this codebase
+
+1. **Start with AGENTS.md** (this file) — it's the orchestration hub
+2. **Use RAG search** to find relevant code:
+   ```bash
+   npm run rag:search "chat input" --type component
+   npm run rag:search "useStageGame" --type hook
+   npm run rag:search "game session" --type route
+   ```
+3. **Follow the dependency chain**: middleware → API route → lib function → DB
+4. **Check opencode.json** for available skill workflows
+
+### Key entry points
+
+| Purpose | File |
+|---|---|
+| Auth + routing | `proxy.ts` |
+| Game server reducer (legacy) | `lib/games/engine.ts` |
+| Game SDK definitions (migrated) | `lib/games/definitions/*.ts` |
+| Game SDK registry | `lib/games/sdk.ts` |
+| API route (games) | `app/api/games/route.ts` |
+| SSE realtime | `lib/live.ts` + `app/api/live/route.ts` |
+| DB schema + queries | `lib/parties.ts` |
+| State hooks | `app/components/use{Stage,Controller,Multiplayer}Game.ts` |
+| CSS global | `app/globals.css` |
+| i18n strings | `lib/i18n.ts` |
+| Party room UI | `app/party/[inviteCode]/PartyRoom.tsx` |
+
+### RAG index structure
+
+- **911 chunks** across 9 types: `docs`, `component`, `utility`, `game`, `route`, `css`, `hook`, `config`, `type`
+- Index stored at `.rag/index.json` (~6 MB, auto-generated, gitignored)
+- **Always rebuild after changes**: `npm run rag:build`
+
+---
+
+## For Developers
+
+### Conventions
+
+- **No comments** in code unless essential — let types and naming speak
+- **Brutal CSS**: 3px black border, shadow offset, translate on hover
+- **Mobile-first**: `@media (max-width: 600px)` breakpoints
+- **Touch targets**: minimum 44px
+- **i18n**: All user-facing text via `t()` function from `useLocale()`
+- **Never white text on lime background** — enforce `color: var(--black)`
+
+### Game architecture
 
 Every multiplayer game has two views:
-- **Stage** (host's phone): uses `useStageGame<T>` — receives `playerActions`, calls `clearActions()`, manages shared state. RESTORES state from DB on mount/reconnect.
-- **Controller** (player's phone): uses `useControllerGame<T>` — calls `sendAction(actionType, payload)`. RESTORES state from DB on mount/reconnect.
+- **Stage** (host): `useStageGame<T>()` — receives `playerActions`, manages shared state, restores from DB on mount
+- **Controller** (player): `useControllerGame<T>()` — `sendAction(type, payload)`, restores from DB on mount
 
-Game component signature:
+Component signature:
 ```tsx
-export default function GameName({ partyId, sessionId, onSave, role }:
+export default function Game({ partyId, sessionId, onSave, role }:
   { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" })
 ```
 
-## Key Patterns
-
 ### Adding a new game
-1. Create `app/components/games/NewGame.tsx`
-2. Add i18n keys to `lib/i18n.ts` (titleKey, descKey, UI strings)
-3. Register in `PartyRoom.tsx` game catalogue array (add GameId type, import, render, catalogue entry)
-4. Use `useStageGame`/`useControllerGame` for multiplayer
-5. Call `onSave(numericScore)` at game end
 
-### State management pattern
-```tsx
-// Stage processes ALL actions, not just last
-useEffect(() => {
-  if (playerActions.length === 0) return;
-  for (const a of playerActions) {
-    if (a.actionType === "someAction") {
-      setState((prev) => {
-        // CHECK INSIDE CALLBACK to prevent double-processing
-        if (prev.locked[a.userId]) return prev;
-        return { ...prev, /* update */ };
-      });
-    }
-  }
-  clearActions();
-}, [playerActions, setState, clearActions]);
+1. Create `app/components/games/NewGame.tsx` (game component)
+2. Add i18n keys to `lib/i18n.ts`
+3. Create `lib/games/definitions/NewGame.ts` (server definition)
+4. Register in `lib/games/sdk.ts`
+5. Register in `PartyRoom.tsx` (catalogue array + import + render)
+6. Build, test, rebuild RAG
+
+### Testing
+
+```bash
+npm test             # 29 tests (game engine, routes, security)
+npm run test:e2e     # Playwright E2E (requires install)
 ```
 
-### SSE reconnect pattern
-All hooks (`useStageGame`, `useControllerGame`, `useMultiplayerGame`, `useLiveStream`) use:
-```ts
-es.onerror = () => {
-  es.close();
-  reconnectTimer = setTimeout(connect, 3000);
-};
+### Common issues
+
+| Symptom | Root cause | Fix |
+|---|---|---|
+| Chat 500 | Schema DDL timeout on cold start | Already optimized (checks `information_schema` first) |
+| Game not receiving actions | Wrong hook | Stage must use `useStageGame`, not `useMultiplayerGame` |
+| 409 Conflict | Version lock | Retry optimistic concurrency in API route |
+| Controller sees stale state | No state restore | All hooks fetch `GET /api/games?sessionId=X` on mount |
+| SSE silent disconnect | No reconnect | All hooks reconnect on error with 3s retry |
+| White on lime | Missing color rule | Add `color: var(--black)` |
+| Customization error | Unlocked check | Cosmetics with unchanged values now skip permission check |
+
+---
+
+## For Vibecoding
+
+"Just tell me what you want" patterns:
+
+```
+"Add a new game called [name] that's like [description]"
+→ Uses add-game skill, creates component + definition + i18n + PartyRoom registration
+
+"Fix the [game name] game, [describe the bug]"
+→ Uses fix-game-bug skill, identifies hook/state/engine issue
+
+"Make the [component] look like [description]"
+→ Edit CSS in app/globals.css, follow brand conventions
+
+"Add an API endpoint for [purpose]"
+→ Create app/api/[name]/route.ts, add DB function in lib/parties.ts, add rate limiting
 ```
 
-### State restoration on mount
-All three game hooks fetch current state from DB on mount:
-```ts
-fetch(`/api/games?sessionId=${sessionId}`)
-  .then((r) => r.json())
-  .then((data) => {
-    if (data.session?.state && Object.keys(data.session.state).length > 0) {
-      if (data.session.version) versionRef.current = data.session.version;
-      _setState((prev) => ({ ...prev, ...data.session.state }));
-    }
-  }).catch(() => undefined);
-```
+---
 
-### Party-level SSE channel
-PartyRoom subscribes to `party:<id>` SSE channel for real-time session events:
-- `session:created` — new game session appears for all party members
-- `session:updated` — player joins/leaves session
-- `session:completed` — session removed from active list
-
-Games API publishes to both `game:<sessionId>` AND `party:<partyId>` channels.
-
-### Version locking (optimistic concurrency)
-`game_sessions` has a `version` column. Stage increments version on each state update.
-Server rejects stale updates with 409 Conflict. Hooks track `versionRef.current`.
-
-### Idempotency
-`client_mutation_id` column + unique constraint on `chat_messages` and `game_scores`.
-`ON CONFLICT DO NOTHING` + fallback SELECT. Chat + games API routes auto-generate `mutationId`.
-
-### CSS conventions
-- Brand colors: `--lime: #C9FF05`, `--blue: #2D00F7`, `--pink: #FF007F`, `--white: #fff`, `--black: #000`, `--cream: #F7F7F2`, `--gray: #a3a3a3`, `--dark: #262626`, `--red: #f87171`
-- Brutal design: 3px black border, shadow offset, translate on hover
-- Fonts: Unbounded (headings), Inter (body), JetBrains Mono (code/chips)
-- Mobile: `@media (max-width: 600px)` breakpoints
-- Minimum touch target: 44px
-- All text via `t()` i18n function
-- **Never white text on lime background** — enforce `color: var(--black)` on lime backgrounds
-
-### Database
-- All tables via `ensurePartySchema()` — runs on cold start
-- Optimized: checks `information_schema.tables` first (skips DDL if exists)
-- Neon Postgres via `@neondatabase/serverless`
-- Tables: `parties`, `party_members`, `chat_messages`, `game_sessions`, `game_scores`, `party_shopping_items`, `gallery_photos`, `koins_ledger`, `bets`, `promo_codes`, `promo_redemptions`, `engagement_rewards`, `notes`, `user_profiles`, `friends`
-
-## Common Issues
-
-### Chat 500 error
-Root cause: `ensurePartySchema()` DDL timeout on cold starts. Fix: already optimized with schema check (SELECT information_schema first, skip DDL if tables exist).
-
-### Game not receiving controller actions
-Check: stage must use `useStageGame`, not `useMultiplayerGame`. Stage must call `clearActions()` after processing. Guard inside `setState(prev)` callback, not outside.
-
-### Stale state in game logic
-Never read outer state inside a `for` loop processing `playerActions`. Always use `setState(prev)` callback pattern with checks inside the callback.
-
-### RSVP buttons don't update counts
-Fixed: `updateRsvp` now processes API response and updates local `rsvpCounts` state. Counts refresh immediately.
-
-### Multiplayer — players don't see Join button
-Fixed: PartyRoom subscribes to `party:<id>` SSE channel. Games API publishes `session:created/updated/completed` to party channel. All members see session changes in real-time.
-
-### Controller joins mid-game — sees wrong state
-Fixed: All hooks fetch current session state from DB on mount (`GET /api/games?sessionId=X`) and restore it.
-
-### SSE disconnects silently
-Fixed: All hooks (`useLiveStream`, `useStageGame`, `useControllerGame`, `useMultiplayerGame`) now reconnect on error with 3s retry.
-
-## SEO/GEO/AEO Pages
-
-| Page | Purpose |
-|---|---|
-| `/` | Landing — WebApplication + Organization JSON-LD, hreflang |
-| `/games` | 32-mode catalogue — CollectionPage schema |
-| `/games/[slug]` (future) | Individual game pages — Game schema |
-| `/faq` | 7 Q&As — FAQPage JSON-LD |
-| `/about` | Mission/story — Organization schema |
-| `/use-cases/online-parties` | SEO landing — online party games |
-| `/use-cases/remote-teams` | SEO landing — virtual team building |
-| `/use-cases/in-person-parties` | SEO landing — group party games |
-| `/robots.txt` | AI-bot permissions (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot) |
-| `/sitemap.xml` | 11+ entries with priorities |
-
-Full strategy: `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` (18 sections, ~2500 lines).
-
-## Files to Touch
+## Files to Touch (Quick Reference)
 
 | Task | Files |
 |---|---|
-| Add new game | `app/components/games/NewGame.tsx`, `lib/i18n.ts`, `app/party/[inviteCode]/PartyRoom.tsx` |
-| Add game to SDK | `lib/games/definitions/GameName.ts`, `lib/games/sdk.ts` (register) |
+| Add new game | `app/components/games/NewGame.tsx`, `lib/i18n.ts`, `lib/games/definitions/NewGame.ts`, `lib/games/sdk.ts`, `PartyRoom.tsx` |
 | Fix game bug | `app/components/games/GameName.tsx` |
 | Fix game engine | `lib/games/definitions/GameName.ts`, `lib/games/engine.ts` |
 | Game SDK | `lib/games/definition.ts`, `lib/games/sdk.ts`, `lib/games/definitions/*.ts` |
-| Add API endpoint | `app/api/new-endpoint/route.ts` |
-| Modify chat | `app/api/chat/route.ts`, `app/party/[inviteCode]/PartyRoom.tsx` |
+| Add API endpoint | `app/api/new-endpoint/route.ts`, `lib/parties.ts` |
+| Modify chat | `app/api/chat/route.ts`, `PartyRoom.tsx` |
 | CSS changes | `app/globals.css` |
 | i18n strings | `lib/i18n.ts` |
-| Database schema | `lib/parties.ts` (ensurePartySchema) |
+| Database schema | `lib/parties.ts` (ensurePartySchema DDL) |
 | Auth rules | `proxy.ts` |
 | Real-time | `lib/live.ts`, `app/api/live/route.ts` |
 | SEO page | `app/games/page.tsx`, `app/faq/page.tsx`, `app/about/page.tsx` |
 | SEO landing | `app/use-cases/*/page.tsx` |
-| Robots | `app/robots.ts` |
-| Sitemap | `app/sitemap.ts` |
-| Layout (JSON-LD) | `app/layout.tsx` |
 | Hook fix | `app/components/use{Stage,Controller,Multiplayer}Game.ts`, `useLiveStream.ts` |
+| RAG rebuild | `npm run rag:build` |
 
-## RAG System
+---
 
-After making code changes, rebuild the index:
-```bash
-npm run rag:build
-```
+## Reference Docs
 
-Search the codebase:
-```bash
-npm run rag:search "how multiplayer works"
-npm run rag:search "chat input" --type component
-npm run rag:search "useStageGame" --type hook
-npm run rag:search "game session" --type route
-```
+| Doc | Location | Purpose |
+|---|---|---|
+| 👑 Production Readiness | `docs/PRODUCTION_READINESS_AUDIT.md` | 32-game certification matrix, infrastructure audit, security posture |
+| 📈 Growth OS | `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` | Full SEO/GEO/AEO strategy, 18 sections |
+| ✅ Platform Audit | `docs/PLATFORM_AUDIT.md` | Platform completion vs style guide + PRD |
+| 🎯 Master Plan (RU) | `docs/PLAN.md` | 807-line general plan for full readiness |
+| 💰 Monetization | `docs/TUSA_io_Партнёрства_реклама_монетизация.md` | Partnerships, ads, monetization strategy |
+| 🌍 Global Platform | `docs/GLOBAL_SOCIAL_GAMING_PLATFORM_2.0.md` | Strategic proposal |
 
-## TUSA Growth Operating System
+---
 
-Full strategy document at `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` — 18 sections:
-Product Vision, Information Architecture, SEO (page-by-page matrix), GEO (ChatGPT/Gemini/Claude/Perplexity), AEO (question clusters, snippets), Knowledge Graph, Semantic SEO, Topic Authority (150+ page plan), Programmatic SEO, EEAT, Technical SEO, Performance, International SEO, AI Crawlers, Social SEO, Growth Engine, Analytics, Backlog.
+## Available Skills
+
+| Skill | Description | File |
+|---|---|---|
+| `add-game` | Add a new multiplayer game | `.opencode/skills/add-game.md` |
+| `fix-game-bug` | Debug and fix a game component/engine | `.opencode/skills/fix-game-bug.md` |
+| `rag-index` | Rebuild RAG index | `.opencode/skills/rag-index.md` |
+
+Load a skill with `opencode use-skill <name>` (or equivalent in your AI tool).
+
+---
+
+## Environment
+
+- **DB**: Neon Postgres via `@neondatabase/serverless` (28 tables, raw SQL + Drizzle)
+- **Auth**: Clerk (user accounts) + HMAC guest sessions
+- **Realtime**: Ably (production) / SSE in-memory fallback
+- **Rate limiting**: Upstash Redis (production) / in-memory fallback
+- **Deployment**: Vercel (53 routes, 0 build errors)
+- **CI**: GitHub Actions (typecheck → lint → test → build → audit → e2e)
