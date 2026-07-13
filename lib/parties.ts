@@ -181,6 +181,8 @@ export function ensurePartyV2() {
   if (schemaV2Promise) return schemaV2Promise;
   schemaV2Promise = (async () => {
   const sql = db();
+  await sql`CREATE TABLE IF NOT EXISTS game_actions (id UUID PRIMARY KEY, session_id UUID NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE, clerk_user_id TEXT NOT NULL, action_type TEXT NOT NULL, payload JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await sql`CREATE INDEX IF NOT EXISTS game_actions_session_idx ON game_actions (session_id, created_at ASC)`;
   await sql`ALTER TABLE game_actions ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS game_actions_command_unique ON game_actions(session_id, clerk_user_id, client_mutation_id) WHERE client_mutation_id IS NOT NULL`;
   await sql`CREATE TABLE IF NOT EXISTS party_highlights (id UUID PRIMARY KEY, party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE, session_id UUID REFERENCES game_sessions(id) ON DELETE SET NULL, clerk_user_id TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'score' CHECK (type IN ('score','achievement','funny','quote','photo')), data JSONB NOT NULL DEFAULT '{}'::jsonb, thumbnail TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
