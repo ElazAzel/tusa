@@ -33,6 +33,7 @@ export default function Codenames({ partyId, sessionId, onSave, role }: { partyI
   const setState = isHost ? stageHook.setState : undefined;
   const playerActions = isHost ? stageHook.playerActions : [];
   const clearActions = isHost ? stageHook.clearActions : undefined;
+  const stage = stageHook;
 
   const [team, setTeam] = useState<"a" | "b" | null>(null);
   const [isSpymaster, setIsSpymaster] = useState(false);
@@ -66,7 +67,7 @@ export default function Codenames({ partyId, sessionId, onSave, role }: { partyI
   const pickTeam = useCallback((t: "a" | "b") => { setTeam(t); sendAction("setSpymaster", { tm: t }); setIsSpymaster(true); }, [sendAction]);
   const giveClue = useCallback(() => { if (!clueWord.trim()) return; sendAction("giveClue", { wd: clueWord.trim(), nm: clueNum }); setClueWord(""); }, [clueWord, clueNum, sendAction]);
   const pickWord = useCallback((idx: number) => { sendAction("pickWord", { idx }); }, [sendAction]);
-  const finish = useCallback(() => { onSave(Math.max(state.scores.a, state.scores.b)); }, [onSave, state.scores]);
+  const finish = useCallback(() => { stage.complete(); onSave(Math.max(state.scores.a, state.scores.b)); }, [onSave, state.scores, stage]);
 
   const colorMap: Record<BoardColor, string> = { a: "#ef4444", b: "#3b82f6", neutral: "#a3a3a3", assassin: "#171717" };
   const showColors = isHost || isSpymaster;

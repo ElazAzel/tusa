@@ -29,6 +29,7 @@ export default function Bunker({ partyId, sessionId, onSave, role }: { partyId: 
   const setState = isHost ? stageHook.setState : undefined;
   const playerActions = isHost ? stageHook.playerActions : [];
   const clearActions = isHost ? stageHook.clearActions : undefined;
+  const stage = stageHook;
 
   const [hasVoted, setHasVoted] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
@@ -64,7 +65,7 @@ export default function Bunker({ partyId, sessionId, onSave, role }: { partyId: 
   }, [state.phase, state.votes, state.traits.length, state.bunkerSpots, isHost, setState]);
 
   const revealNext = useCallback(() => { if (!isHost) return; setState?.((prev) => ({ ...prev, revealedIndex: Math.min(prev.revealedIndex + 1, prev.traits.length - 1) })); }, [isHost, setState]);
-  const finish = useCallback(() => { onSave(state.traits.length - state.eliminated.length); }, [onSave, state.traits.length, state.eliminated.length]);
+  const finish = useCallback(() => { stage.complete(); onSave(state.traits.length - state.eliminated.length); }, [onSave, state.traits.length, state.eliminated.length, stage]);
   const join = useCallback(() => { setHasJoined(true); sendAction("join"); }, [sendAction]);
   const voteFor = useCallback((target: string) => { setHasVoted(true); sendAction("vote", { target }); }, [sendAction]);
 

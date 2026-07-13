@@ -78,5 +78,10 @@ export function useMultiplayerGame<T extends Record<string, unknown>>(
     });
   }, [sessionId]);
 
-  return { state, setState, isMultiplayer: Boolean(sessionId) };
+  const complete = useCallback(() => {
+    if (!sessionId) return;
+    fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "complete", sessionId }) }).catch(() => undefined);
+  }, [sessionId]);
+
+  return { state, setState, isMultiplayer: Boolean(sessionId), complete };
 }
