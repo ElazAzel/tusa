@@ -33,7 +33,7 @@ const COMMANDS: Record<string, Record<string, z.ZodType>> = {
     next: empty,
   },
   pictionary: { guess: text("text", 120), stroke: z.object({ points: z.array(point).min(1).max(32) }).strict() },
-  quiplash: { answer: text("text", 240), vote: target },
+  quiplash: { answer: text("text", 160), openVote: empty, vote: target, reveal: empty, next: empty },
   quiz: { answer: index, reveal: empty, next: empty },
   spyfall: { spyGuess: text("location", 120), vote: target },
   trivia: { answer: index, reveal: empty, next: empty },

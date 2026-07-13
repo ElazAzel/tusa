@@ -241,6 +241,10 @@ function sanitizeControllerState(game: string, rawState: Record<string, unknown>
     delete state.usedWords;
   }
   if (game === "wavelength" && phase !== "reveal" && phase !== "finished") state.target = -1;
+  if (game === "quiplash" && phase === "answer") {
+    const submissions = (state.submissions ?? {}) as Record<string, string>;
+    state.submissions = Object.fromEntries(Object.keys(submissions).map((id) => [id, id === userId ? submissions[id] : ""]));
+  }
   if ((game === "werewolf" || game === "mafia") && phase !== "reveal") {
     const roles = (state.roles ?? {}) as Record<string, unknown>;
     state.roles = roles[userId] ? { [userId]: roles[userId] } : {};
