@@ -258,7 +258,7 @@ function sanitizeControllerState(game: string, rawState: Record<string, unknown>
   }
   if (game === "impostor" && phase !== "reveal") {
     const isImpostor = state.impostorId === userId;
-    state.word = isImpostor ? "" : state.word;
+    state.word = !userId || isImpostor ? "" : state.word;
     state.impostorId = isImpostor ? userId : null;
   }
   if (game === "spyfall" && phase !== "reveal") {
