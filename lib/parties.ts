@@ -611,7 +611,7 @@ export async function updateProfile(userId: string, input: { displayName: string
   const cosmetics = { ...current.cosmetics, ...(input.cosmetics ?? {}) };
   const permissions: Record<keyof NonNullable<typeof input.cosmetics>, PromoBenefitType> = { cover: "profile_cover", avatarFrame: "avatar_frame", chatEffect: "chat_effect", nameColor: "name_color", badge: "badge" };
   for (const [key, benefit] of Object.entries(permissions) as [keyof typeof permissions, PromoBenefitType][]) {
-    if (input.cosmetics?.[key] !== undefined && !current.cosmetics.unlocked.includes(benefit)) {
+    if (input.cosmetics?.[key] !== undefined && input.cosmetics[key] !== current.cosmetics[key] && !current.cosmetics.unlocked.includes(benefit)) {
       if (current.handle !== "elazart") throw new Error("Этот предмет пока не открыт.");
       current.cosmetics.unlocked.push(benefit);
     }

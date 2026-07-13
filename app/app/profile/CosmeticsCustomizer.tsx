@@ -90,8 +90,6 @@ export default function CosmeticsCustomizer({
         changed[key] = preview[key] as string;
       }
     }
-    changed.badge = preview.badge;
-    changed.cover = preview.cover;
     await onSave(changed);
     soundSuccess();
     setSaving(false);
