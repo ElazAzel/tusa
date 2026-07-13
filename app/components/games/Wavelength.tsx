@@ -1,89 +1,40 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStageGame } from "@/app/components/useStageGame";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
 
-const PAIRS_EN: [string, string][] = [["Hot", "Cold"], ["Sweet", "Sour"], ["Fast", "Slow"], ["Rich", "Poor"], ["Easy", "Hard"], ["Happy", "Sad"], ["Old", "New"], ["Light", "Dark"], ["Boring", "Exciting"], ["Brave", "Scared"]];
-const PAIRS_RU: [string, string][] = [["Горячо", "Холодно"], ["Сладкое", "Кислое"], ["Быстро", "Медленно"], ["Богатый", "Бедный"], ["Лёгкое", "Тяжёлое"], ["Счастливый", "Грустный"], ["Старое", "Новое"], ["Светлое", "Тёмное"], ["Скучное", "Захватывающее"], ["Храбрый", "Испуганный"]];
+type GameState = { engine: "server-v1"; phase: "clue" | "guess" | "reveal" | "finished"; round: number; pair: [string, string]; target: number; clue: string; guesses: Record<string, number>; average?: number | null; roundScore: number; teamScore: number; players: string[] };
+const initialState = (): GameState => ({ engine: "server-v1", phase: "clue", round: 0, pair: ["", ""], target: -1, clue: "", guesses: {}, roundScore: 0, teamScore: 0, players: [] });
 
-type GameState = { left: string; right: string; target: number; clue: number; phase: "clue" | "guess" | "reveal"; guess: number | null; scores: Record<string, number>; lastGuesser: string };
-
-export default function Wavelength({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+export default function Wavelength({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale } = useLocale();
-  const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
-  const pairs = useMemo(() => locale === "ru" ? PAIRS_RU : PAIRS_EN, [locale]);
   const isHost = role === "stage";
+  const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, initialState);
+  const controller = useControllerGame<GameState>(!isHost ? sessionId ?? null : null, initialState());
+  const state = isHost ? stage.state : controller.state;
+  const sendAction = isHost ? stage.sendAction : controller.sendAction;
+  const [clue, setClue] = useState("");
+  const [guess, setGuess] = useState(5);
+  const [submitted, setSubmitted] = useState(false);
+  const completed = useRef(false);
+  const copy = locale === "ru" ? { title: "Спектр", round: "Раунд", target: "Секретная цель", clueHint: "Дай ассоциацию, которая приведёт команду к этой точке", cluePlaceholder: "Твоя ассоциация…", send: "Отправить подсказку", guessHint: "Где на шкале находится подсказка?", lock: "Зафиксировать", accepted: "Оценка принята", reveal: "Раскрыть цель", average: "Средняя оценка", points: "очков за раунд", total: "Всего", next: "Следующий раунд", finish: "Завершить", waiting: "Ведущий готовит подсказку" } : { title: "Spectrum", round: "Round", target: "Secret target", clueHint: "Give an association that leads the team to this point", cluePlaceholder: "Your association…", send: "Send clue", guessHint: "Where does the clue sit on the scale?", lock: "Lock guess", accepted: "Guess locked", reveal: "Reveal target", average: "Team average", points: "round points", total: "Total", next: "Next round", finish: "Finish", waiting: "The clue giver is preparing a clue" };
 
-  const stageHook = useStageGame<GameState>(isHost ? (sessionId ?? null) : null, () => {
-    const p = pairs[Math.floor(Math.random() * pairs.length)];
-    return { left: p[0], right: p[1], target: Math.floor(Math.random() * 9) + 1, clue: 5, phase: "clue", guess: null, scores: {}, lastGuesser: "" };
-  });
-  const controllerHook = useControllerGame<GameState>(!isHost ? (sessionId ?? null) : null, { left: "", right: "", target: 5, clue: 5, phase: "clue", guess: null, scores: {}, lastGuesser: "" });
+  useEffect(() => { setClue(""); setGuess(5); setSubmitted(false); }, [state.round]);
+  useEffect(() => { if (!isHost || state.phase !== "finished" || completed.current) return; completed.current = true; stage.complete(); onSave(0); }, [isHost, onSave, stage, state.phase]);
+  const guesses = Object.keys(state.guesses).length;
+  const left = state.pair?.[0] ?? "";
+  const right = state.pair?.[1] ?? "";
+  const marker = (value: number) => `${((value - 1) / 9) * 100}%`;
 
-  const state = isHost ? stageHook.state : controllerHook.state;
-  const sendAction = isHost ? stageHook.sendAction : controllerHook.sendAction;
-  const setState = isHost ? stageHook.setState : undefined;
-  const playerActions = isHost ? stageHook.playerActions : [];
-  const clearActions = isHost ? stageHook.clearActions : undefined;
-  const complete = isHost ? stageHook.complete : undefined;
-
-  const [val, setVal] = useState(5);
-  useEffect(() => { setVal(5); }, [state.phase]);
-
-  useEffect(() => {
-    if (!isHost || playerActions.length === 0) return;
-    for (const a of playerActions) {
-      if (a.actionType === "clue" && state.phase === "clue") {
-        const { value } = a.payload as { value: number };
-        setState?.((prev) => ({ ...prev, clue: Math.max(1, Math.min(10, value)), phase: "guess" }));
-      }
-      if (a.actionType === "guess" && state.phase === "guess") {
-        const { value } = a.payload as { value: number };
-        setState?.((prev) => ({ ...prev, guess: Math.max(1, Math.min(10, value)), phase: "reveal", lastGuesser: a.userId }));
-      }
-    }
-    clearActions?.();
-  }, [playerActions, state.phase, isHost, setState, clearActions]);
-
-  const dist = state.guess !== null ? Math.abs(state.guess! - state.target) : 0;
-  const pts = dist === 0 ? 3 : dist <= 1 ? 2 : dist <= 2 ? 1 : 0;
-
-  const next = useCallback(() => {
-    if (!isHost) return;
-    const p = pairs[Math.floor(Math.random() * pairs.length)];
-    const newScores = { ...state.scores };
-    if (pts > 0 && state.lastGuesser) newScores[state.lastGuesser] = (newScores[state.lastGuesser] || 0) + pts;
-    setState?.({ left: p[0], right: p[1], target: Math.floor(Math.random() * 9) + 1, clue: 5, phase: "clue", guess: null, scores: newScores, lastGuesser: "" });
-  }, [pairs, pts, state.scores, state.lastGuesser, isHost, setState]);
-
-  const finish = useCallback(() => { if (!isHost) return; complete?.(); onSave(Math.max(...Object.values(state.scores), 0)); }, [isHost, complete, onSave, state.scores]);
-
-  return <div className="party-game-board game-board-enter">
-    <span className="game-step">{t("wavelength")}</span>
-    <h3>{state.left} ↔ {state.right}</h3>
-    {state.phase === "clue" && <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("spymaster")} — {t("targetHidden")}: {state.target}</p>}
-    {state.phase === "guess" && <p style={{ color: "var(--gray)", marginBottom: 8 }}>{t("team")} — {t("clueLabel")}: {state.clue}</p>}
-    <div style={{ position: "relative", margin: "16px 0", height: 60 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "var(--gray)" }}><span>{state.left}</span><span>{state.right}</span></div>
-      <div style={{ position: "relative", height: 8, background: "#333", borderRadius: 4, marginTop: 8 }}>
-        <div style={{ position: "absolute", left: `${((state.clue - 1) / 9) * 100}%`, top: -6, width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "10px solid var(--lime)" }} />
-        {state.phase === "reveal" && state.guess !== null && <div style={{ position: "absolute", left: `${((state.guess - 1) / 9) * 100}%`, top: -6, width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "10px solid var(--red)" }} />}
-      </div>
-    </div>
-    {state.phase !== "reveal" && <div>
-      <input type="range" min={1} max={10} value={val} onChange={(e) => setVal(Number(e.target.value))} style={{ width: "100%" }} />
-      <p style={{ textAlign: "center", fontSize: 32, fontWeight: 700 }}>{val}</p>
-      <button className="demo-action demo-action--lime" onClick={() => sendAction(state.phase === "clue" ? "clue" : "guess", { value: val })} type="button">{state.phase === "clue" ? t("sendClue") : t("lockGuess")}</button>
-    </div>}
-    {state.phase === "reveal" && <div style={{ textAlign: "center", marginTop: 8 }}>
-      <p style={{ fontSize: 24, fontWeight: 700, color: pts >= 2 ? "var(--lime)" : pts === 1 ? "#facc15" : "var(--red)" }}>{dist === 0 ? "🎯 " : ""}{pts} {t("pts")}</p>
-      <p style={{ color: "var(--gray)" }}>{t("target")}: {state.target}</p>
-      {isHost && <><button className="demo-action demo-action--lime" onClick={next} type="button" style={{ marginTop: 8 }}>{t("next")}</button><button className="demo-action demo-action--white" onClick={finish} type="button" style={{ marginTop: 8 }}>{t("finish")}</button></>}
-    </div>}
+  return <div className="party-game-board game-board-enter spectrum-board">
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/6</span><span className="multiplayer-badge">LIVE · {guesses}</span></div>
+    <h3>{copy.title}</h3><div className="spectrum-labels"><b>{left}</b><b>{right}</b></div>
+    <div className="spectrum-track">{isHost && state.phase === "clue" && state.target > 0 && <span className="spectrum-target" style={{ left: marker(state.target) }} />}{state.phase === "reveal" && <><span className="spectrum-target" style={{ left: marker(state.target) }} /><span className="spectrum-guess" style={{ left: marker(state.average ?? 5) }} /></>}</div>
+    {isHost && state.phase === "clue" && <div className="spectrum-form"><p><b>{copy.target}: {state.target}</b><br />{copy.clueHint}</p><input className="bs-input" maxLength={100} onChange={(event) => setClue(event.target.value)} placeholder={copy.cluePlaceholder} value={clue} /><button className="demo-action demo-action--lime" disabled={!clue.trim()} onClick={() => sendAction("clue", { text: clue.trim() })} type="button">{copy.send}</button></div>}
+    {!isHost && state.phase === "clue" && <p className="controller-answered">{copy.waiting}</p>}
+    {state.phase === "guess" && <div className="spectrum-form"><p><b>“{state.clue}”</b><br />{copy.guessHint}</p>{!isHost && <><input aria-label={copy.guessHint} max={10} min={1} onChange={(event) => setGuess(Number(event.target.value))} type="range" value={guess} /><strong className="spectrum-value">{guess}</strong><button className="demo-action demo-action--lime" disabled={submitted} onClick={() => { setSubmitted(true); sendAction("guess", { value: guess }); }} type="button">{submitted ? copy.accepted : copy.lock}</button></>}{isHost && guesses > 0 && <button className="demo-action demo-action--lime" onClick={() => sendAction("reveal")} type="button">{copy.reveal}</button>}</div>}
+    {state.phase === "reveal" && <div className="trivia-result"><p>{copy.average}: <b>{state.average?.toFixed(1)}</b> · {state.roundScore} {copy.points}</p><p>{copy.total}: <b>{state.teamScore}</b></p>{isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 5 ? copy.finish : copy.next}</button>}</div>}
   </div>;
 }
-
-const EN: Record<string, string> = { wavelength: "Wavelength", spymaster: "Spymaster", team: "Team", targetHidden: "Target (hidden)", clueLabel: "Clue position", sendClue: "Send clue", lockGuess: "Lock guess", pts: "pts", target: "Target", next: "Next", finish: "Finish" };
-const RU: Record<string, string> = { wavelength: "Волновая Длина", spymaster: "Шпион", team: "Команда", targetHidden: "Цель (скрыта)", clueLabel: "Позиция подсказки", sendClue: "Отправить", lockGuess: "Зафиксировать", pts: "очк", target: "Цель", next: "Далее", finish: "Завершить" };

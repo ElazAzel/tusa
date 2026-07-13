@@ -39,7 +39,7 @@ const COMMANDS: Record<string, Record<string, z.ZodType>> = {
   trivia: { answer: index, reveal: empty, next: empty },
   twoTruths: { vote: z.object({ index: z.number().int().min(0).max(2) }).strict(), reveal: empty, next: empty },
   uno: { draw: empty, play: z.object({ cardId: z.string().min(1).max(80), color: z.enum(["red", "yellow", "green", "blue"]) }).strict() },
-  wavelength: { clue: z.object({ value: z.number().int().min(1).max(10) }).strict(), guess: z.object({ value: z.number().int().min(1).max(10) }).strict() },
+  wavelength: { clue: text("text", 100), guess: z.object({ value: z.number().int().min(1).max(10) }).strict(), reveal: empty, next: empty },
   werewolf: {
     join: z.object({ playerId: z.string().min(1).max(128) }).strict(),
     nightAction: z.object({ tp: z.enum(["mafia", "doctor", "seer", "villager"]), tg: z.string().min(1).max(128) }).strict(),
