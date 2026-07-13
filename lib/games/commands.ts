@@ -18,7 +18,7 @@ const COMMANDS: Record<string, Record<string, z.ZodType>> = {
     giveClue: z.object({ wd: z.string().trim().min(1).max(40), nm: z.number().int().min(1).max(9) }).strict(),
     pickWord: z.object({ idx: z.number().int().min(0).max(24) }).strict(),
   },
-  crocodil: { correct: empty, pass: empty, setActive: empty },
+  crocodil: { correct: empty, pass: empty, finalize: empty, next: empty },
   fibbage: { answer: text("text", 100), openVote: empty, vote: target, reveal: empty, next: empty },
   gartic: {
     prompt: text("text", 180), guess: text("text", 180), drawingDone: empty,
