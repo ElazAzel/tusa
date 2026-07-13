@@ -16,16 +16,13 @@ test("service worker never intercepts the web manifest", async ({ browser }) => 
     if ("serviceWorker" in navigator) await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
   });
   await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length), { timeout: 10_000 }).toBeGreaterThan(0);
-  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.reload({ waitUntil: "networkidle" });
 
-  const manifest = await page.evaluate(async () => {
-    const response = await fetch("/manifest.webmanifest", { cache: "no-store" });
-    return { status: response.status, contentType: response.headers.get("content-type"), body: await response.text() };
-  });
-
-  expect(manifest.status).toBe(200);
-  expect(manifest.contentType).toContain("application/manifest+json");
-  expect(JSON.parse(manifest.body).name).toContain("TUSA.game");
+  const response = await page.request.get("/manifest.webmanifest");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toContain("application/manifest+json");
+  const body = await response.json();
+  expect(body.name).toContain("TUSA.game");
   expect(hydrationErrors).toEqual([]);
   await context.close();
 });
