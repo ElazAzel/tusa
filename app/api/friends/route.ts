@@ -4,29 +4,32 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getFriends, getFriendRequests, sendFriendRequest, respondToFriendRequest, removeFriend, resolveHandleToUserId, grantEngagementReward } from "@/lib/parties";
 
 export async function GET(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:friends`, 60, 60000);
-  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
-  const url = new URL(request.url);
-  const scope = url.searchParams.get("scope") || "friends";
-  if (scope === "requests") {
-    const requests = await getFriendRequests(userId);
-    return NextResponse.json({ requests });
-  }
-  const friends = await getFriends(userId);
-  return NextResponse.json({ friends });
+  try {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const rl = rateLimit(`api:${ip}:friends`, 60, 60000);
+    if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
+    const url = new URL(request.url);
+    const scope = url.searchParams.get("scope") || "friends";
+    if (scope === "requests") {
+      const requests = await getFriendRequests(userId);
+      return NextResponse.json({ requests });
+    }
+    const friends = await getFriends(userId);
+    return NextResponse.json({ friends });
+  } catch { return NextResponse.json({ error: "Friends error" }, { status: 500 }); }
 }
 
 export async function POST(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:friends`, 20, 60000);
-  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
-  const body = await request.json().catch(() => ({}));
-  if (body.action === "request") {
+  try {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const rl = rateLimit(`api:${ip}:friends`, 20, 60000);
+    if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
+    const body = await request.json().catch(() => ({}));
+    if (body.action === "request") {
     const targetId = body.targetId;
     if (!targetId) return NextResponse.json({ error: "targetId required" }, { status: 400 });
     try {
@@ -47,16 +50,19 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   }
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+  } catch { return NextResponse.json({ error: "Friends error" }, { status: 500 }); }
 }
 
 export async function DELETE(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:friends`, 20, 60000);
-  if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
-  const body = await request.json().catch(() => ({}));
-  if (!body.friendId) return NextResponse.json({ error: "friendId required" }, { status: 400 });
-  await removeFriend(userId, body.friendId);
-  return NextResponse.json({ deleted: true });
+  try {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const rl = rateLimit(`api:${ip}:friends`, 20, 60000);
+    if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
+    const body = await request.json().catch(() => ({}));
+    if (!body.friendId) return NextResponse.json({ error: "friendId required" }, { status: 400 });
+    await removeFriend(userId, body.friendId);
+    return NextResponse.json({ deleted: true });
+  } catch { return NextResponse.json({ error: "Friends error" }, { status: 500 }); }
 }

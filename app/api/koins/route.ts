@@ -6,22 +6,24 @@ import { publish } from "@/lib/live";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:koins`, 60, 60000);
-  if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
-  const { searchParams } = new URL(request.url);
-  const partyId = searchParams.get("partyId");
-  const action = searchParams.get("action") || "bets";
-  if (action === "balance") {
-    const balance = await getKoinsBalance(userId);
-    const transactions = await getKoinsTransactions(userId);
-    return Response.json({ balance, transactions });
-  }
-  if (!partyId) return Response.json({ error: "partyId required" }, { status: 400 });
-  const bets = await getBets(partyId);
-  return Response.json({ bets });
+  try {
+    const { userId } = await auth();
+    if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const rl = rateLimit(`api:${ip}:koins`, 60, 60000);
+    if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
+    const { searchParams } = new URL(request.url);
+    const partyId = searchParams.get("partyId");
+    const action = searchParams.get("action") || "bets";
+    if (action === "balance") {
+      const balance = await getKoinsBalance(userId);
+      const transactions = await getKoinsTransactions(userId);
+      return Response.json({ balance, transactions });
+    }
+    if (!partyId) return Response.json({ error: "partyId required" }, { status: 400 });
+    const bets = await getBets(partyId);
+    return Response.json({ bets });
+  } catch { return Response.json({ error: "Koins error" }, { status: 500 }); }
 }
 
 export async function POST(request: Request) {
