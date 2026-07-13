@@ -219,6 +219,10 @@ export function ensurePartyV2() {
   await sql`CREATE TABLE IF NOT EXISTS cosmetics_catalogue (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, type TEXT NOT NULL, slug TEXT NOT NULL, name_ru TEXT NOT NULL, name_en TEXT NOT NULL, value TEXT NOT NULL, image_url TEXT NOT NULL DEFAULT '', sort_order INTEGER NOT NULL DEFAULT 0, active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ DEFAULT now(), UNIQUE(type, slug))`;
   try { await seedCosmetics(sql); } catch { /* already seeded */ }
   try { await seedQuests(sql); } catch { /* already seeded */ }
+  await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
+  await sql`DO $$ BEGIN ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_mutation_unique UNIQUE (party_id, client_mutation_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$`;
+  await sql`ALTER TABLE game_scores ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
+  await sql`DO $$ BEGIN ALTER TABLE game_scores ADD CONSTRAINT game_scores_mutation_unique UNIQUE (session_id, client_mutation_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$`;
   })().catch((error) => {
     schemaV2Promise = null;
     throw error;
