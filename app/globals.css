@@ -3935,7 +3935,8 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .cosmetics-item.equipped { border-color: var(--lime); background: #f0ffe0; box-shadow: 0 0 0 1px var(--lime); }
 .cosmetics-item.locked { opacity: .55; filter: grayscale(.4); }
 .cosmetics-item.locked:hover { opacity: .8; filter: grayscale(.1); }
-.cosmetics-item-img { width: 48px; height: 48px; object-fit: contain; pointer-events: none; }
+.cosmetics-item-img { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.cosmetics-item-img svg { width: 100%; height: 100%; display: block; }
 .cosmetics-item-name { font-size: 10px; font-weight: 800; text-align: center; line-height: 1.2; color: var(--dark); }
 .cosmetics-item-status { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; }
 .cosmetics-anim-indicator { position: absolute; top: 4px; left: 4px; font-size: 12px; color: var(--pink); }

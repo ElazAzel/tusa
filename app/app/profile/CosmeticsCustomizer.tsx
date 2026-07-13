@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import type { CosmeticsItem, ProfileCosmetics } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { soundTap, soundSuccess } from "@/lib/audio";
+import InlineSvg from "@/app/components/InlineSvg";
 
 const TYPE_TO_FIELD: Record<string, keyof ProfileCosmetics> = {
   cover: "cover",
@@ -158,11 +159,9 @@ export default function CosmeticsCustomizer({
                     className={`cosmetics-item ${isEquipped ? "equipped" : ""} ${isLocked ? "locked" : ""}`}
                     onClick={() => handleSelect(item)}
                   >
-                    <img
-                      src={item.imageUrl}
-                      alt={locale === "ru" ? item.nameRu : item.nameEn}
+                    <InlineSvg
+                      url={item.imageUrl}
                       className="cosmetics-item-img"
-                      loading="lazy"
                     />
                     <span className="cosmetics-item-name">
                       {locale === "ru" ? item.nameRu : item.nameEn}
