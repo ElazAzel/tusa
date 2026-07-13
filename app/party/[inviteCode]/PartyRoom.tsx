@@ -465,7 +465,7 @@ export default function PartyRoom({ party, actorId }: { party: Party; actorId: s
           const sticker = item.type === "sticker" ? tusaStickers.find((s) => s.id === item.stickerId) : null;
           const reactionEntries = item.reactions ? Object.entries(item.reactions) : [];
           return <div className={`party-chat-bubble ${isMe ? "is-me" : "is-other"} ${item.type === "voice" ? "is-voice" : ""} ${item.type === "sticker" ? "is-sticker" : ""}`} key={item.id || index} onDoubleClick={() => setReactionTarget(reactionTarget === item.id ? null : item.id)}>
-            {!isMe && <span className="chat-name">{item.displayName}</span>}
+            {!isMe && <span className="chat-name" style={item.nameColor && item.nameColor !== "#000000" ? { color: item.nameColor } : undefined}>{item.displayName}</span>}
             {item.type === "sticker" && sticker ? (
               <span className="chat-sticker" dangerouslySetInnerHTML={{ __html: sticker.svg }} />
             ) : item.type === "voice" && item.voiceUrl ? (

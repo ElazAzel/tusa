@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<style>
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 4px #c9ff05)}50%{filter:drop-shadow(0 0 12px #e91e63)}}
+@keyframes shift{0%{fill:#c9ff05}25%{fill:#ff007f}50%{fill:#2196f3}75%{fill:#ff9800}100%{fill:#c9ff05}}
+@keyframes slide{0%{transform:translateX(-20px);opacity:0}50%{opacity:1}100%{transform:translateX(20px);opacity:0}}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+</style>
+</defs>
+<rect width="120" height="120" rx="14" fill="#1a1a2e"/>
+<rect x="10" y="15" width="5.485591866105917" height="5.485591866105917" rx="1" fill="#c9ff05" style="animation:slide 1.5s ease-in-out infinite;animation-delay:0s"/>
+<rect x="10" y="35" width="4.365249294655801" height="4.365249294655801" rx="1" fill="#ff007f" style="animation:slide 1.7s ease-in-out infinite;animation-delay:0.08s"/>
+<rect x="10" y="55" width="5.250418350954984" height="5.250418350954984" rx="1" fill="#2196f3" style="animation:slide 1.9s ease-in-out infinite;animation-delay:0.16s"/>
+<rect x="45" y="15" width="4.093490367036585" height="4.093490367036585" rx="1" fill="#ff9800" style="animation:slide 2.1s ease-in-out infinite;animation-delay:0.24s"/>
+<rect x="45" y="35" width="4.605390882612205" height="4.605390882612205" rx="1" fill="#e91e63" style="animation:slide 2.3s ease-in-out infinite;animation-delay:0.32s"/>
+<rect x="45" y="55" width="3.198850721098538" height="3.198850721098538" rx="1" fill="#c9ff05" style="animation:slide 2.5s ease-in-out infinite;animation-delay:0.4s"/>
+<rect x="80" y="15" width="3.307654607516519" height="3.307654607516519" rx="1" fill="#ff007f" style="animation:slide 2.7s ease-in-out infinite;animation-delay:0.48s"/>
+<rect x="80" y="35" width="4.896329116688317" height="4.896329116688317" rx="1" fill="#2196f3" style="animation:slide 2.9000000000000004s ease-in-out infinite;animation-delay:0.56s"/>
+<rect x="80" y="55" width="6.86194258514878" height="6.86194258514878" rx="1" fill="#ff9800" style="animation:slide 3.1s ease-in-out infinite;animation-delay:0.64s"/>
+<rect x="115" y="15" width="3.1983373216839355" height="3.1983373216839355" rx="1" fill="#e91e63" style="animation:slide 3.3s ease-in-out infinite;animation-delay:0.72s"/>
+<rect x="115" y="35" width="3.566883027292883" height="3.566883027292883" rx="1" fill="#c9ff05" style="animation:slide 3.5s ease-in-out infinite;animation-delay:0.8s"/>
+<rect x="115" y="55" width="4.673041946991654" height="4.673041946991654" rx="1" fill="#ff007f" style="animation:slide 3.7s ease-in-out infinite;animation-delay:0.88s"/>
+<text x="60" y="80" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="10" font-weight="900">Confetti</text>
+</svg>

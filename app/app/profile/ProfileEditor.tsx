@@ -105,7 +105,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
             </div>
             <div>
               <span>{t("profileHero")}</span>
-              <h2>{profile.displayName}</h2>
+              <h2 style={profile.cosmetics.nameColor !== "#000000" ? { color: profile.cosmetics.nameColor } : undefined}>{profile.cosmetics.badge !== "newcomer" && <span className="material-symbols-rounded" style={{ fontSize: 20, color: "var(--lime)", verticalAlign: "middle", marginRight: 4 }}>verified</span>}{profile.displayName}</h2>
               <p>{profile.bio}</p>
               <div className="profile-meta">
                 <b><Icon name="location_on" /> {profile.city || "\u2014"}</b>
@@ -251,24 +251,24 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
 
               <fieldset className="cosmetic-controls">
                 <legend>{t("profileStyle")}</legend>
-                <fieldset className="brand-choice"><legend>{t("profileCover")}</legend>
+                    <fieldset className="brand-choice"><legend>{t("profileCover")}</legend>
                     {["lime", "beta", "midnight"].map((opt) => (
-                      <label key={opt}><input type="radio" name="cosmetics.cover" value={opt} defaultChecked={profile.cosmetics.cover === opt} disabled={opt !== "lime" && !unlocked.includes("profile_cover")} /><span>{t(opt === "lime" ? "profileLime" : opt === "beta" ? "profileBeta" : "profileMidnight")}</span></label>
+                      <label key={opt}><input type="radio" name="cover" value={opt} defaultChecked={profile.cosmetics.cover === opt} disabled={opt !== "lime" && !unlocked.includes("profile_cover")} /><span>{t(opt === "lime" ? "profileLime" : opt === "beta" ? "profileBeta" : "profileMidnight")}</span></label>
                     ))}
                 </fieldset>
                 <fieldset className="brand-choice"><legend>{t("profileFrame")}</legend>
                     {["none", "lime", "pink", "blue", "neon"].map((opt) => (
-                      <label key={opt}><input type="radio" name="cosmetics.avatarFrame" value={opt} defaultChecked={profile.cosmetics.avatarFrame === opt} disabled={opt !== "none" && opt !== "lime" && opt !== "pink" && opt !== "blue" && !unlocked.includes("avatar_frame")} /><span>{t(opt === "none" ? "profileNoFrame" : opt === "neon" ? "profileNeon" : opt === "lime" ? "profileFrameLime" : opt === "pink" ? "profileFramePink" : "profileFrameBlue")}</span></label>
+                      <label key={opt}><input type="radio" name="avatarFrame" value={opt} defaultChecked={profile.cosmetics.avatarFrame === opt} disabled={opt !== "none" && opt !== "lime" && opt !== "pink" && opt !== "blue" && !unlocked.includes("avatar_frame")} /><span>{t(opt === "none" ? "profileNoFrame" : opt === "neon" ? "profileNeon" : opt === "lime" ? "profileFrameLime" : opt === "pink" ? "profileFramePink" : "profileFrameBlue")}</span></label>
                     ))}
                 </fieldset>
                 <fieldset className="brand-choice"><legend>{t("profileEffect")}</legend>
                     {["none", "sparkle", "glow"].map((opt) => (
-                      <label key={opt}><input type="radio" name="cosmetics.chatEffect" value={opt} defaultChecked={profile.cosmetics.chatEffect === opt} disabled={opt !== "none" && !unlocked.includes("chat_effect")} /><span>{t(opt === "none" ? "profileNoEffect" : opt === "sparkle" ? "profileSparkle" : "profileGlow")}</span></label>
+                      <label key={opt}><input type="radio" name="chatEffect" value={opt} defaultChecked={profile.cosmetics.chatEffect === opt} disabled={opt !== "none" && !unlocked.includes("chat_effect")} /><span>{t(opt === "none" ? "profileNoEffect" : opt === "sparkle" ? "profileSparkle" : "profileGlow")}</span></label>
                     ))}
                 </fieldset>
                 <fieldset className="brand-choice brand-choice--colors"><legend>{t("profileColor")}</legend>
                     {["#000000", "#c9ff05", "#ff1791"].map((opt) => (
-                      <label key={opt}><input type="radio" name="cosmetics.nameColor" value={opt} defaultChecked={profile.cosmetics.nameColor === opt} disabled={opt !== "#000000" && !unlocked.includes("name_color")} /><span><i style={{ background: opt }} />{opt === "#000000" ? t("profileBlack") : opt === "#c9ff05" ? "Лайм" : "Розовый"}</span></label>
+                      <label key={opt}><input type="radio" name="nameColor" value={opt} defaultChecked={profile.cosmetics.nameColor === opt} disabled={opt !== "#000000" && !unlocked.includes("name_color")} /><span><i style={{ background: opt }} />{opt === "#000000" ? t("profileBlack") : opt === "#c9ff05" ? "Лайм" : "Розовый"}</span></label>
                     ))}
                 </fieldset>
               </fieldset>

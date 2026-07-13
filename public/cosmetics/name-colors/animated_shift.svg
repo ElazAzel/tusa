@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<style>
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 4px #2D00F7)}50%{filter:drop-shadow(0 0 12px #ff007f)}}
+@keyframes shift{0%{fill:#2D00F7}25%{fill:#b829ff}50%{fill:#ff007f}75%{fill:#2D00F7}100%{fill:#2D00F7}}
+@keyframes slide{0%{transform:translateX(-20px);opacity:0}50%{opacity:1}100%{transform:translateX(20px);opacity:0}}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+</style>
+</defs>
+<rect width="120" height="120" rx="14" style="animation:shift 3s ease-in-out infinite"/>
+<text x="60" y="65" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="11" font-weight="900" style="animation:shift 3s ease-in-out infinite">Shift</text>
+</svg>

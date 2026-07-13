@@ -92,6 +92,7 @@ export default function AdminDashboard({ access, initialApplications, initialSta
       <Link href="/" className="admin-brand">TUSA<span>.game</span></Link>
       <div className="admin-nav">
         {can("promos_read") && <Link href="/admin/promos" className="admin-text-button">{t("adminPromoNav")}</Link>}
+        {can("promos_read") && <Link href="/admin/cosmetics" className="admin-text-button">{locale === "ru" ? "Косметика" : "Cosmetics"}</Link>}
         {can("waitlist_read") && <button className="admin-text-button" onClick={() => setTab("waitlist")}>{t("adminWaitlist")}</button>}
         {can("users_read") && <button className="admin-text-button" onClick={() => setTab("users")}>{t("adminTabUsers")}</button>}
         {can("parties_read") && <button className="admin-text-button" onClick={() => setTab("parties")}>{t("adminTabParties")}</button>}

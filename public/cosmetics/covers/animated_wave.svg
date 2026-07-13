@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<style>
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 4px #2196f3)}50%{filter:drop-shadow(0 0 12px #006064)}}
+@keyframes shift{0%{fill:#2196f3}25%{fill:#00bcd4}50%{fill:#006064}75%{fill:#2196f3}100%{fill:#2196f3}}
+@keyframes slide{0%{transform:translateX(-20px);opacity:0}50%{opacity:1}100%{transform:translateX(20px);opacity:0}}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+</style>
+</defs>
+<rect width="120" height="120" rx="14" fill="#006064"/>
+<path d="M0 50 Q30 35 60 50 Q90 65 120 50" fill="none" stroke="#2196f3" stroke-width="2" opacity="0.5" style="animation:slide 2s ease-in-out infinite;animation-delay:0s"/>
+<path d="M0 55 Q30 37 60 55 Q90 73 120 55" fill="none" stroke="#00bcd4" stroke-width="2" opacity="0.42" style="animation:slide 2.3s ease-in-out infinite;animation-delay:0.2s"/>
+<path d="M0 60 Q30 39 60 60 Q90 81 120 60" fill="none" stroke="#2196f3" stroke-width="2" opacity="0.33999999999999997" style="animation:slide 2.6s ease-in-out infinite;animation-delay:0.4s"/>
+<path d="M0 65 Q30 41 60 65 Q90 89 120 65" fill="none" stroke="#00bcd4" stroke-width="2" opacity="0.26" style="animation:slide 2.9s ease-in-out infinite;animation-delay:0.6000000000000001s"/>
+<path d="M0 70 Q30 43 60 70 Q90 97 120 70" fill="none" stroke="#2196f3" stroke-width="2" opacity="0.18" style="animation:slide 3.2s ease-in-out infinite;animation-delay:0.8s"/>
+<text x="60" y="76" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="10" font-weight="900">Wave</text>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<style>
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 4px #4a148c)}50%{filter:drop-shadow(0 0 12px #c9ff05)}}
+@keyframes shift{0%{fill:#4a148c}25%{fill:#6a1b9a}50%{fill:#c9ff05}75%{fill:#4a148c}100%{fill:#4a148c}}
+@keyframes slide{0%{transform:translateX(-20px);opacity:0}50%{opacity:1}100%{transform:translateX(20px);opacity:0}}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+</style>
+</defs>
+<rect width="120" height="120" rx="14" fill="#0a0a2e"/>
+<ellipse cx="30" cy="50" rx="30" ry="12" fill="#4a148c" opacity="0.4" style="animation:slide 3s ease-in-out infinite;animation-delay:0s"/>
+<ellipse cx="55" cy="50" rx="30" ry="12" fill="#6a1b9a" opacity="0.4" style="animation:slide 4s ease-in-out infinite;animation-delay:0.5s"/>
+<ellipse cx="80" cy="50" rx="30" ry="12" fill="#c9ff05" opacity="0.4" style="animation:slide 5s ease-in-out infinite;animation-delay:1s"/>
+<text x="60" y="76" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="10" font-weight="900">Aurora</text>
+</svg>

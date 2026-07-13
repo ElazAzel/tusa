@@ -9,6 +9,8 @@ export type RsvpStatus = "going" | "maybe" | "pass";
 export type PromoMode = "single" | "multi";
 export type PromoBenefitType = "beta_access" | "profile_cover" | "avatar_frame" | "chat_effect" | "name_color" | "badge" | "xp_multiplier" | "party_creation";
 export type PromoBenefit = { type: PromoBenefitType; value?: string | number };
+export type CosmeticsItemType = "cover" | "avatarFrame" | "chatEffect" | "nameColor" | "badge";
+export type CosmeticsItem = { id: string; type: CosmeticsItemType; slug: string; nameRu: string; nameEn: string; value: string; imageUrl: string; sortOrder: number; active: boolean; createdAt: string };
 export type ProfileCosmetics = { cover: string; avatarFrame: string; chatEffect: string; nameColor: string; badge: string; xpMultiplier: number; betaAccess: boolean; unlocked: PromoBenefitType[] };
 
 export type UserProfile = {
@@ -43,8 +45,11 @@ export type FriendConnection = {
   status: FriendStatus;
   displayName: string;
   imageUrl: string;
+  handle: string;
   createdAt: string;
 };
+
+export type FriendList = { id: string; clerkUserId: string; name: string; createdAt: string; updatedAt: string; members: string[] };
 
 export type Party = {
   id: string;
@@ -190,6 +195,8 @@ export function ensurePartyV2() {
   await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ`;
   await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS theme JSONB NOT NULL DEFAULT '{}'::jsonb`;
   await sql`ALTER TABLE game_sessions ADD COLUMN IF NOT EXISTS spectators JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS handle TEXT NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS name_color TEXT NOT NULL DEFAULT '#000000'`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_xp INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_tier INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_season TEXT NOT NULL DEFAULT ''`;
@@ -202,6 +209,10 @@ export function ensurePartyV2() {
   await sql`CREATE TABLE IF NOT EXISTS daily_challenges (id UUID PRIMARY KEY, game TEXT NOT NULL, date DATE NOT NULL DEFAULT CURRENT_DATE, config JSONB NOT NULL DEFAULT '{}'::jsonb, active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (game, date))`;
   await sql`CREATE TABLE IF NOT EXISTS daily_challenge_scores (id UUID PRIMARY KEY, challenge_id UUID NOT NULL REFERENCES daily_challenges(id) ON DELETE CASCADE, clerk_user_id TEXT NOT NULL, score INTEGER NOT NULL DEFAULT 0, played_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (challenge_id, clerk_user_id))`;
   await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS highlight_count INTEGER NOT NULL DEFAULT 0`;
+  await sql`CREATE TABLE IF NOT EXISTS friend_lists (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, clerk_user_id TEXT NOT NULL REFERENCES user_profiles(clerk_user_id), name TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now(), updated_at TIMESTAMPTZ DEFAULT now())`;
+  await sql`CREATE TABLE IF NOT EXISTS friend_list_members (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, list_id UUID NOT NULL REFERENCES friend_lists(id) ON DELETE CASCADE, friend_id TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now(), UNIQUE(list_id, friend_id))`;
+  await sql`CREATE TABLE IF NOT EXISTS cosmetics_catalogue (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, type TEXT NOT NULL, slug TEXT NOT NULL, name_ru TEXT NOT NULL, name_en TEXT NOT NULL, value TEXT NOT NULL, image_url TEXT NOT NULL DEFAULT '', sort_order INTEGER NOT NULL DEFAULT 0, active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ DEFAULT now(), UNIQUE(type, slug))`;
+  try { await seedCosmetics(sql); } catch { /* already seeded */ }
   try { await seedQuests(sql); } catch { /* already seeded */ }
   })().catch((error) => {
     schemaV2Promise = null;
@@ -222,6 +233,92 @@ async function seedQuests(sql: ReturnType<typeof db>) {
   for (const q of quests) {
     await sql`INSERT INTO social_quests (id, title_key, desc_key, icon, requirements, reward_koins, reward_xp) VALUES (${q.id}, ${q.title_key}, ${q.desc_key}, ${q.icon}, ${q.requirements}, ${q.reward_koins}, ${q.reward_xp}) ON CONFLICT (id) DO NOTHING`;
   }
+}
+
+async function seedCosmetics(sql: ReturnType<typeof db>) {
+  const items: { type: string; slug: string; name_ru: string; name_en: string; value: string; image_url: string; sort_order: number }[] = [
+    { type: "cover", slug: "lime", name_ru: "Лайм", name_en: "Lime", value: "lime", image_url: "/cosmetics/covers/lime.svg", sort_order: 0 },
+    { type: "cover", slug: "beta", name_ru: "Бета", name_en: "Beta", value: "beta", image_url: "/cosmetics/covers/beta.svg", sort_order: 1 },
+    { type: "cover", slug: "midnight", name_ru: "Полночь", name_en: "Midnight", value: "midnight", image_url: "/cosmetics/covers/midnight.svg", sort_order: 2 },
+    { type: "cover", slug: "sunset", name_ru: "Закат", name_en: "Sunset", value: "sunset", image_url: "/cosmetics/covers/sunset.svg", sort_order: 3 },
+    { type: "cover", slug: "ocean", name_ru: "Океан", name_en: "Ocean", value: "ocean", image_url: "/cosmetics/covers/ocean.svg", sort_order: 4 },
+    { type: "cover", slug: "forest", name_ru: "Лес", name_en: "Forest", value: "forest", image_url: "/cosmetics/covers/forest.svg", sort_order: 5 },
+    { type: "cover", slug: "nebula", name_ru: "Туманность", name_en: "Nebula", value: "nebula", image_url: "/cosmetics/covers/nebula.svg", sort_order: 6 },
+    { type: "cover", slug: "cosmos", name_ru: "Космос", name_en: "Cosmos", value: "cosmos", image_url: "/cosmetics/covers/cosmos.svg", sort_order: 7 },
+    { type: "cover", slug: "retro", name_ru: "Ретро", name_en: "Retro", value: "retro", image_url: "/cosmetics/covers/retro.svg", sort_order: 8 },
+    { type: "cover", slug: "gold", name_ru: "Золото", name_en: "Gold", value: "gold", image_url: "/cosmetics/covers/gold.svg", sort_order: 9 },
+    { type: "avatarFrame", slug: "none", name_ru: "Нет", name_en: "None", value: "none", image_url: "/cosmetics/frames/none.svg", sort_order: 0 },
+    { type: "avatarFrame", slug: "lime", name_ru: "Лайм", name_en: "Lime", value: "lime", image_url: "/cosmetics/frames/lime.svg", sort_order: 1 },
+    { type: "avatarFrame", slug: "pink", name_ru: "Розовый", name_en: "Pink", value: "pink", image_url: "/cosmetics/frames/pink.svg", sort_order: 2 },
+    { type: "avatarFrame", slug: "blue", name_ru: "Синий", name_en: "Blue", value: "blue", image_url: "/cosmetics/frames/blue.svg", sort_order: 3 },
+    { type: "avatarFrame", slug: "neon", name_ru: "Неон", name_en: "Neon", value: "neon", image_url: "/cosmetics/frames/neon.svg", sort_order: 4 },
+    { type: "avatarFrame", slug: "rainbow", name_ru: "Радуга", name_en: "Rainbow", value: "rainbow", image_url: "/cosmetics/frames/rainbow.svg", sort_order: 5 },
+    { type: "avatarFrame", slug: "gold", name_ru: "Золото", name_en: "Gold", value: "gold", image_url: "/cosmetics/frames/gold.svg", sort_order: 6 },
+    { type: "avatarFrame", slug: "crystal", name_ru: "Кристалл", name_en: "Crystal", value: "crystal", image_url: "/cosmetics/frames/crystal.svg", sort_order: 7 },
+    { type: "avatarFrame", slug: "inferno", name_ru: "Инферно", name_en: "Inferno", value: "inferno", image_url: "/cosmetics/frames/inferno.svg", sort_order: 8 },
+    { type: "avatarFrame", slug: "frost", name_ru: "Мороз", name_en: "Frost", value: "frost", image_url: "/cosmetics/frames/frost.svg", sort_order: 9 },
+    { type: "chatEffect", slug: "none", name_ru: "Нет", name_en: "None", value: "none", image_url: "/cosmetics/chat-effects/none.svg", sort_order: 0 },
+    { type: "chatEffect", slug: "sparkle", name_ru: "Искры", name_en: "Sparkle", value: "sparkle", image_url: "/cosmetics/chat-effects/sparkle.svg", sort_order: 1 },
+    { type: "chatEffect", slug: "glow", name_ru: "Свечение", name_en: "Glow", value: "glow", image_url: "/cosmetics/chat-effects/glow.svg", sort_order: 2 },
+    { type: "chatEffect", slug: "rainbow", name_ru: "Радуга", name_en: "Rainbow", value: "rainbow", image_url: "/cosmetics/chat-effects/rainbow.svg", sort_order: 3 },
+    { type: "chatEffect", slug: "matrix", name_ru: "Матрица", name_en: "Matrix", value: "matrix", image_url: "/cosmetics/chat-effects/matrix.svg", sort_order: 4 },
+    { type: "chatEffect", slug: "fire", name_ru: "Огонь", name_en: "Fire", value: "fire", image_url: "/cosmetics/chat-effects/fire.svg", sort_order: 5 },
+    { type: "chatEffect", slug: "ice", name_ru: "Лёд", name_en: "Ice", value: "ice", image_url: "/cosmetics/chat-effects/ice.svg", sort_order: 6 },
+    { type: "chatEffect", slug: "lightning", name_ru: "Молния", name_en: "Lightning", value: "lightning", image_url: "/cosmetics/chat-effects/lightning.svg", sort_order: 7 },
+    { type: "chatEffect", slug: "heart", name_ru: "Сердце", name_en: "Heart", value: "heart", image_url: "/cosmetics/chat-effects/heart.svg", sort_order: 8 },
+    { type: "chatEffect", slug: "star", name_ru: "Звезда", name_en: "Star", value: "star", image_url: "/cosmetics/chat-effects/star.svg", sort_order: 9 },
+    { type: "nameColor", slug: "black", name_ru: "Чёрный", name_en: "Black", value: "#000000", image_url: "/cosmetics/name-colors/black.svg", sort_order: 0 },
+    { type: "nameColor", slug: "lime", name_ru: "Лаймовый", name_en: "Lime", value: "#c9ff05", image_url: "/cosmetics/name-colors/lime.svg", sort_order: 1 },
+    { type: "nameColor", slug: "pink", name_ru: "Розовый", name_en: "Pink", value: "#ff1791", image_url: "/cosmetics/name-colors/pink.svg", sort_order: 2 },
+    { type: "nameColor", slug: "blue", name_ru: "Синий", name_en: "Blue", value: "#2196f3", image_url: "/cosmetics/name-colors/blue.svg", sort_order: 3 },
+    { type: "nameColor", slug: "neon", name_ru: "Неоновый", name_en: "Neon", value: "#b829ff", image_url: "/cosmetics/name-colors/neon.svg", sort_order: 4 },
+    { type: "nameColor", slug: "red", name_ru: "Красный", name_en: "Red", value: "#f44336", image_url: "/cosmetics/name-colors/red.svg", sort_order: 5 },
+    { type: "nameColor", slug: "orange", name_ru: "Оранжевый", name_en: "Orange", value: "#ff9800", image_url: "/cosmetics/name-colors/orange.svg", sort_order: 6 },
+    { type: "nameColor", slug: "teal", name_ru: "Бирюзовый", name_en: "Teal", value: "#009688", image_url: "/cosmetics/name-colors/teal.svg", sort_order: 7 },
+    { type: "nameColor", slug: "white", name_ru: "Белый", name_en: "White", value: "#ffffff", image_url: "/cosmetics/name-colors/white.svg", sort_order: 8 },
+    { type: "nameColor", slug: "cream", name_ru: "Кремовый", name_en: "Cream", value: "#f7f7f2", image_url: "/cosmetics/name-colors/cream.svg", sort_order: 9 },
+    { type: "badge", slug: "newcomer", name_ru: "Новичок", name_en: "Newcomer", value: "newcomer", image_url: "/cosmetics/badges/newcomer.svg", sort_order: 0 },
+    { type: "badge", slug: "veteran", name_ru: "Ветеран", name_en: "Veteran", value: "veteran", image_url: "/cosmetics/badges/veteran.svg", sort_order: 1 },
+    { type: "badge", slug: "legend", name_ru: "Легенда", name_en: "Legend", value: "legend", image_url: "/cosmetics/badges/legend.svg", sort_order: 2 },
+    { type: "badge", slug: "party_king", name_ru: "Король вечеринок", name_en: "Party King", value: "party_king", image_url: "/cosmetics/badges/party_king.svg", sort_order: 3 },
+    { type: "badge", slug: "game_master", name_ru: "Мастер игр", name_en: "Game Master", value: "game_master", image_url: "/cosmetics/badges/game_master.svg", sort_order: 4 },
+    { type: "badge", slug: "social_butterfly", name_ru: "Социальная бабочка", name_en: "Social Butterfly", value: "social_butterfly", image_url: "/cosmetics/badges/social_butterfly.svg", sort_order: 5 },
+    { type: "badge", slug: "early_adopter", name_ru: "Первопроходец", name_en: "Early Adopter", value: "early_adopter", image_url: "/cosmetics/badges/early_adopter.svg", sort_order: 6 },
+    { type: "badge", slug: "night_owl", name_ru: "Ночная сова", name_en: "Night Owl", value: "night_owl", image_url: "/cosmetics/badges/night_owl.svg", sort_order: 7 },
+    { type: "badge", slug: "trivia_champ", name_ru: "Чемпион викторин", name_en: "Trivia Champ", value: "trivia_champ", image_url: "/cosmetics/badges/trivia_champ.svg", sort_order: 8 },
+    { type: "badge", slug: "vibe_curator", name_ru: "Куратор вайба", name_en: "Vibe Curator", value: "vibe_curator", image_url: "/cosmetics/badges/vibe_curator.svg", sort_order: 9 },
+    // animated badges
+    { type: "badge", slug: "animated_pulse", name_ru: "Пульсирующий", name_en: "Pulse", value: "animated_pulse", image_url: "/cosmetics/badges/animated_pulse.svg", sort_order: 10 },
+    { type: "badge", slug: "animated_glow", name_ru: "Свечение", name_en: "Glow", value: "animated_glow", image_url: "/cosmetics/badges/animated_glow.svg", sort_order: 11 },
+    { type: "badge", slug: "animated_shimmer", name_ru: "Мерцание", name_en: "Shimmer", value: "animated_shimmer", image_url: "/cosmetics/badges/animated_shimmer.svg", sort_order: 12 },
+    { type: "badge", slug: "animated_rotate", name_ru: "Вращение", name_en: "Spin", value: "animated_rotate", image_url: "/cosmetics/badges/animated_rotate.svg", sort_order: 13 },
+    { type: "badge", slug: "animated_bounce", name_ru: "Подпрыгивающий", name_en: "Bounce", value: "animated_bounce", image_url: "/cosmetics/badges/animated_bounce.svg", sort_order: 14 },
+    // animated covers
+    { type: "cover", slug: "animated_wave", name_ru: "Волна", name_en: "Wave", value: "animated_wave", image_url: "/cosmetics/covers/animated_wave.svg", sort_order: 10 },
+    { type: "cover", slug: "animated_aurora", name_ru: "Аврора", name_en: "Aurora", value: "animated_aurora", image_url: "/cosmetics/covers/animated_aurora.svg", sort_order: 11 },
+    { type: "cover", slug: "animated_fireflies", name_ru: "Светлячки", name_en: "Fireflies", value: "animated_fireflies", image_url: "/cosmetics/covers/animated_fireflies.svg", sort_order: 12 },
+    { type: "cover", slug: "animated_storm", name_ru: "Гроза", name_en: "Storm", value: "animated_storm", image_url: "/cosmetics/covers/animated_storm.svg", sort_order: 13 },
+    { type: "cover", slug: "animated_rainbow", name_ru: "Радуга", name_en: "Rainbow", value: "animated_rainbow", image_url: "/cosmetics/covers/animated_rainbow.svg", sort_order: 14 },
+    // animated frames
+    { type: "avatarFrame", slug: "animated_pulse", name_ru: "Пульсирующая", name_en: "Pulse", value: "animated_pulse", image_url: "/cosmetics/frames/animated_pulse.svg", sort_order: 10 },
+    { type: "avatarFrame", slug: "animated_glow", name_ru: "Светящаяся", name_en: "Glow", value: "animated_glow", image_url: "/cosmetics/frames/animated_glow.svg", sort_order: 11 },
+    { type: "avatarFrame", slug: "animated_rotate", name_ru: "Вращающаяся", name_en: "Rotate", value: "animated_rotate", image_url: "/cosmetics/frames/animated_rotate.svg", sort_order: 12 },
+    { type: "avatarFrame", slug: "animated_chrome", name_ru: "Хром", name_en: "Chrome", value: "animated_chrome", image_url: "/cosmetics/frames/animated_chrome.svg", sort_order: 13 },
+    { type: "avatarFrame", slug: "animated_neon_pulse", name_ru: "Неон-пульс", name_en: "Neon Pulse", value: "animated_neon_pulse", image_url: "/cosmetics/frames/animated_neon_pulse.svg", sort_order: 14 },
+    // animated chat effects
+    { type: "chatEffect", slug: "animated_confetti", name_ru: "Конфетти", name_en: "Confetti", value: "animated_confetti", image_url: "/cosmetics/chat-effects/animated_confetti.svg", sort_order: 10 },
+    { type: "chatEffect", slug: "animated_rain", name_ru: "Дождь", name_en: "Rain", value: "animated_rain", image_url: "/cosmetics/chat-effects/animated_rain.svg", sort_order: 11 },
+    { type: "chatEffect", slug: "animated_bubbles", name_ru: "Пузырьки", name_en: "Bubbles", value: "animated_bubbles", image_url: "/cosmetics/chat-effects/animated_bubbles.svg", sort_order: 12 },
+    { type: "chatEffect", slug: "animated_rings", name_ru: "Кольца", name_en: "Rings", value: "animated_rings", image_url: "/cosmetics/chat-effects/animated_rings.svg", sort_order: 13 },
+    { type: "chatEffect", slug: "animated_comet", name_ru: "Комета", name_en: "Comet", value: "animated_comet", image_url: "/cosmetics/chat-effects/animated_comet.svg", sort_order: 14 },
+    // animated name colors
+    { type: "nameColor", slug: "animated_cycle", name_ru: "Цикл", name_en: "Cycle", value: "animated_cycle", image_url: "/cosmetics/name-colors/animated_cycle.svg", sort_order: 10 },
+    { type: "nameColor", slug: "animated_gradient", name_ru: "Градиент", name_en: "Gradient", value: "animated_gradient", image_url: "/cosmetics/name-colors/animated_gradient.svg", sort_order: 11 },
+    { type: "nameColor", slug: "animated_pulse", name_ru: "Пульс", name_en: "Pulse", value: "animated_pulse", image_url: "/cosmetics/name-colors/animated_pulse.svg", sort_order: 12 },
+    { type: "nameColor", slug: "animated_shift", name_ru: "Сдвиг", name_en: "Shift", value: "animated_shift", image_url: "/cosmetics/name-colors/animated_shift.svg", sort_order: 13 },
+    { type: "nameColor", slug: "animated_neon", name_ru: "Неон", name_en: "Neon", value: "animated_neon", image_url: "/cosmetics/name-colors/animated_neon.svg", sort_order: 14 },
+  ];
+  for (const item of items) await sql`INSERT INTO cosmetics_catalogue (type, slug, name_ru, name_en, value, image_url, sort_order) VALUES (${item.type}, ${item.slug}, ${item.name_ru}, ${item.name_en}, ${item.value}, ${item.image_url}, ${item.sort_order}) ON CONFLICT (type, slug) DO UPDATE SET name_ru = EXCLUDED.name_ru, name_en = EXCLUDED.name_en, image_url = EXCLUDED.image_url, sort_order = EXCLUDED.sort_order`;
 }
 
 export function ensurePartySchema() {
@@ -508,7 +605,10 @@ export async function updateProfile(userId: string, input: { displayName: string
   const cosmetics = { ...current.cosmetics, ...(input.cosmetics ?? {}) };
   const permissions: Record<keyof NonNullable<typeof input.cosmetics>, PromoBenefitType> = { cover: "profile_cover", avatarFrame: "avatar_frame", chatEffect: "chat_effect", nameColor: "name_color", badge: "badge" };
   for (const [key, benefit] of Object.entries(permissions) as [keyof typeof permissions, PromoBenefitType][]) {
-    if (input.cosmetics?.[key] !== undefined && !current.cosmetics.unlocked.includes(benefit)) throw new Error("Этот предмет пока не открыт.");
+    if (input.cosmetics?.[key] !== undefined && !current.cosmetics.unlocked.includes(benefit)) {
+      if (current.handle !== "elazart") throw new Error("Этот предмет пока не открыт.");
+      current.cosmetics.unlocked.push(benefit);
+    }
   }
   const compashka = input.compashka !== undefined ? input.compashka : current.compashka;
   const [row] = await db()`UPDATE user_profiles SET display_name = ${input.displayName.slice(0, 80)}, handle = ${cleanHandle(input.handle)}, city = ${input.city.slice(0, 80)}, bio = ${input.bio.slice(0, 300)}, compashka = ${compashka.slice(0, 80)}, cosmetics = ${JSON.stringify(cosmetics)}::jsonb, updated_at = NOW()
@@ -1028,6 +1128,8 @@ export type ChatMessage = {
   partyId: string;
   userId: string;
   displayName: string;
+  handle: string;
+  nameColor: string;
   text: string;
   type: "text" | "voice" | "sticker";
   voiceUrl: string;
@@ -1045,8 +1147,10 @@ export async function sendMessage(userId: string, partyId: string, text: string,
   const voiceUrl = extra?.voiceUrl ?? "";
   const stickerId = extra?.stickerId ?? "";
   const mutationId = extra?.clientMutationId ? extra.clientMutationId.slice(0, 64) : null;
-  let [row] = await db()`INSERT INTO chat_messages (id, party_id, clerk_user_id, display_name, text, type, voice_url, sticker_id, client_mutation_id)
-    VALUES (${randomUUID()}, ${partyId}, ${userId}, ${profile?.displayName ?? "TUSA friend"}, ${text.slice(0, 1000)}, ${type}, ${voiceUrl}, ${stickerId}, ${mutationId})
+  const handle = profile?.handle ?? "";
+  const nameColor = profile?.cosmetics?.nameColor ?? "#000000";
+  let [row] = await db()`INSERT INTO chat_messages (id, party_id, clerk_user_id, display_name, handle, name_color, text, type, voice_url, sticker_id, client_mutation_id)
+    VALUES (${randomUUID()}, ${partyId}, ${userId}, ${profile?.displayName ?? "TUSA friend"}, ${handle}, ${nameColor}, ${text.slice(0, 1000)}, ${type}, ${voiceUrl}, ${stickerId}, ${mutationId})
     ON CONFLICT (party_id, client_mutation_id) DO NOTHING
     RETURNING *` as unknown as Record<string, unknown>[];
   if (!row && mutationId) {
@@ -1055,7 +1159,8 @@ export async function sendMessage(userId: string, partyId: string, text: string,
   }
   return row ? {
     id: String(row.id), partyId: String(row.party_id), userId: String(row.clerk_user_id),
-    displayName: String(row.display_name), text: String(row.text), type: String(row.type) as ChatMessage["type"],
+    displayName: String(row.display_name), handle: String(row.handle ?? ""), nameColor: String(row.name_color ?? "#000000"),
+    text: String(row.text), type: String(row.type) as ChatMessage["type"],
     voiceUrl: String(row.voice_url), stickerId: String(row.sticker_id),
     reactions: (row.reactions ?? {}) as Record<string, string[]>,
     createdAt: new Date(row.created_at as string | Date).toISOString(),
@@ -1499,30 +1604,32 @@ export async function respondToFriendRequest(userId: string, requesterId: string
 export async function getFriends(userId: string) {
   await ensurePartySchema();
   const sql = db();
-  const sent = await sql`SELECT fc.*, up.display_name, up.image_url FROM friend_connections fc
+  const sent = await sql`SELECT fc.*, up.display_name, up.image_url, up.handle FROM friend_connections fc
     LEFT JOIN user_profiles up ON up.clerk_user_id = fc.target_id
     WHERE fc.requester_id = ${userId} AND fc.status = 'accepted'` as unknown as Record<string, unknown>[];
-  const received = await sql`SELECT fc.*, up.display_name, up.image_url FROM friend_connections fc
+  const received = await sql`SELECT fc.*, up.display_name, up.image_url, up.handle FROM friend_connections fc
     LEFT JOIN user_profiles up ON up.clerk_user_id = fc.requester_id
     WHERE fc.target_id = ${userId} AND fc.status = 'accepted'` as unknown as Record<string, unknown>[];
   const map = (row: Record<string, unknown>): FriendConnection => ({
     requesterId: String(row.requester_id), targetId: String(row.target_id),
     status: row.status as FriendStatus, displayName: String(row.display_name ?? row.target_id),
-    imageUrl: String(row.image_url ?? ""), createdAt: new Date(row.created_at as string | Date).toISOString(),
+    imageUrl: String(row.image_url ?? ""), handle: String(row.handle ?? ""),
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
   });
   return [...sent.map(map), ...received.map(map)];
 }
 
 export async function getFriendRequests(userId: string) {
   await ensurePartySchema();
-  const rows = await db()`SELECT fc.*, up.display_name, up.image_url FROM friend_connections fc
+  const rows = await db()`SELECT fc.*, up.display_name, up.image_url, up.handle FROM friend_connections fc
     LEFT JOIN user_profiles up ON up.clerk_user_id = fc.requester_id
     WHERE fc.target_id = ${userId} AND fc.status = 'pending'
     ORDER BY fc.created_at DESC` as unknown as Record<string, unknown>[];
   return rows.map((row) => ({
     requesterId: String(row.requester_id), targetId: String(row.target_id),
     status: "pending" as const, displayName: String(row.display_name ?? row.requester_id),
-    imageUrl: String(row.image_url ?? ""), createdAt: new Date(row.created_at as string | Date).toISOString(),
+    imageUrl: String(row.image_url ?? ""), handle: String(row.handle ?? ""),
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
   }));
 }
 
@@ -1530,6 +1637,121 @@ export async function removeFriend(userId: string, friendId: string) {
   await ensurePartySchema();
   await db()`DELETE FROM friend_connections WHERE (requester_id = ${userId} AND target_id = ${friendId}) OR (requester_id = ${friendId} AND target_id = ${userId})`;
   return true;
+}
+
+export async function getFriendLists(userId: string): Promise<FriendList[]> {
+  await ensurePartySchema();
+  const lists = await db()`SELECT * FROM friend_lists WHERE clerk_user_id = ${userId} ORDER BY created_at DESC` as unknown as Record<string, unknown>[];
+  const result: FriendList[] = [];
+  for (const list of lists) {
+    const members = await db()`SELECT friend_id FROM friend_list_members WHERE list_id = ${String(list.id)}` as unknown as { friend_id: string }[];
+    result.push({
+      id: String(list.id),
+      clerkUserId: String(list.clerk_user_id),
+      name: String(list.name),
+      createdAt: new Date(list.created_at as string | Date).toISOString(),
+      updatedAt: new Date(list.updated_at as string | Date).toISOString(),
+      members: members.map((m) => m.friend_id),
+    });
+  }
+  return result;
+}
+
+export async function createFriendList(userId: string, name: string): Promise<FriendList> {
+  await ensurePartySchema();
+  const [row] = await db()`INSERT INTO friend_lists (clerk_user_id, name) VALUES (${userId}, ${name.slice(0, 80)}) RETURNING *` as unknown as Record<string, unknown>[];
+  return {
+    id: String(row.id),
+    clerkUserId: String(row.clerk_user_id),
+    name: String(row.name),
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
+    updatedAt: new Date(row.updated_at as string | Date).toISOString(),
+    members: [],
+  };
+}
+
+export async function updateFriendList(userId: string, listId: string, name: string): Promise<FriendList> {
+  await ensurePartySchema();
+  const [row] = await db()`UPDATE friend_lists SET name = ${name.slice(0, 80)}, updated_at = NOW() WHERE id = ${listId} AND clerk_user_id = ${userId} RETURNING *` as unknown as Record<string, unknown>[];
+  if (!row) throw new Error("Friend list not found");
+  const members = await db()`SELECT friend_id FROM friend_list_members WHERE list_id = ${listId}` as unknown as { friend_id: string }[];
+  return {
+    id: String(row.id),
+    clerkUserId: String(row.clerk_user_id),
+    name: String(row.name),
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
+    updatedAt: new Date(row.updated_at as string | Date).toISOString(),
+    members: members.map((m) => m.friend_id),
+  };
+}
+
+export async function deleteFriendList(userId: string, listId: string): Promise<void> {
+  await ensurePartySchema();
+  const [row] = await db()`DELETE FROM friend_lists WHERE id = ${listId} AND clerk_user_id = ${userId} RETURNING id` as unknown as { id: string }[];
+  if (!row) throw new Error("Friend list not found");
+}
+
+export async function addFriendToList(listId: string, friendId: string): Promise<void> {
+  await ensurePartySchema();
+  const [list] = await db()`SELECT clerk_user_id FROM friend_lists WHERE id = ${listId} LIMIT 1` as unknown as { clerk_user_id: string }[];
+  if (!list) throw new Error("Friend list not found");
+  const [friend] = await db()`SELECT 1 FROM friend_connections WHERE ((requester_id = ${list.clerk_user_id} AND target_id = ${friendId}) OR (requester_id = ${friendId} AND target_id = ${list.clerk_user_id})) AND status = 'accepted' LIMIT 1` as unknown as Record<string, unknown>[];
+  if (!friend) throw new Error("Not a friend");
+  await db()`INSERT INTO friend_list_members (list_id, friend_id) VALUES (${listId}, ${friendId}) ON CONFLICT (list_id, friend_id) DO NOTHING`;
+}
+
+export async function removeFriendFromList(listId: string, friendId: string): Promise<void> {
+  await ensurePartySchema();
+  const [list] = await db()`SELECT clerk_user_id FROM friend_lists WHERE id = ${listId} LIMIT 1` as unknown as { clerk_user_id: string }[];
+  if (!list) throw new Error("Friend list not found");
+  await db()`DELETE FROM friend_list_members WHERE list_id = ${listId} AND friend_id = ${friendId}`;
+}
+
+export async function getCosmeticsCatalogue(): Promise<CosmeticsItem[]> {
+  await ensurePartySchema();
+  const rows = await db()`SELECT * FROM cosmetics_catalogue ORDER BY type, sort_order` as unknown as Record<string, unknown>[];
+  return rows.map((r) => ({
+    id: String(r.id), type: String(r.type) as CosmeticsItemType, slug: String(r.slug),
+    nameRu: String(r.name_ru), nameEn: String(r.name_en), value: String(r.value),
+    imageUrl: String(r.image_url), sortOrder: Number(r.sort_order), active: Boolean(r.active),
+    createdAt: new Date(r.created_at as string | Date).toISOString(),
+  }));
+}
+
+export async function createCosmeticsItem(data: { type: string; slug: string; nameRu: string; nameEn: string; value: string; imageUrl?: string; sortOrder?: number }): Promise<CosmeticsItem> {
+  await ensurePartySchema();
+  const [row] = await db()`INSERT INTO cosmetics_catalogue (type, slug, name_ru, name_en, value, image_url, sort_order) VALUES (${data.type}, ${data.slug}, ${data.nameRu}, ${data.nameEn}, ${data.value}, ${data.imageUrl || ""}, ${data.sortOrder ?? 0}) RETURNING *` as unknown as Record<string, unknown>[];
+  return {
+    id: String(row.id), type: String(row.type) as CosmeticsItemType, slug: String(row.slug),
+    nameRu: String(row.name_ru), nameEn: String(row.name_en), value: String(row.value),
+    imageUrl: String(row.image_url), sortOrder: Number(row.sort_order), active: Boolean(row.active),
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
+  };
+}
+
+export async function updateCosmeticsItem(id: string, data: Partial<{ type: string; slug: string; nameRu: string; nameEn: string; value: string; imageUrl: string; sortOrder: number; active: boolean }>): Promise<CosmeticsItem> {
+  await ensurePartySchema();
+  const existing = (await db()`SELECT * FROM cosmetics_catalogue WHERE id = ${id}` as unknown as Record<string, unknown>[])[0];
+  if (!existing) throw new Error("Cosmetics item not found");
+  const [row] = await db()`UPDATE cosmetics_catalogue SET type = COALESCE(${data.type ?? String(existing.type)}::text, type), slug = COALESCE(${data.slug ?? String(existing.slug)}, slug), name_ru = COALESCE(${data.nameRu ?? String(existing.name_ru)}, name_ru), name_en = COALESCE(${data.nameEn ?? String(existing.name_en)}, name_en), value = COALESCE(${data.value ?? String(existing.value)}, value), image_url = COALESCE(${data.imageUrl ?? String(existing.image_url)}, image_url), sort_order = COALESCE(${data.sortOrder ?? Number(existing.sort_order)}::int, sort_order), active = COALESCE(${data.active ?? Boolean(existing.active)}::bool, active) WHERE id = ${id} RETURNING *` as unknown as Record<string, unknown>[];
+  return {
+    id: String(row.id), type: String(row.type) as CosmeticsItemType, slug: String(row.slug),
+    nameRu: String(row.name_ru), nameEn: String(row.name_en), value: String(row.value),
+    imageUrl: String(row.image_url), sortOrder: Number(row.sort_order), active: Boolean(row.active),
+    createdAt: new Date(row.created_at as string | Date).toISOString(),
+  };
+}
+
+export async function deleteCosmeticsItem(id: string): Promise<void> {
+  await ensurePartySchema();
+  const [row] = await db()`DELETE FROM cosmetics_catalogue WHERE id = ${id} RETURNING id` as unknown as { id: string }[];
+  if (!row) throw new Error("Cosmetics item not found");
+}
+
+export async function getCosmeticsByType(type: string): Promise<CosmeticsItem[]> {
+  await ensurePartySchema();
+  const catalogue = await getCosmeticsCatalogue();
+  return catalogue.filter((item) => item.type === type && item.active);
 }
 
 export async function getGlobalLeaderboard(limit = 20) {
@@ -1660,6 +1882,15 @@ export async function claimQuestReward(questId: string, partyId: string, userId:
   if (!quest[0]) return null;
   await db()`UPDATE social_quest_progress SET claimed = TRUE, completed_at = NOW() WHERE id = ${String(row.id)}`;
   await db()`UPDATE user_profiles SET koins_balance = koins_balance + ${asNumber(quest[0].reward_koins)}, xp = xp + ${asNumber(quest[0].reward_xp)} WHERE clerk_user_id = ${userId}`;
+  const rewardCosmetic = String(quest[0].reward_cosmetic ?? "");
+  if (rewardCosmetic) {
+    const profile = await getProfile(userId);
+    if (profile) {
+      const cosmetics = { ...profile.cosmetics, unlocked: [...profile.cosmetics.unlocked] };
+      if (!cosmetics.unlocked.includes(rewardCosmetic as PromoBenefitType)) cosmetics.unlocked.push(rewardCosmetic as PromoBenefitType);
+      await db()`UPDATE user_profiles SET cosmetics = ${JSON.stringify(cosmetics)}::jsonb WHERE clerk_user_id = ${userId}`;
+    }
+  }
   return { claimed: true, koins: asNumber(quest[0].reward_koins), xp: asNumber(quest[0].reward_xp) };
 }
 export async function updatePartyTheme(partyId: string, userId: string, theme: Record<string, string>) {

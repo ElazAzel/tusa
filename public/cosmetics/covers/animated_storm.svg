@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<style>
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 4px #0a0a1a)}50%{filter:drop-shadow(0 0 12px #ffeb3b)}}
+@keyframes shift{0%{fill:#0a0a1a}25%{fill:#2196f3}50%{fill:#ffeb3b}75%{fill:#0a0a1a}100%{fill:#0a0a1a}}
+@keyframes slide{0%{transform:translateX(-20px);opacity:0}50%{opacity:1}100%{transform:translateX(20px);opacity:0}}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+</style>
+</defs>
+<rect width="120" height="120" rx="14" fill="#0a0a1a"/>
+<line x1="10" y1="20" x2="20" y2="60" stroke="#ffeb3b" stroke-width="2" opacity="0.8" style="animation:pulse 0.5s ease-in-out infinite;animation-delay:0s"/>
+<line x1="40" y1="20" x2="45" y2="60" stroke="#ffeb3b" stroke-width="2" opacity="0.8" style="animation:pulse 0.7s ease-in-out infinite;animation-delay:0.1s"/>
+<line x1="70" y1="20" x2="70" y2="60" stroke="#ffeb3b" stroke-width="2" opacity="0.8" style="animation:pulse 0.9s ease-in-out infinite;animation-delay:0.2s"/>
+<line x1="100" y1="20" x2="95" y2="60" stroke="#ffeb3b" stroke-width="2" opacity="0.8" style="animation:pulse 1.1s ease-in-out infinite;animation-delay:0.30000000000000004s"/>
+<text x="60" y="76" text-anchor="middle" fill="##ffeb3b" font-family="sans-serif" font-size="10" font-weight="900">Storm</text>
+</svg>
