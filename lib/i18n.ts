@@ -1113,6 +1113,13 @@ export const localeCopy = {
     questDescWinRounds: "Побеждай в 5 раундах игр",
     questThankOthers: "Благодари друзей",
     questDescThankOthers: "Отправь 3 благодарности другим игрокам",
+    profileCustomize: "Кастомизировать",
+    profileCosmetics: "Косметика",
+    profilePreview: "Предпросмотр",
+    cosmeticsLockedHint: "Заблокированные предметы можно примерить, но не сохранить",
+    cosmeticsEmpty: "Нет предметов в этой категории",
+    saving: "Сохранение…",
+    cancel: "Отмена",
   },
   en: {
     language: "Language",
@@ -2225,6 +2232,13 @@ export const localeCopy = {
     questDescWinRounds: "Win 5 game rounds",
     questThankOthers: "Thank friends",
     questDescThankOthers: "Send 3 gratitude tips to other players",
+    profileCustomize: "Customize",
+    profileCosmetics: "Cosmetics",
+    profilePreview: "Preview",
+    cosmeticsLockedHint: "Locked items can be tried on but not saved",
+    cosmeticsEmpty: "No items in this category",
+    saving: "Saving…",
+    cancel: "Cancel",
   },
 } as const;
 

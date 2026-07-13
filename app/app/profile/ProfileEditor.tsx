@@ -6,6 +6,7 @@ import type { Party, PromoBenefit, PromoRedemption, UserProfile } from "@/lib/pa
 import { useLocale } from "@/app/components/LocaleProvider";
 import ProductHeader from "@/app/components/ProductHeader";
 import { soundTap, soundSuccess, soundReward } from "@/lib/audio";
+import CosmeticsCustomizer from "./CosmeticsCustomizer";
 
 const badgeFamilies = ["Организатор", "Игрок", "Хроникёр", "Казначей", "Душа компании", "Пунктуальный", "Командный", "Исследователь", "Мемолог", "Голос вечера"];
 const badgeCatalogue = Array.from({ length: 60 }, (_, index) => ({ id: `badge_${index + 1}`, name: `${badgeFamilies[index % badgeFamilies.length]} \u00b7 ${Math.floor(index / badgeFamilies.length) + 1}`, threshold: (index + 1) * 120 }));
@@ -45,6 +46,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
   const [redemptions, setRedemptions] = useState<PromoRedemption[]>([]);
   const { t, locale } = useLocale();
   const unlocked = profile.cosmetics.unlocked;
+  const [showCustomizer, setShowCustomizer] = useState(false);
 
   useEffect(() => {
     fetch("/api/user/stats").then((r) => r.json()).then((d) => { if (d.stats) setGameStats(d.stats); }).catch(() => undefined);
@@ -91,6 +93,27 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
   }
 
   const badgeGrid = [...badgeCatalogue].slice(0, showAllBadges ? Infinity : 10);
+
+  async function handleCosmeticsSave(cosmetics: Record<string, string>) {
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        displayName: profile.displayName,
+        handle: profile.handle,
+        city: profile.city,
+        bio: profile.bio,
+        ...cosmetics,
+      }),
+    });
+    if (res.ok) {
+      setShowCustomizer(false);
+      window.location.reload();
+    } else {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to save");
+    }
+  }
 
   return (
     <main className="profile-editor-page">
@@ -249,29 +272,29 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
                 <textarea name="bio" defaultValue={profile.bio} maxLength={300} />
               </label>
 
-              <fieldset className="cosmetic-controls">
+              <div className="cosmetic-controls">
                 <legend>{t("profileStyle")}</legend>
-                    <fieldset className="brand-choice"><legend>{t("profileCover")}</legend>
-                    {["lime", "beta", "midnight"].map((opt) => (
-                      <label key={opt}><input type="radio" name="cover" value={opt} defaultChecked={profile.cosmetics.cover === opt} disabled={opt !== "lime" && !unlocked.includes("profile_cover")} /><span>{t(opt === "lime" ? "profileLime" : opt === "beta" ? "profileBeta" : "profileMidnight")}</span></label>
-                    ))}
-                </fieldset>
-                <fieldset className="brand-choice"><legend>{t("profileFrame")}</legend>
-                    {["none", "lime", "pink", "blue", "neon"].map((opt) => (
-                      <label key={opt}><input type="radio" name="avatarFrame" value={opt} defaultChecked={profile.cosmetics.avatarFrame === opt} disabled={opt !== "none" && opt !== "lime" && opt !== "pink" && opt !== "blue" && !unlocked.includes("avatar_frame")} /><span>{t(opt === "none" ? "profileNoFrame" : opt === "neon" ? "profileNeon" : opt === "lime" ? "profileFrameLime" : opt === "pink" ? "profileFramePink" : "profileFrameBlue")}</span></label>
-                    ))}
-                </fieldset>
-                <fieldset className="brand-choice"><legend>{t("profileEffect")}</legend>
-                    {["none", "sparkle", "glow"].map((opt) => (
-                      <label key={opt}><input type="radio" name="chatEffect" value={opt} defaultChecked={profile.cosmetics.chatEffect === opt} disabled={opt !== "none" && !unlocked.includes("chat_effect")} /><span>{t(opt === "none" ? "profileNoEffect" : opt === "sparkle" ? "profileSparkle" : "profileGlow")}</span></label>
-                    ))}
-                </fieldset>
-                <fieldset className="brand-choice brand-choice--colors"><legend>{t("profileColor")}</legend>
-                    {["#000000", "#c9ff05", "#ff1791"].map((opt) => (
-                      <label key={opt}><input type="radio" name="nameColor" value={opt} defaultChecked={profile.cosmetics.nameColor === opt} disabled={opt !== "#000000" && !unlocked.includes("name_color")} /><span><i style={{ background: opt }} />{opt === "#000000" ? t("profileBlack") : opt === "#c9ff05" ? "Лайм" : "Розовый"}</span></label>
-                    ))}
-                </fieldset>
-              </fieldset>
+                <div className="cosmetics-quick-view">
+                  <div className="cosmetics-quick-avatars">
+                    <div className={`profile-avatar frame-${profile.cosmetics.avatarFrame !== "none" ? profile.cosmetics.avatarFrame : "lime"}`} style={{ width: 60, height: 60, fontSize: 20, borderWidth: 4 }}>
+                      {profile.displayName.slice(0, 2).toUpperCase()}
+                    </div>
+                  </div>
+                  <div className="cosmetics-quick-info">
+                    <span style={profile.cosmetics.nameColor !== "#000000" ? { color: profile.cosmetics.nameColor, fontWeight: 900 } : { fontWeight: 900 }}>
+                      {profile.cosmetics.badge !== "newcomer" && <span className="material-symbols-rounded" style={{ fontSize: 16, color: "var(--lime)", verticalAlign: "middle", marginRight: 3 }}>verified</span>}
+                      {profile.displayName}
+                    </span>
+                    <span className="cosmetics-quick-items">
+                      {profile.cosmetics.cover} · {profile.cosmetics.avatarFrame} · {profile.cosmetics.chatEffect}
+                    </span>
+                  </div>
+                </div>
+                <button type="button" className="admin-button" onClick={() => { soundTap(); setShowCustomizer(true); }}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 16, verticalAlign: "middle", marginRight: 4 }}>palette</span>
+                  {t("profileCustomize")}
+                </button>
+              </div>
 
               <button type="submit" disabled={saved} className={saved ? "saved-transition" : ""}>
                 {saved ? t("profileSaved") : t("profileSave")}
@@ -308,6 +331,14 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
           <Icon name="person" /><span>Profile</span>
         </Link>
       </nav>
+
+      {showCustomizer && (
+        <CosmeticsCustomizer
+          profileCosmetics={profile.cosmetics}
+          onSave={handleCosmeticsSave}
+          onClose={() => setShowCustomizer(false)}
+        />
+      )}
     </main>
   );
 }

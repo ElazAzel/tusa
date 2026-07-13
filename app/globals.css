@@ -3914,3 +3914,63 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .admin-tabs button.active { background: var(--lime); }
 @media (max-width: 600px) { .cosmetics-grid { grid-template-columns: 1fr; } .cosmetics-row { grid-template-columns: 1fr 50px auto auto; } }
 .promo-benefit-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; padding: 8px 10px; border: 1px solid #3a3a41; border-radius: 8px; } .promo-benefit-row label { margin: 0; color: #e6e6ed; font-size: 12px; font-weight: 700; cursor: pointer; } .promo-benefit-row label input { margin-right: 6px; accent-color: var(--lime); } .promo-benefit-item-select { width: 100%; margin-top: 2px; padding: 6px 8px; border: 1px solid #3a3a41; border-radius: 6px; background: #1a1a21; color: #e6e6ed; font-size: 12px; }
+
+.cosmetics-customizer-overlay { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgba(0,0,0,.7); padding: 16px; animation: fadeIn .15s ease-out; }
+.cosmetics-customizer { width: 100%; max-width: 780px; max-height: 90vh; display: flex; flex-direction: column; background: var(--cream); border: 3px solid var(--black); border-radius: 18px; box-shadow: 8px 8px 0 var(--black); overflow: hidden; animation: slideUp .2s ease-out; }
+.cosmetics-customizer-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 2px solid var(--black); background: var(--white); }
+.cosmetics-customizer-header h2 { margin: 0; font: 900 20px var(--font-unbounded),sans-serif; letter-spacing: -.04em; }
+.cosmetics-close-btn { width: 36px; height: 36px; display: grid; place-items: center; border: 2px solid var(--black); border-radius: 10px; background: var(--cream); cursor: pointer; }
+.cosmetics-close-btn:hover { background: var(--lime); }
+.cosmetics-customizer-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0; }
+.cosmetics-preview-panel { padding: 16px 20px; background: var(--white); border-bottom: 2px solid var(--black); }
+.cosmetics-preview-card { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border: 2px solid var(--black); border-radius: 14px; position: relative; }
+.cosmetics-preview-avatar { width: 52px; height: 52px; display: grid; place-items: center; border: 4px solid var(--black); border-radius: 16px; background: var(--white); flex-shrink: 0; font: 900 18px var(--font-unbounded),sans-serif; }
+.cosmetics-preview-info { display: flex; flex-direction: column; gap: 2px; }
+.cosmetics-preview-name { font-size: 18px; font-weight: 900; font-family: var(--font-unbounded),sans-serif; }
+.cosmetics-preview-label { font-size: 12px; color: var(--gray); font-weight: 700; }
+.cosmetics-animated-badge { position: absolute; top: 8px; right: 8px; font-size: 18px; color: var(--lime); }
+.cosmetics-main-panel { display: flex; flex-direction: column; min-height: 260px; }
+.cosmetics-tabs { display: flex; gap: 4px; padding: 12px 20px 0; overflow-x: auto; flex-shrink: 0; }
+.cosmetics-tab { position: relative; flex-shrink: 0; padding: 8px 14px; border: 2px solid var(--black); border-bottom: none; border-radius: 10px 10px 0 0; background: #e8e8e0; font-size: 12px; font-weight: 800; cursor: pointer; color: var(--black); text-transform: uppercase; letter-spacing: .03em; }
+.cosmetics-tab.active { background: var(--white); z-index: 1; }
+.cosmetics-tab:hover { background: var(--lime); }
+.cosmetics-tab-unlocked-dot { position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--lime); }
+.cosmetics-items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; padding: 12px 20px 20px; flex: 1; align-content: start; }
+.cosmetics-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px 8px; border: 2px solid var(--black); border-radius: 12px; background: var(--white); cursor: pointer; transition: transform .12s,box-shadow .12s; min-height: 100px; }
+.cosmetics-item:hover { transform: translate(-2px,-2px); box-shadow: 4px 4px 0 var(--black); }
+.cosmetics-item.equipped { border-color: var(--lime); background: #f0ffe0; box-shadow: 0 0 0 1px var(--lime); }
+.cosmetics-item.locked { opacity: .55; filter: grayscale(.4); }
+.cosmetics-item.locked:hover { opacity: .8; filter: grayscale(.1); }
+.cosmetics-item-img { width: 48px; height: 48px; object-fit: contain; pointer-events: none; }
+.cosmetics-item-name { font-size: 10px; font-weight: 800; text-align: center; line-height: 1.2; color: var(--dark); }
+.cosmetics-item-status { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; }
+.cosmetics-anim-indicator { position: absolute; top: 4px; left: 4px; font-size: 12px; color: var(--pink); }
+.cosmetics-empty { padding: 30px 20px; text-align: center; color: var(--gray); font-weight: 700; }
+.cosmetics-customizer-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 2px solid var(--black); background: var(--white); flex-shrink: 0; }
+.cosmetics-hint { margin: 0; font-size: 11px; color: var(--gray); font-weight: 600; }
+.cosmetics-footer-actions { display: flex; gap: 8px; }
+.cosmetics-footer-actions .admin-text-button { padding: 8px 16px; border: 2px solid var(--black); border-radius: 10px; background: var(--cream); font-size: 13px; font-weight: 700; cursor: pointer; color: var(--black); }
+.cosmetics-footer-actions .admin-button { padding: 8px 20px; border: 2px solid var(--black); border-radius: 10px; background: var(--lime); font-size: 13px; font-weight: 700; cursor: pointer; color: var(--black); }
+.cosmetics-footer-actions .admin-button:disabled { opacity: .5; cursor: default; }
+
+.cosmetics-quick-view { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding: 10px 14px; border: 2px solid var(--black); border-radius: 12px; background: var(--cream); }
+.cosmetics-quick-info { display: flex; flex-direction: column; gap: 2px; }
+.cosmetics-quick-items { font-size: 11px; color: var(--gray); font-weight: 600; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+@media (max-width: 600px) {
+  .cosmetics-customizer { max-height: 96vh; border-radius: 14px; }
+  .cosmetics-preview-panel { padding: 12px 14px; }
+  .cosmetics-preview-card { padding: 10px 14px; }
+  .cosmetics-preview-avatar { width: 42px; height: 42px; font-size: 14px; }
+  .cosmetics-tabs { padding: 10px 12px 0; gap: 3px; }
+  .cosmetics-tab { padding: 6px 10px; font-size: 10px; }
+  .cosmetics-items-grid { grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); gap: 6px; padding: 10px 12px 16px; }
+  .cosmetics-item { min-height: 80px; padding: 8px 4px 6px; }
+  .cosmetics-item-img { width: 36px; height: 36px; }
+  .cosmetics-item-name { font-size: 9px; }
+  .cosmetics-customizer-footer { padding: 10px 14px; flex-direction: column; align-items: stretch; }
+  .cosmetics-footer-actions { justify-content: flex-end; }
+}
