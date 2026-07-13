@@ -131,3 +131,15 @@ test("Spectrum hides authority on the server and scores the team average", () =>
   assert.equal(reveal.state.roundScore, 4);
   assert.equal(reveal.state.teamScore, 4);
 });
+
+test("Punchline keeps answers server-owned and prevents self voting", () => {
+  const started = initialServerGameState("quiplash", players, { locale: "en" }, 1_000)!;
+  const first = applyServerGameCommand("quiplash", started, "answer", { text: "My cat drove" }, context("host", 2_000))!;
+  const second = applyServerGameCommand("quiplash", first.state, "answer", { text: "Traffic was shy" }, context("guest", 2_100))!;
+  const opened = applyServerGameCommand("quiplash", second.state, "openVote", {}, context("host", 2_200))!;
+  const selfVote = applyServerGameCommand("quiplash", opened.state, "vote", { target: "guest" }, context("guest", 2_300))!;
+  assert.match(selfVote.error ?? "", /another player/);
+  const vote = applyServerGameCommand("quiplash", opened.state, "vote", { target: "host" }, context("guest", 2_400))!;
+  const reveal = applyServerGameCommand("quiplash", vote.state, "reveal", {}, context("host", 2_500))!;
+  assert.equal((reveal.state.scores as Record<string, number>).host, 100);
+});
