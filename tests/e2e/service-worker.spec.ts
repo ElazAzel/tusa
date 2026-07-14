@@ -12,14 +12,13 @@ test("service worker never intercepts the web manifest", async ({ browser }) => 
   });
 
   await page.goto("/", { waitUntil: "networkidle" });
-
-  const [sw] = await Promise.all([
-    context.waitForEvent("serviceworker", { timeout: 10_000 }),
-    page.evaluate(async () => {
-      if ("serviceWorker" in navigator) await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
-    }),
-  ]);
-  expect(sw).toBeDefined();
+  await page.evaluate(async () => {
+    if ("serviceWorker" in navigator) await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+  });
+  await page.waitForFunction(
+    () => navigator.serviceWorker.getRegistrations().then((r) => r.length > 0),
+    { timeout: 10_000 },
+  );
 
   await page.reload({ waitUntil: "networkidle" });
 
