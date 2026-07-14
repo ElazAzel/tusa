@@ -4,7 +4,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getHighlights, saveHighlight, deleteHighlight, requirePartyMember } from "@/lib/parties";
 import { publish } from "@/lib/live";
 
-const ALLOWED_ORIGINS = ["http://localhost:3000", "https://tusa.game", "https://www.tusa.game"];
+const ALLOWED_ORIGINS = ["http://localhost:3000", "https://tusagame.vercel.app", "https://tusa.game", "https://www.tusa.game"];
 
 function cors(res: NextResponse, origin: string | null) { const allowed = ALLOWED_ORIGINS.includes(origin ?? ""); if (allowed) res.headers.set("Access-Control-Allow-Origin", origin!); res.headers.set("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS"); res.headers.set("Access-Control-Allow-Headers", "*"); return res; }
 
