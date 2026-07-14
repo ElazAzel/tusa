@@ -1323,7 +1323,13 @@ select:focus-visible {
   .feature-card { min-height: 300px; padding: 26px; }
   .games-band { padding-block: 68px; }
   .proof-top { grid-template-columns: 1fr; }
-  .proof-number { margin-top: 18px; }
+  .proof-number {
+    max-width: 100%;
+    margin-top: 18px;
+    font-size: clamp(44px, 12vw, 60px);
+    line-height: .95;
+    overflow-wrap: anywhere;
+  }
   .community-strip { grid-template-columns: 1fr; }
   .field-grid { grid-template-columns: 1fr; gap: 0; }
   .form-card,

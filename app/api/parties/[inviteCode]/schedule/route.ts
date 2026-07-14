@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { getPartyByInvite, scheduleParty } from "@/lib/parties";
 
-const ALLOWED_ORIGINS = ["http://localhost:3000", "https://tusa.game", "https://www.tusa.game"];
+const ALLOWED_ORIGINS = ["http://localhost:3000", "https://tusagame.vercel.app", "https://tusa.game", "https://www.tusa.game"];
 
 function cors(res: NextResponse, origin: string | null) { const allowed = ALLOWED_ORIGINS.includes(origin ?? ""); if (allowed) res.headers.set("Access-Control-Allow-Origin", origin!); res.headers.set("Access-Control-Allow-Methods", "POST,OPTIONS"); res.headers.set("Access-Control-Allow-Headers", "*"); return res; }
 
