@@ -63,11 +63,14 @@ export async function readGuestSession() {
 }
 
 export async function resolveActor(): Promise<Actor | null> {
-  const { userId } = await auth();
-  if (userId) {
-    const user = await currentUser();
-    return { id: userId, kind: "clerk", displayName: user?.fullName ?? user?.firstName ?? "TUSA friend", imageUrl: user?.imageUrl ?? "" };
-  }
+  try {
+    const { userId } = await auth();
+    if (userId) {
+      let user;
+      try { user = await currentUser(); } catch { user = null; }
+      return { id: userId, kind: "clerk", displayName: user?.fullName ?? user?.firstName ?? "TUSA friend", imageUrl: user?.imageUrl ?? "" };
+    }
+  } catch { /* Clerk auth failed — fall through to guest session */ }
   const guest = await readGuestSession();
   return guest ? { id: guest.id, kind: "guest", displayName: guest.displayName, imageUrl: guest.avatar, guest } : null;
 }
