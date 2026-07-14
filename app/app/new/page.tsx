@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import CreatePartyForm from "./CreatePartyForm";
 
 export default async function NewPartyPage() {
-  const { userId } = await auth();
+  let userId: string | null = null;
+  try { userId = (await auth()).userId ?? null; } catch { /* auth unavailable */ }
   if (!userId) redirect("/sign-in?redirect_url=/app/new");
   return <CreatePartyForm />;
 }

@@ -11,11 +11,16 @@ test("service worker never intercepts the web manifest", async ({ browser }) => 
     }
   });
 
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.evaluate(async () => {
-    if ("serviceWorker" in navigator) await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
-  });
-  await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length), { timeout: 10_000 }).toBeGreaterThan(0);
+  await page.goto("/", { waitUntil: "networkidle" });
+
+  const [sw] = await Promise.all([
+    context.waitForEvent("serviceworker", { timeout: 10_000 }),
+    page.evaluate(async () => {
+      if ("serviceWorker" in navigator) await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+    }),
+  ]);
+  expect(sw).toBeDefined();
+
   await page.reload({ waitUntil: "networkidle" });
 
   const response = await page.request.get("/manifest.webmanifest");
