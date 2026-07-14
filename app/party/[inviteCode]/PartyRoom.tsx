@@ -341,6 +341,11 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
   }
 
   return <main className={`party-room ${party.adultOnly ? "party-room--adult" : "party-room--family"}`}>
+    {(!liveChat.connected || !liveParty.connected) && <div className="connection-banner connection-banner--offline">
+      <span className="material-symbols-rounded">cloud_off</span>
+      {locale === "ru" ? "Нет соединения. Переподключение…" : "Connection lost. Reconnecting…"}
+    </div>}
+
     <header className="party-room-header">
       <Link href="/app">{t("backToParties")}</Link>
       <strong>{party.title}</strong>

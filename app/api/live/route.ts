@@ -30,9 +30,11 @@ export async function GET(request: Request) {
     return new Response("Forbidden", { status: 403 });
   }
 
+  const lastEventId = request.headers.get("last-event-id") ?? undefined;
+
   const stream = new ReadableStream({
     async start(controller) {
-      for await (const event of generateEvents(channel)) {
+      for await (const event of generateEvents(channel, lastEventId)) {
         try { controller.enqueue(new TextEncoder().encode(event)); } catch { break; }
       }
       try { controller.close(); } catch { /* client disconnected */ }

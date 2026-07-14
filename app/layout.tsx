@@ -6,6 +6,8 @@ import { cookies } from "next/headers";
 import PwaRegister from "./PwaRegister";
 import MotionObserver from "./MotionObserver";
 import CookieConsent from "./components/CookieConsent";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { LocaleProvider } from "./components/LocaleProvider";
 import { detectLocale, normalizeLocale, copy } from "@/lib/i18n";
 import { SITE_ORIGIN } from "@/lib/site";
@@ -108,6 +110,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <PwaRegister />
             <MotionObserver />
             <CookieConsent />
+            <Analytics />
+            <SpeedInsights />
           </LocaleProvider>
         </ClerkProvider>
       </body>

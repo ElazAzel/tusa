@@ -39,8 +39,15 @@ function eventEnvelope(channel: string, data: unknown) {
   return { eventId: randomUUID(), occurredAt: new Date().toISOString(), channel, ...base };
 }
 
+const MAX_PAYLOAD_BYTES = 64_000;
+
 export function publish(channel: string, data: unknown) {
   const event = eventEnvelope(channel, data);
+  const serialized = JSON.stringify(event);
+  if (serialized.length > MAX_PAYLOAD_BYTES) {
+    console.error("[realtime] payload too large", { channel, bytes: serialized.length });
+    return;
+  }
   const ably = getRestClient();
   if (ably) {
     void ably.channels.get(channel).publish("tusa:event", event).catch((error) => {
@@ -61,7 +68,9 @@ export function sseHeaders() {
   };
 }
 
-export async function* generateEvents(channelName: string) {
+let eventCounter = 0;
+
+export async function* generateEvents(channelName: string, lastEventId?: string) {
   const queue: unknown[] = [];
   let wake: (() => void) | null = null;
   const listener: Listener = (data) => { queue.push(data); wake?.(); wake = null; };
@@ -79,6 +88,8 @@ export async function* generateEvents(channelName: string) {
     unsubscribe = subscribeLocal(channelName, listener);
   }
 
+  void lastEventId;
+
   try {
     while (true) {
       if (queue.length === 0) {
@@ -89,7 +100,10 @@ export async function* generateEvents(channelName: string) {
         yield `: ping\n\n`;
         continue;
       }
-      while (queue.length > 0) yield `data: ${JSON.stringify(queue.shift())}\n\n`;
+      while (queue.length > 0) {
+        eventCounter++;
+        yield `id: ${eventCounter}\ndata: ${JSON.stringify(queue.shift())}\n\n`;
+      }
     }
   } finally {
     unsubscribe();

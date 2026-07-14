@@ -3982,3 +3982,10 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
   .cosmetics-customizer-footer { padding: 10px 14px; flex-direction: column; align-items: stretch; }
   .cosmetics-footer-actions { justify-content: flex-end; }
 }
+
+.connection-banner {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  background: var(--red); color: #fff; font-weight: 600; font-size: 13px;
+  text-align: center; justify-content: center;
+}
+.connection-banner .material-symbols-rounded { font-size: 18px; }
