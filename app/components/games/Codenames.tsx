@@ -45,12 +45,12 @@ export default function Codenames({ partyId, sessionId, onSave, role }: { partyI
   useEffect(() => {
     if (!isHost || playerActions.length === 0) return;
     for (const a of playerActions) {
-      if (a.actionType === "setSpymaster") { const { tm } = a.payload as { tm: "a" | "b" }; setState?.((prev) => ({ ...prev, [tm === "a" ? "spymasterA" : "spymasterB"]: a.userId, phase: prev.spymasterA && prev.spymasterB ? "clue" : prev.phase })); }
-      if (a.actionType === "giveClue" && a.userId === state[`spymaster${state.activeTeam.toUpperCase()}` as "spymasterA" | "spymasterB"]) { const { wd, nm } = a.payload as { wd: string; nm: number }; setState?.((prev) => ({ ...prev, clue: wd, clueNumber: nm, phase: "guess" })); }
-      if (a.actionType === "pickWord" && state.phase === "guess") {
-        const { idx } = a.payload as { idx: number }; const color = state.colors[idx];
+      if (a.actionType === "setSpymaster") { const { tm } = a.payload as { tm: "a" | "b" }; setState?.((prev) => { const next = { ...prev, [tm === "a" ? "spymasterA" : "spymasterB"]: a.userId }; return { ...next, phase: next.spymasterA && next.spymasterB ? "clue" : next.phase }; }); }
+      if (a.actionType === "giveClue") { const { wd, nm } = a.payload as { wd: string; nm: number }; setState?.((prev) => a.userId === prev[`spymaster${prev.activeTeam.toUpperCase()}` as "spymasterA" | "spymasterB"] && prev.phase === "clue" ? { ...prev, clue: wd, clueNumber: nm, phase: "guess" } : prev); }
+      if (a.actionType === "pickWord") {
+        const { idx } = a.payload as { idx: number };
         setState?.((prev) => {
-          if (prev.revealed[idx]) return prev; const nr = [...prev.revealed]; nr[idx] = true;
+          if (prev.phase !== "guess" || prev.revealed[idx] || !prev.colors[idx]) return prev; const color = prev.colors[idx]; const nr = [...prev.revealed]; nr[idx] = true;
           if (color === "assassin") { const w = prev.activeTeam === "a" ? "b" : "a"; return { ...prev, revealed: nr, phase: "reveal", scores: { ...prev.scores, [w]: prev.scores[w] + 1 } }; }
           if (color === prev.activeTeam) return { ...prev, revealed: nr, scores: { ...prev.scores, [color]: prev.scores[color] + 1 } };
           const nxt = prev.activeTeam === "a" ? "b" : "a"; return { ...prev, revealed: nr, activeTeam: nxt, clue: "", clueNumber: 0, phase: "clue" };
@@ -58,7 +58,7 @@ export default function Codenames({ partyId, sessionId, onSave, role }: { partyI
       }
     }
     clearActions?.();
-  }, [playerActions, state, isHost, setState, clearActions]);
+  }, [playerActions, isHost, setState, clearActions]);
 
   const teamACount = useMemo(() => state.colors.filter((c, i) => c === "a" && !state.revealed[i]).length, [state.colors, state.revealed]);
   const teamBCount = useMemo(() => state.colors.filter((c, i) => c === "b" && !state.revealed[i]).length, [state.colors, state.revealed]);
