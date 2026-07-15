@@ -17,6 +17,7 @@ const partiesSource = readFileSync(new URL("../lib/parties.ts", import.meta.url)
 const commandClient = readFileSync(new URL("../app/components/sendGameCommand.ts", import.meta.url), "utf8");
 const commandMigration = readFileSync(new URL("../drizzle/0001_game_command_idempotency.sql", import.meta.url), "utf8");
 const commandRegistry = readFileSync(new URL("../lib/games/commands.ts", import.meta.url), "utf8");
+const healthApi = readFileSync(new URL("../app/api/health/route.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -90,4 +91,11 @@ test("server multiplayer games visibly identify active live sessions", () => {
     const source = readFileSync(new URL(`../app/components/games/${game}.tsx`, import.meta.url), "utf8");
     assert.match(source, /sessionId && <span className="multiplayer-badge">LIVE<\/span>/, game);
   }
+});
+
+test("health endpoint verifies the database without exposing configuration", () => {
+  assert.match(healthApi, /await sql`SELECT 1`/);
+  assert.match(healthApi, /database: "ready"/);
+  assert.match(healthApi, /status: 503/);
+  assert.doesNotMatch(healthApi, /DATABASE_URL.*json/);
 });
