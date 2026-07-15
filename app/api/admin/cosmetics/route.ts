@@ -1,11 +1,10 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
+import { isAdmin } from "@/lib/admin-auth";
 import { getCosmeticsCatalogue, createCosmeticsItem, updateCosmeticsItem, deleteCosmeticsItem } from "@/lib/parties";
 
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAdmin("cosmetics_read"))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const items = await getCosmeticsCatalogue();
     return NextResponse.json({ items });
@@ -13,8 +12,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAdmin("cosmetics_write"))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
   const rl = rateLimit(`api:${ip}:admin-cosmetics`, 10, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
@@ -29,8 +27,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAdmin("cosmetics_write"))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
   const rl = rateLimit(`api:${ip}:admin-cosmetics`, 10, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
@@ -43,8 +40,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAdmin("cosmetics_write"))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
   try {
