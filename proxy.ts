@@ -1,29 +1,24 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-const isAppRoute = createRouteMatcher(["/app(.*)"]);
-const isPartyRoute = createRouteMatcher(["/party(.*)"]);
-const isLandingPage = createRouteMatcher(["/"]);
+function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const hasSession = Boolean(request.cookies.get("tusa_auth")?.value);
+  const hasGuestSession = Boolean(request.cookies.get("tusa_guest_session")?.value);
 
-const authenticatedProxy = clerkMiddleware(async (auth, request) => {
-  const { userId } = await auth();
-
-  if (isLandingPage(request) && userId) {
+  if (pathname === "/" && hasSession) {
     return NextResponse.redirect(new URL("/app", request.url));
   }
 
-  if (isAppRoute(request) && !userId) {
-    return NextResponse.redirect(
-      new URL(
-        "/sign-in?redirect_url=" + encodeURIComponent(request.nextUrl.pathname),
-        request.url,
-      ),
-    );
+  if (pathname.startsWith("/app") && !hasSession) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
-  if (isPartyRoute(request) && !userId && !request.cookies.get("tusa_guest_session")) {
-    const inviteCode = request.nextUrl.pathname.split("/")[2] ?? "";
-    return NextResponse.redirect(new URL(`/join/${encodeURIComponent(inviteCode)}`, request.url));
+  if (pathname.startsWith("/party/") && !hasSession && !hasGuestSession) {
+    const inviteCode = pathname.split("/")[2];
+    if (inviteCode) {
+      return NextResponse.redirect(new URL(`/join/${inviteCode}`, request.url));
+    }
   }
 
   const response = NextResponse.next();
@@ -36,20 +31,9 @@ const authenticatedProxy = clerkMiddleware(async (auth, request) => {
   );
 
   return response;
-});
-
-function e2eProxy() {
-  const response = NextResponse.next();
-  response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  return response;
 }
 
-// The bypass requires both flags and exists only for isolated CI browser tests
-// that have no access to a real Clerk tenant. Vercel does not set TUSA_E2E_MODE.
-export default process.env.CI === "true" && process.env.TUSA_E2E_MODE === "1"
-  ? e2eProxy
-  : authenticatedProxy;
+export default proxy;
 
 export const config = {
   matcher: [

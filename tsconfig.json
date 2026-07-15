@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@clerk/nextjs": ["./lib/local-auth/client.tsx"],
+      "@clerk/nextjs/server": ["./lib/local-auth/server.ts"]
     }
   },
   "include": [
