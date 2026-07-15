@@ -76,6 +76,7 @@ export default function Crocodil({ sessionId, onSave, role }: { partyId: string;
   const activeShort = state.activePlayer ? state.activePlayer.slice(-8) : "stage";
 
   return <div className="party-game-board game-board-enter charades-board">
+    {sessionId && <span className="multiplayer-badge">LIVE</span>}
     <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/6</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}s</strong></div>
     <h3>{copy.title}</h3>
     <p>{copy.active}: <b>{activeShort}</b> · {copy.team}: <b>{activeLabel}</b></p>

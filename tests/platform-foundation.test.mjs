@@ -83,3 +83,11 @@ test("every accepted multiplayer command is game-scoped and payload-validated", 
   assert.match(commandRegistry, /nightAction: z\.object/);
   assert.doesNotMatch(commandRegistry, /z\.unknown/);
 });
+
+test("server multiplayer games visibly identify active live sessions", () => {
+  const games = ["BombParty", "BrainBurst", "Charades", "Crocodil", "GuessSong", "HeadsUp", "Impostor", "Spyfall", "Wheel"];
+  for (const game of games) {
+    const source = readFileSync(new URL(`../app/components/games/${game}.tsx`, import.meta.url), "utf8");
+    assert.match(source, /sessionId && <span className="multiplayer-badge">LIVE<\/span>/, game);
+  }
+});

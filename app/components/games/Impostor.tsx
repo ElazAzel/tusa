@@ -66,6 +66,7 @@ export default function Impostor({ sessionId, onSave, role }: { partyId: string;
   const voted = Boolean(state.votes[me]);
 
   return <div className="party-game-board game-board-enter">
+    {sessionId && <span className="multiplayer-badge">LIVE</span>}
     <span className="game-step">{copy.round} {state.round + 1}/5</span>
     <h3>{copy.title}</h3>
     {state.phase !== "reveal" && <div className="charades-secret">

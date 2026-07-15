@@ -66,6 +66,7 @@ export default function Wheel({ partyId, sessionId, onSave, role }: { partyId: s
   const segAngle = segCount > 0 ? 360 / segCount : 360;
 
   return <div className="party-game-board game-board-enter">
+    {sessionId && <span className="multiplayer-badge">LIVE</span>}
     <span className="game-step">{t("wheelTitle")}</span>
     <div className="bs-input-group">
       <input className="bs-input" maxLength={40} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder={t("wheelPlaceholder")} value={text} />

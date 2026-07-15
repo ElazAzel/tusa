@@ -49,6 +49,7 @@ export default function BrainBurst({ sessionId, onSave, role }: { partyId: strin
   }
 
   return <div className="party-game-board game-board-enter trivia-board brain-burst-board">
+    {sessionId && <span className="multiplayer-badge">LIVE</span>}
     <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/8</span><strong className={seconds <= 3 ? "is-ending" : ""}>{seconds}s</strong></div>
     <h3>{state.question || copy.waiting}</h3>
     {state.phase === "question" && <div className="quiz-options">{state.options.map((option, index) => <button className={chosen === index ? "selected" : ""} disabled={chosen !== null || seconds <= 0} key={option} onClick={() => answer(index)} type="button"><b>{String.fromCharCode(65 + index)}</b><span>{option}</span></button>)}</div>}

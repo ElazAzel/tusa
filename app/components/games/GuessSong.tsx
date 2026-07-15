@@ -114,6 +114,7 @@ export default function GuessSong({ partyId, sessionId, onSave, role }: { partyI
   const full = state.song.title + " — " + state.song.artist;
 
   return <div className="party-game-board game-board-enter">
+    {sessionId && <span className="multiplayer-badge">LIVE</span>}
     <span className="game-step">{t("round")} {state.round + 1}/{songs.length}</span>
     <div style={{ fontSize: 48, fontWeight: 700, color: state.timer <= 5 ? "var(--red)" : "var(--lime)", margin: "8px 0" }}>{state.timer}s</div>
     {state.phase === "clue" && <div style={{ textAlign: "center" }}>

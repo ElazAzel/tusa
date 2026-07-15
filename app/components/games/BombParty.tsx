@@ -47,6 +47,7 @@ export default function BombParty({ sessionId, onSave, role }: { partyId: string
   }
 
   return <div className="party-game-board game-board-enter word-bomb-board">
+    {sessionId && <span className="multiplayer-badge">LIVE</span>}
     <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/10</span><strong className={seconds <= 5 ? "is-ending" : ""}>{seconds}s</strong></div>
     <h3>{copy.title}</h3><p className="tt-prompt">{copy.hint}</p><div className="bp-letter">{state.letter}</div>
     <div className="bp-info"><span>{alive.length} {copy.alive}</span><span>{Object.keys(state.submissions).length} {copy.answered}</span></div>

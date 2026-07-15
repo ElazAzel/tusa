@@ -28,6 +28,7 @@ export default function Charades({ sessionId, onSave, role }: { partyId: string;
   useEffect(() => { if (!isHost || state.phase !== "finished" || completed.current) return; completed.current = true; stage.complete(); onSave(0); }, [isHost, onSave, stage, state.phase]);
 
   return <div className="party-game-board game-board-enter charades-board">
+    {sessionId && <span className="multiplayer-badge">LIVE</span>}
     <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/5</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}s</strong></div>
     <h3>{copy.title}</h3><p>{copy.active}: <b>{state.activePlayer.slice(-8)}</b></p>
     {state.phase === "play" && <>{isActive ? <div className="charades-secret"><span>{copy.yourWord}</span><strong>{state.word}</strong></div> : <p className="controller-answered">{copy.watch}</p>}<div className="charades-score"><span>{copy.roundScore}: <b>{state.roundScore}</b></span><span>{copy.total}: <b>{state.score}</b></span></div>{isActive && <div className="game-primary-actions"><button className="demo-action demo-action--lime" onClick={() => sendAction("correct")} type="button">{copy.correct}</button><button className="demo-action demo-action--white" onClick={() => sendAction("skip")} type="button">{copy.skip}</button></div>}</>}
