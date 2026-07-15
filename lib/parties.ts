@@ -220,9 +220,9 @@ export function ensurePartyV2() {
   try { await seedCosmetics(sql); } catch { /* already seeded */ }
   try { await seedQuests(sql); } catch { /* already seeded */ }
   await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
-  await sql`DO $$ BEGIN ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_mutation_unique UNIQUE (party_id, client_mutation_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$`;
+  await sql`DO $$ BEGIN CREATE UNIQUE INDEX IF NOT EXISTS chat_messages_mutation_unique ON chat_messages (party_id, client_mutation_id); EXCEPTION WHEN duplicate_table THEN NULL; END $$`;
   await sql`ALTER TABLE game_scores ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
-  await sql`DO $$ BEGIN ALTER TABLE game_scores ADD CONSTRAINT game_scores_mutation_unique UNIQUE (session_id, client_mutation_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$`;
+  await sql`DO $$ BEGIN CREATE UNIQUE INDEX IF NOT EXISTS game_scores_mutation_unique ON game_scores (session_id, client_mutation_id); EXCEPTION WHEN duplicate_table THEN NULL; END $$`;
   })().catch((error) => {
     schemaV2Promise = null;
     throw error;
@@ -454,11 +454,9 @@ export function ensurePartySchema() {
   await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS sticker_id TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reactions JSONB NOT NULL DEFAULT '{}'::jsonb`;
   await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
-  await sql`ALTER TABLE chat_messages DROP CONSTRAINT IF EXISTS chat_messages_mutation_unique`;
-  await sql`ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_mutation_unique UNIQUE (party_id, client_mutation_id)`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS chat_messages_mutation_unique ON chat_messages (party_id, client_mutation_id)`;
   await sql`ALTER TABLE game_scores ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
-  await sql`ALTER TABLE game_scores DROP CONSTRAINT IF EXISTS game_scores_mutation_unique`;
-  await sql`ALTER TABLE game_scores ADD CONSTRAINT game_scores_mutation_unique UNIQUE (session_id, client_mutation_id)`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS game_scores_mutation_unique ON game_scores (session_id, client_mutation_id)`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS koins_balance INTEGER NOT NULL DEFAULT 100`;
   await sql`CREATE TABLE IF NOT EXISTS koins_transactions (
     id UUID PRIMARY KEY,
