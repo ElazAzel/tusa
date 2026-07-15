@@ -38,12 +38,12 @@ export default function Werewolf({ partyId, sessionId, onSave, role }: { partyId
   useEffect(() => {
     if (!isHost || playerActions.length === 0) return;
     for (const a of playerActions) {
-      if (a.actionType === "join" && state.phase === "deal") { const pid = (a.payload as { playerId?: string })?.playerId || a.userId; setState?.((prev) => ({ ...prev, players: prev.players.includes(pid) ? prev.players : [...prev.players, pid] })); }
-      if (a.actionType === "nightAction" && state.phase === "night") { const { tp, tg } = a.payload as { tp: Role; tg: string }; setState?.((prev) => ({ ...prev, nightActions: { ...prev.nightActions, [tp]: tg } })); }
-      if (a.actionType === "vote" && state.phase === "vote") { setState?.((prev) => ({ ...prev, votes: { ...prev.votes, [a.userId]: (a.payload as { target: string }).target } })); }
+      if (a.actionType === "join") { const pid = (a.payload as { playerId?: string })?.playerId || a.userId; setState?.((prev) => prev.phase === "deal" ? { ...prev, players: prev.players.includes(pid) ? prev.players : [...prev.players, pid] } : prev); }
+      if (a.actionType === "nightAction") { const { tp, tg } = a.payload as { tp: Role; tg: string }; setState?.((prev) => prev.phase === "night" ? { ...prev, nightActions: { ...prev.nightActions, [tp]: tg } } : prev); }
+      if (a.actionType === "vote") { setState?.((prev) => prev.phase === "vote" ? { ...prev, votes: { ...prev.votes, [a.userId]: (a.payload as { target: string }).target } } : prev); }
     }
     clearActions?.();
-  }, [playerActions, state.phase, isHost, setState, clearActions]);
+  }, [playerActions, isHost, setState, clearActions]);
 
   useEffect(() => {
     if (!isHost) return;

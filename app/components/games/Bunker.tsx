@@ -39,13 +39,13 @@ export default function Bunker({ partyId, sessionId, onSave, role }: { partyId: 
   useEffect(() => {
     if (!isHost || playerActions.length === 0) return;
     for (const a of playerActions) {
-      if (a.actionType === "join" && state.phase === "reveal") {
-        setState?.((prev) => { if (prev.traits.find((tr) => tr.userId === a.userId)) return prev; const ti = prev.traits.length % traits.length; return { ...prev, traits: [...prev.traits, { userId: a.userId, trait: traits[ti] }] }; });
+      if (a.actionType === "join") {
+        setState?.((prev) => { if (prev.phase !== "reveal" || prev.traits.find((tr) => tr.userId === a.userId)) return prev; const ti = prev.traits.length % traits.length; return { ...prev, traits: [...prev.traits, { userId: a.userId, trait: traits[ti] }] }; });
       }
-      if (a.actionType === "vote" && state.phase === "vote") { setState?.((prev) => ({ ...prev, votes: { ...prev.votes, [a.userId]: (a.payload as { target: string }).target } })); }
+      if (a.actionType === "vote") { setState?.((prev) => prev.phase === "vote" ? { ...prev, votes: { ...prev.votes, [a.userId]: (a.payload as { target: string }).target } } : prev); }
     }
     clearActions?.();
-  }, [playerActions, state.phase, traits, isHost, setState, clearActions]);
+  }, [playerActions, traits, isHost, setState, clearActions]);
 
   useEffect(() => { if (!isHost) return; if (state.phase === "reveal" && state.traits.length >= 4) setState?.((prev) => ({ ...prev, phase: "argue", timer: 30 })); }, [state.traits.length, state.phase, isHost, setState]);
   useEffect(() => { if (!isHost) return; if (state.phase !== "argue" || state.timer <= 0) return; const id = setTimeout(() => setState?.((p) => ({ ...p, timer: p.timer - 1 })), 1000); return () => clearTimeout(id); }, [state.phase, state.timer, isHost, setState]);
