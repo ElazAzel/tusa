@@ -472,8 +472,10 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
           const isMe = item.userId === actorId;
           const sticker = item.type === "sticker" ? tusaStickers.find((s) => s.id === item.stickerId) : null;
           const reactionEntries = item.reactions ? Object.entries(item.reactions) : [];
-          return <div className={`party-chat-bubble ${isMe ? "is-me" : "is-other"} ${item.type === "voice" ? "is-voice" : ""} ${item.type === "sticker" ? "is-sticker" : ""}`} key={item.id || index} onDoubleClick={() => setReactionTarget(reactionTarget === item.id ? null : item.id)}>
-            {!isMe && <span className="chat-name" style={item.nameColor && item.nameColor !== "#000000" ? { color: item.nameColor } : undefined}>{item.displayName}</span>}
+          const chatEffect = item.chatEffect?.replace(/[^a-z0-9_-]/gi, "") ?? "none";
+          const nameEffect = item.nameColor?.startsWith("animated_") ? `cosmetic-name-${item.nameColor.replace(/[^a-z0-9_-]/gi, "")}` : "";
+          return <div className={`party-chat-bubble chat-effect-${chatEffect} ${isMe ? "is-me" : "is-other"} ${item.type === "voice" ? "is-voice" : ""} ${item.type === "sticker" ? "is-sticker" : ""}`} key={item.id || index} onDoubleClick={() => setReactionTarget(reactionTarget === item.id ? null : item.id)}>
+            {!isMe && <span className={`chat-name ${nameEffect}`} style={item.nameColor && item.nameColor !== "#000000" && !item.nameColor.startsWith("animated_") ? { color: item.nameColor } : undefined}>{item.displayName}</span>}
             {item.type === "sticker" && sticker ? (
               <span className="chat-sticker" dangerouslySetInnerHTML={{ __html: sticker.svg }} />
             ) : item.type === "voice" && item.voiceUrl ? (

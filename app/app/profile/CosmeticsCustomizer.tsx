@@ -93,12 +93,12 @@ export default function CosmeticsCustomizer({
 
         <div className="cosmetics-customizer-body">
           <div className="cosmetics-preview-panel">
-            <div className="cosmetics-preview-card" style={{ background: preview.cover === "lime" ? "var(--lime)" : preview.cover === "midnight" ? "#1a1a2e" : preview.cover === "beta" ? "linear-gradient(135deg,#2D00F7,#b829ff)" : "var(--cream)" }}>
-              <div className="cosmetics-preview-avatar" style={preview.avatarFrame !== "none" ? { borderColor: preview.avatarFrame === "lime" ? "var(--lime)" : preview.avatarFrame === "pink" ? "var(--pink)" : preview.avatarFrame === "blue" ? "var(--blue)" : preview.avatarFrame === "neon" ? "#b829ff" : preview.avatarFrame === "gold" ? "#ffd700" : preview.avatarFrame === "crystal" ? "#80deea" : preview.avatarFrame === "inferno" ? "#ff6f00" : preview.avatarFrame === "frost" ? "#e0f7fa" : preview.avatarFrame === "rainbow" ? "#ff9800" : preview.avatarFrame === "animated_pulse" ? "var(--lime)" : preview.avatarFrame === "animated_glow" ? "#ff1791" : preview.avatarFrame === "animated_rotate" ? "#ff0000" : preview.avatarFrame === "animated_chrome" ? "#b0bec5" : preview.avatarFrame === "animated_neon_pulse" ? "#b829ff" : undefined} : undefined}>
+            <div className={`cosmetics-preview-card cosmetic-cover-${preview.cover.replace(/[^a-z0-9_-]/gi, "")}`}>
+              <div className={`cosmetics-preview-avatar frame-${preview.avatarFrame.replace(/[^a-z0-9_-]/gi, "")}`}>
                 <span>{profileCosmetics.cover?.slice(0, 2).toUpperCase() || "TU"}</span>
               </div>
               <div className="cosmetics-preview-info">
-                <span className="cosmetics-preview-name" style={preview.nameColor !== "#000000" ? { color: preview.nameColor } : undefined}>
+                <span className={`cosmetics-preview-name ${preview.nameColor.startsWith("animated_") ? `cosmetic-name-${preview.nameColor}` : ""}`} style={preview.nameColor !== "#000000" && !preview.nameColor.startsWith("animated_") ? { color: preview.nameColor } : undefined}>
                   {preview.badge !== "newcomer" && <span className="material-symbols-rounded" style={{ fontSize: 16, color: "var(--lime)", verticalAlign: "middle", marginRight: 3 }}>verified</span>}
                   Preview
                 </span>

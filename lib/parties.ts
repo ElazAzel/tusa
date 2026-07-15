@@ -203,6 +203,7 @@ export function ensurePartyV2() {
   await sql`ALTER TABLE game_sessions ADD COLUMN IF NOT EXISTS spectators JSONB NOT NULL DEFAULT '[]'::jsonb`;
   await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS handle TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS name_color TEXT NOT NULL DEFAULT '#000000'`;
+  await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS chat_effect TEXT NOT NULL DEFAULT 'none'`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_xp INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_tier INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_season TEXT NOT NULL DEFAULT ''`;
@@ -1140,6 +1141,7 @@ export type ChatMessage = {
   displayName: string;
   handle: string;
   nameColor: string;
+  chatEffect: string;
   text: string;
   type: "text" | "voice" | "sticker";
   voiceUrl: string;
@@ -1159,8 +1161,9 @@ export async function sendMessage(userId: string, partyId: string, text: string,
   const mutationId = extra?.clientMutationId ? extra.clientMutationId.slice(0, 64) : null;
   const handle = profile?.handle ?? "";
   const nameColor = profile?.cosmetics?.nameColor ?? "#000000";
-  let [row] = await db()`INSERT INTO chat_messages (id, party_id, clerk_user_id, display_name, handle, name_color, text, type, voice_url, sticker_id, client_mutation_id)
-    VALUES (${randomUUID()}, ${partyId}, ${userId}, ${profile?.displayName ?? "TUSA friend"}, ${handle}, ${nameColor}, ${text.slice(0, 1000)}, ${type}, ${voiceUrl}, ${stickerId}, ${mutationId})
+  const chatEffect = profile?.cosmetics?.chatEffect ?? "none";
+  let [row] = await db()`INSERT INTO chat_messages (id, party_id, clerk_user_id, display_name, handle, name_color, chat_effect, text, type, voice_url, sticker_id, client_mutation_id)
+    VALUES (${randomUUID()}, ${partyId}, ${userId}, ${profile?.displayName ?? "TUSA friend"}, ${handle}, ${nameColor}, ${chatEffect}, ${text.slice(0, 1000)}, ${type}, ${voiceUrl}, ${stickerId}, ${mutationId})
     ON CONFLICT (party_id, client_mutation_id) DO NOTHING
     RETURNING *` as unknown as Record<string, unknown>[];
   if (!row && mutationId) {
@@ -1169,7 +1172,7 @@ export async function sendMessage(userId: string, partyId: string, text: string,
   }
   return row ? {
     id: String(row.id), partyId: String(row.party_id), userId: String(row.clerk_user_id),
-    displayName: String(row.display_name), handle: String(row.handle ?? ""), nameColor: String(row.name_color ?? "#000000"),
+    displayName: String(row.display_name), handle: String(row.handle ?? ""), nameColor: String(row.name_color ?? "#000000"), chatEffect: String(row.chat_effect ?? "none"),
     text: String(row.text), type: String(row.type) as ChatMessage["type"],
     voiceUrl: String(row.voice_url), stickerId: String(row.sticker_id),
     reactions: (row.reactions ?? {}) as Record<string, string[]>,
@@ -1205,7 +1208,7 @@ export async function getMessages(partyId: string, limit = 50, after?: string) {
   const ordered = after ? rows : rows.reverse();
   return ordered.map((row) => ({
     id: String(row.id), partyId: String(row.party_id), userId: String(row.clerk_user_id),
-    displayName: String(row.display_name), text: String(row.text), type: String(row.type ?? "text") as ChatMessage["type"],
+    displayName: String(row.display_name), handle: String(row.handle ?? ""), nameColor: String(row.name_color ?? "#000000"), chatEffect: String(row.chat_effect ?? "none"), text: String(row.text), type: String(row.type ?? "text") as ChatMessage["type"],
     voiceUrl: String(row.voice_url ?? ""), stickerId: String(row.sticker_id ?? ""),
     reactions: (row.reactions ?? {}) as Record<string, string[]>,
     createdAt: new Date(row.created_at as string | Date).toISOString(),
