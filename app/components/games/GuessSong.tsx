@@ -68,16 +68,15 @@ export default function GuessSong({ partyId, sessionId, onSave, role }: { partyI
   useEffect(() => {
     if (!isHost || playerActions.length === 0) return;
     for (const a of playerActions) {
-      if (a.actionType === "guess" && state.phase === "guess" && !state.winner) {
-        const g = ((a.payload as { title: string }).title || "").toLowerCase().trim();
-        const title = state.song.title.toLowerCase();
-        if (g.length >= 3 && title.includes(g)) {
-          setState?.((prev) => ({ ...prev, scores: { ...prev.scores, [a.userId]: (prev.scores[a.userId] || 0) + (prev.timer > 6 ? 3 : 1) }, winner: a.userId, phase: "reveal" }));
-        }
-      }
+      if (a.actionType !== "guess") continue;
+      const g = ((a.payload as { title: string }).title || "").toLowerCase().trim();
+      setState?.((prev) => {
+        if (prev.phase !== "guess" || prev.winner || g.length < 3 || !prev.song.title.toLowerCase().includes(g)) return prev;
+        return { ...prev, scores: { ...prev.scores, [a.userId]: (prev.scores[a.userId] || 0) + (prev.timer > 6 ? 3 : 1) }, winner: a.userId, phase: "reveal" };
+      });
     }
     clearActions?.();
-  }, [playerActions, state.phase, state.song.title, state.timer, state.winner, isHost, setState, clearActions]);
+  }, [playerActions, isHost, setState, clearActions]);
 
   useEffect(() => {
     if (!isHost) return;
