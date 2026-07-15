@@ -15,7 +15,10 @@ export function ClerkProvider({ children }: { children: ReactNode }) {
     setUser(data.user ?? null);
     setIsLoaded(true);
   };
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => {
+    const task = window.setTimeout(() => { void refresh(); }, 0);
+    return () => window.clearTimeout(task);
+  }, []);
   const value = useMemo(() => ({ isLoaded, isSignedIn: !!user, user, refresh }), [isLoaded, user]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
