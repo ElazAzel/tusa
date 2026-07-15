@@ -17,11 +17,15 @@ export default function Pictionary({ sessionId, onSave, role }: { partyId: strin
   const state = isHost ? stage.state : controller.state; const sendAction = isHost ? stage.sendAction : controller.sendAction; const setState = isHost ? stage.setState : undefined;
   const actions = isHost ? stage.playerActions : []; const clearActions = isHost ? stage.clearActions : undefined; const drawing = useRef(false); const pending = useRef<Point[]>([]); const [guess, setGuess] = useState("");
 
-  useEffect(() => { if (!isHost || !actions.length) return; for (const action of actions) {
-    if (action.actionType === "join" && state.phase === "lobby") setState?.((prev) => ({ ...prev, players: prev.players.includes(action.userId) ? prev.players : [...prev.players, action.userId] }));
-    if (action.actionType === "stroke" && action.userId === state.drawerId && state.phase === "drawing") { const points = (action.payload as { points?: Point[] }).points ?? []; setState?.((prev) => ({ ...prev, points: [...prev.points, ...points].slice(-2500) })); }
-    if (action.actionType === "guess" && action.userId !== state.drawerId && state.phase === "drawing") { const text = String((action.payload as { text?: string }).text ?? "").trim(); if (!text) continue; if (text.toLocaleLowerCase() === state.word.toLocaleLowerCase()) setState?.((prev) => ({ ...prev, phase: "result", winner: action.userId, guesses: [...prev.guesses, { userId: action.userId, text }], scores: { ...prev.scores, [action.userId]: (prev.scores[action.userId] ?? 0) + 3, [prev.drawerId]: (prev.scores[prev.drawerId] ?? 0) + 2 } })); else setState?.((prev) => ({ ...prev, guesses: [...prev.guesses, { userId: action.userId, text }].slice(-10) })); }
-  } clearActions?.(); }, [actions, clearActions, isHost, setState, state.drawerId, state.phase, state.word]);
+  useEffect(() => { if (!isHost || !actions.length) return; setState?.((prev) => {
+    let next = prev;
+    for (const action of actions) {
+      if (action.actionType === "join" && next.phase === "lobby") next = { ...next, players: next.players.includes(action.userId) ? next.players : [...next.players, action.userId] };
+      if (action.actionType === "stroke" && action.userId === next.drawerId && next.phase === "drawing") { const points = (action.payload as { points?: Point[] }).points ?? []; next = { ...next, points: [...next.points, ...points].slice(-2500) }; }
+      if (action.actionType === "guess" && action.userId !== next.drawerId && next.phase === "drawing") { const text = String((action.payload as { text?: string }).text ?? "").trim(); if (!text) continue; if (text.toLocaleLowerCase() === next.word.toLocaleLowerCase()) next = { ...next, phase: "result", winner: action.userId, guesses: [...next.guesses, { userId: action.userId, text }], scores: { ...next.scores, [action.userId]: (next.scores[action.userId] ?? 0) + 3, [next.drawerId]: (next.scores[next.drawerId] ?? 0) + 2 } }; else next = { ...next, guesses: [...next.guesses, { userId: action.userId, text }].slice(-10) }; }
+    }
+    return next;
+  }); clearActions?.(); }, [actions, clearActions, isHost, setState]);
 
   const startRound = useCallback(() => { if (!isHost || state.players.length < 2) return; const round = state.round + 1; const word = WORDS[locale as "ru" | "en"]?.[round % WORDS.en.length] ?? WORDS.en[round % WORDS.en.length]; setState?.((prev) => ({ ...prev, phase: "drawing", round, drawerId: prev.players[round % prev.players.length], word, points: [], guesses: [], winner: "" })); }, [isHost, locale, setState, state.players, state.round]);
   const point = (event: PointerEvent<SVGSVGElement>, draw: boolean) => { if (state.drawerId !== me || state.phase !== "drawing") return; const rect = event.currentTarget.getBoundingClientRect(); pending.current.push({ x: Math.round(((event.clientX - rect.left) / rect.width) * 600), y: Math.round(((event.clientY - rect.top) / rect.height) * 360), draw }); if (pending.current.length >= 5 || !draw) { sendAction("stroke", { points: pending.current }); pending.current = []; } };
