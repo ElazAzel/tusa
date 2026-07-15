@@ -68,14 +68,14 @@ https://tusa.game
 - **Next.js 16** App Router + Turbopack
 - **React 19** + TypeScript
 - **CSS-дизайн-система** — переменные `--lime`, `--blue`, `--pink`, brutal shadows, без runtime UI-зависимостей
-- **Clerk** — авторизация (Google, Apple)
+- **Local auth** — авторизация по email и паролю с защищённой HttpOnly-сессией
 - **Neon Postgres** — БД через `@neondatabase/serverless`
 - **SSE** через `/api/live` + **Ably** (production) — real-time для multiplayer
 - **Stage+Controller** — `useStageGame`, `useControllerGame`, `useMultiplayerGame` generic hooks
 - **Version locking** — optimistic concurrency через `version` column + 409 Conflict
 - **Idempotency** — `client_mutation_id` unique constraint на `game_actions` + `chat_messages` + `game_scores`
 - **Rate limiting** — distributed (Upstash Redis) + in-memory fallback на всех 39 API endpoints
-- **Guest sessions** — HMAC-SHA256 signed cookie-based guest identity без Clerk
+- **Guest sessions** — HMAC-SHA256 signed cookie-based guest identity
 - **Server-authoritative game engine** — 24 из 32 игр с серверным reducer, Zod-валидацией команд и приватным состоянием
 - **Auth guards** — `requirePartyMember()` / `requireOwner()` в 13 уязвимых функциях
 - **SSE reconnect** — все hooks переподключаются через 3s при ошибке

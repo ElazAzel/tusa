@@ -1,6 +1,6 @@
 # TUSA.game — AI Context & Orchestration Hub
 
-> Multiplayer party platform · Next.js 16 · React 19 · TypeScript · Clerk · Neon Postgres · SSE realtime · 53 routes · 32 games · 32 modes
+> Multiplayer party platform · Next.js 16 · React 19 · TypeScript · local auth · Neon Postgres · SSE realtime · 53 routes · 32 games · 32 modes
 
 ---
 
@@ -20,7 +20,7 @@ npm run rag:build    # rebuild RAG index after changes
 ## Architecture (TL;DR)
 
 ```
-proxy.ts             ← Clerk auth + i18n routing (middleware)
+proxy.ts             ← local auth + i18n routing (middleware)
 next.config.ts        ← CSP + security headers
 lib/
   live.ts             ← SSE event bus (Ably prod / in-memory dev)
@@ -214,7 +214,7 @@ Load a skill with `opencode use-skill <name>` (or equivalent in your AI tool).
 ## Environment
 
 - **DB**: Neon Postgres via `@neondatabase/serverless` (28 tables, raw SQL + Drizzle)
-- **Auth**: Clerk (user accounts) + HMAC guest sessions
+- **Auth**: local email/password accounts + HMAC guest sessions
 - **Realtime**: Ably (production) / SSE in-memory fallback
 - **Rate limiting**: Upstash Redis (production) / in-memory fallback
 - **Deployment**: Vercel (53 routes, 0 build errors)
