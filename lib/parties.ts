@@ -13,6 +13,8 @@ export type CosmeticsItemType = "cover" | "avatarFrame" | "chatEffect" | "nameCo
 export type CosmeticsItem = { id: string; type: CosmeticsItemType; slug: string; nameRu: string; nameEn: string; value: string; imageUrl: string; sortOrder: number; active: boolean; createdAt: string };
 export type ProfileCosmetics = { cover: string; avatarFrame: string; chatEffect: string; nameColor: string; badge: string; xpMultiplier: number; betaAccess: boolean; unlocked: PromoBenefitType[] };
 
+const COSMETIC_UNLOCKS: PromoBenefitType[] = ["profile_cover", "avatar_frame", "chat_effect", "name_color", "badge"];
+
 export type UserProfile = {
   id: string;
   displayName: string;
@@ -145,7 +147,7 @@ function partyFromRow(row: Record<string, unknown>): Party {
 }
 
 function profileFromRow(row: Record<string, unknown>): UserProfile {
-  const defaults: ProfileCosmetics = { cover: "lime", avatarFrame: "none", chatEffect: "none", nameColor: "#000000", badge: "newcomer", xpMultiplier: 1, betaAccess: false, unlocked: [] };
+  const defaults: ProfileCosmetics = { cover: "lime", avatarFrame: "none", chatEffect: "none", nameColor: "#000000", badge: "newcomer", xpMultiplier: 1, betaAccess: false, unlocked: COSMETIC_UNLOCKS };
   const raw = row.cosmetics;
   const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
   const cosmetics = parsed && typeof parsed === "object" ? { ...defaults, ...(parsed as Partial<ProfileCosmetics>) } : defaults;
@@ -157,7 +159,7 @@ function profileFromRow(row: Record<string, unknown>): UserProfile {
     bio: String(row.bio ?? ""),
     imageUrl: String(row.image_url ?? ""),
     compashka: String(row.compashka ?? ""),
-    cosmetics: { ...cosmetics, unlocked: Array.isArray(cosmetics.unlocked) ? cosmetics.unlocked : [] },
+    cosmetics: { ...cosmetics, unlocked: COSMETIC_UNLOCKS },
     xp: asNumber(row.xp),
     hasPartyCreation: row.has_party_creation === true,
     updatedAt: iso(row.updated_at as string | Date),
@@ -610,13 +612,13 @@ export async function updateProfile(userId: string, input: { displayName: string
   await ensurePartySchema();
   const current = await getProfile(userId);
   if (!current) throw new Error("Profile not found");
-  const cosmetics = { ...current.cosmetics, ...(input.cosmetics ?? {}) };
-  const permissions: Record<keyof NonNullable<typeof input.cosmetics>, PromoBenefitType> = { cover: "profile_cover", avatarFrame: "avatar_frame", chatEffect: "chat_effect", nameColor: "name_color", badge: "badge" };
-  for (const [key, benefit] of Object.entries(permissions) as [keyof typeof permissions, PromoBenefitType][]) {
-    if (input.cosmetics?.[key] !== undefined && input.cosmetics[key] !== current.cosmetics[key] && !current.cosmetics.unlocked.includes(benefit)) {
-      if (current.handle !== "elazart") throw new Error("Этот предмет пока не открыт.");
-      current.cosmetics.unlocked.push(benefit);
+  const cosmetics = { ...current.cosmetics, unlocked: COSMETIC_UNLOCKS };
+  const catalogue = await getCosmeticsCatalogue();
+  for (const [key, value] of Object.entries(input.cosmetics ?? {}) as [CosmeticsItemType, string][]) {
+    if (!catalogue.some((item) => item.active && item.type === key && item.value === value)) {
+      throw new Error("This cosmetic is unavailable.");
     }
+    cosmetics[key] = value;
   }
   const compashka = input.compashka !== undefined ? input.compashka : current.compashka;
   const [row] = await db()`UPDATE user_profiles SET display_name = ${input.displayName.slice(0, 80)}, handle = ${cleanHandle(input.handle)}, city = ${input.city.slice(0, 80)}, bio = ${input.bio.slice(0, 300)}, compashka = ${compashka.slice(0, 80)}, cosmetics = ${JSON.stringify(cosmetics)}::jsonb, updated_at = NOW()

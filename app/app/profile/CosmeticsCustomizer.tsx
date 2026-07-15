@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import type { CosmeticsItem, ProfileCosmetics, PromoBenefitType } from "@/lib/parties";
+import type { CosmeticsItem, ProfileCosmetics } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { soundTap, soundSuccess } from "@/lib/audio";
 import InlineSvg from "@/app/components/InlineSvg";
@@ -11,14 +11,6 @@ const TYPE_TO_FIELD: Record<string, keyof ProfileCosmetics> = {
   avatarFrame: "avatarFrame",
   chatEffect: "chatEffect",
   nameColor: "nameColor",
-  badge: "badge",
-};
-
-const TYPE_TO_UNLOCK: Record<string, PromoBenefitType> = {
-  cover: "profile_cover",
-  avatarFrame: "avatar_frame",
-  chatEffect: "chat_effect",
-  nameColor: "name_color",
   badge: "badge",
 };
 
@@ -49,7 +41,7 @@ export default function CosmeticsCustomizer({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/cosmetics")
+    fetch("/api/cosmetics")
       .then((r) => r.json())
       .then((d) => { if (d.items) setCatalogue(d.items); })
       .catch(() => undefined);
@@ -67,34 +59,25 @@ export default function CosmeticsCustomizer({
 
   const field = activeTab;
   const items = grouped[activeTab] || [];
-  const unlockType = TYPE_TO_UNLOCK[activeTab];
-  const unlocked = profileCosmetics.unlocked.includes(unlockType);
-
   const handleSelect = useCallback((item: CosmeticsItem) => {
     soundTap();
     const fieldKey = TYPE_TO_FIELD[item.type] || item.type;
     setPreview((prev) => ({ ...prev, [fieldKey as keyof ProfileCosmetics]: item.value }));
-    if (unlocked) {
-      setDirty(true);
-    }
-  }, [unlocked]);
+    setDirty(true);
+  }, []);
 
   const handleSave = useCallback(async () => {
     soundTap();
     setSaving(true);
     const changed: Record<string, string> = {};
     for (const key of CATEGORY_TABS) {
-      const unlock = TYPE_TO_UNLOCK[key];
-      const isUnlocked = profileCosmetics.unlocked.includes(unlock);
-      if (isUnlocked) {
-        changed[key] = preview[key] as string;
-      }
+      changed[key] = preview[key] as string;
     }
     await onSave(changed);
     soundSuccess();
     setSaving(false);
     setDirty(false);
-  }, [preview, profileCosmetics.unlocked, onSave]);
+  }, [preview, onSave]);
 
   const hasChanges = dirty || CATEGORY_TABS.some((key) => preview[key] !== profileCosmetics[key]);
 
@@ -136,9 +119,6 @@ export default function CosmeticsCustomizer({
                   onClick={() => { soundTap(); setActiveTab(tab); }}
                 >
                   {categoryLabels[tab]?.[locale] || tab}
-                  {profileCosmetics.unlocked.includes(TYPE_TO_UNLOCK[tab]) && (
-                    <span className="cosmetics-tab-unlocked-dot" />
-                  )}
                 </button>
               ))}
             </div>
@@ -147,11 +127,10 @@ export default function CosmeticsCustomizer({
               {items.length === 0 && <p className="cosmetics-empty">{t("cosmeticsEmpty")}</p>}
               {items.map((item) => {
                 const isEquipped = preview[field] === item.value;
-                const isLocked = !unlocked && !["none", "newcomer"].includes(item.slug);
                 return (
                   <button
                     key={item.id}
-                    className={`cosmetics-item ${isEquipped ? "equipped" : ""} ${isLocked ? "locked" : ""}`}
+                    className={`cosmetics-item ${isEquipped ? "equipped" : ""}`}
                     onClick={() => handleSelect(item)}
                   >
                     <InlineSvg
@@ -162,10 +141,8 @@ export default function CosmeticsCustomizer({
                       {locale === "ru" ? item.nameRu : item.nameEn}
                     </span>
                     <span className="cosmetics-item-status">
-                      {isEquipped && !isLocked && <span className="material-symbols-rounded" style={{ fontSize: 16, color: "var(--lime)" }}>check_circle</span>}
-                      {isLocked && <span className="material-symbols-rounded" style={{ fontSize: 16, color: "var(--gray)" }}>lock</span>}
-                      {!isEquipped && !isLocked && <span className="material-symbols-rounded" style={{ fontSize: 16, color: "var(--blue)" }}>touch_app</span>}
-                      {isEquipped && isLocked && <span className="material-symbols-rounded" style={{ fontSize: 16, color: "var(--pink)" }}>visibility</span>}
+                      {isEquipped && <span className="material-symbols-rounded" style={{ fontSize: 16, color: "var(--lime)" }}>check_circle</span>}
+                      {!isEquipped && <span className="material-symbols-rounded" style={{ fontSize: 16, color: "var(--blue)" }}>touch_app</span>}
                     </span>
                     {item.slug.startsWith("animated_") && <span className="cosmetics-anim-indicator material-symbols-rounded">auto_awesome</span>}
                   </button>
@@ -177,8 +154,7 @@ export default function CosmeticsCustomizer({
 
         <div className="cosmetics-customizer-footer">
           <p className="cosmetics-hint">
-            <span className="material-symbols-rounded" style={{ fontSize: 14, verticalAlign: "middle" }}>lock</span>
-            {" "}{t("cosmeticsLockedHint")}
+            {t("profilePreview")}
           </p>
           <div className="cosmetics-footer-actions">
             <button className="admin-text-button" onClick={onClose}>{t("cancel")}</button>
