@@ -3939,6 +3939,11 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
   transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 .more-modal-grid > button:hover { transform: translate(2px,2px); box-shadow: 4px 4px 0 var(--black); }
+.more-modal-grid > button, .more-modal-grid > button span:not(.material-symbols-rounded) { color: var(--black); font-weight: 900; }
+.party-game-board .social-quests-empty, .party-game-board .moments-empty, .party-game-board .gratitude-empty { color: var(--cream) !important; font-weight: 700; }
+.daily-leaderboard > div, .daily-leaderboard > div span, .daily-leaderboard > div strong { color: var(--black); }
+.party-room-rsvp-toggle button { min-height: 48px; color: var(--black); background: var(--cream); border: 3px solid var(--black); box-shadow: 3px 3px 0 var(--black); }
+.party-room-rsvp-toggle button.active { background: var(--lime); transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--black); }
 .more-modal-grid > button .material-symbols-rounded { font-size: 26px; color: var(--blue); }
 
 .cosmetics-grid { display: grid; grid-template-columns: minmax(270px,.5fr) minmax(0,1.5fr); gap: 20px; max-width: 1320px; margin: 0 auto; }

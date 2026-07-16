@@ -420,7 +420,7 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
       <div className="party-room-rsvp-toggle">
         {["going", "maybe", "pass"].map((status) => (
           <button className={rsvp === status ? "active" : ""} key={status} onClick={() => updateRsvp(status as RsvpStatus)} type="button">
-            {status === "going" ? t("eventHubGoing") : status === "maybe" ? t("eventHubThinkingCount") : t("eventHubPass")}
+            {status === "going" ? "Точно иду" : status === "maybe" ? "Думаю" : "Не иду"}
           </button>
         ))}
       </div>
