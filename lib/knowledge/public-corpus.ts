@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { copy, type Locale } from "@/lib/i18n";
 import { GAME_MANIFEST, formatPlayerRange } from "@/lib/games/manifest";
 import { gamePageCopy } from "@/lib/games/page-copy";
+import { GAME_RULES } from "@/lib/games/rules";
 import { CONTENT_UPDATED_AT, SITE_ORIGIN } from "@/lib/site";
 import type { KnowledgeDocument, SearchHit } from "./types";
 
@@ -13,7 +14,8 @@ export function buildPublicCorpus(locale: Locale): KnowledgeDocument[] {
   const gameDocs = GAME_MANIFEST.map((game) => {
     const title = copy(locale, game.titleKey);
     const description = copy(locale, game.descKey);
-    const text = `${title}. ${description} ${ui.players}: ${formatPlayerRange(game)}. ${ui.duration}: ${game.seo.durationMinutes} ${ui.minutes}. ${ui.equipment}: ${game.seo.equipment === "phones_and_stage" ? ui.phonesAndStage : ui.phones}. ${ui.beta} ${ui.safe}`;
+    const rules = GAME_RULES[locale][game.id];
+    const text = `${title}. ${description} ${rules.overview} ${rules.steps.join(" ")} ${rules.tips.join(" ")} ${ui.players}: ${formatPlayerRange(game)}. ${ui.duration}: ${game.seo.durationMinutes} ${ui.minutes}. ${ui.equipment}: ${game.seo.equipment === "phones_and_stage" ? ui.phonesAndStage : ui.phones}. ${ui.beta} ${ui.safe}`;
     return {
       id: `game:${game.id}:${locale}`,
       locale,

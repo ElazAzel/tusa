@@ -14,6 +14,7 @@ import { resolveActor } from "@/lib/guest-session";
 import { deriveVerifiedScore } from "@/lib/games/scoring";
 import { parseGameCommand } from "@/lib/games/commands";
 import { applyServerGameCommand, initialServerGameState, isServerGameState } from "@/lib/games/engine";
+import { sanitizeSdkState } from "@/lib/games/sdk";
 
 const gameRequestSchema = z.object({
   action: z.enum(["create", "join", "start", "leave", "update", "complete", "score", "playerAction"]),
@@ -227,7 +228,7 @@ function sanitizeControllerSession(session: SessionView, userId: string) {
 }
 
 function sanitizeControllerState(game: string, rawState: Record<string, unknown>, userId: string) {
-  const state = structuredClone(rawState);
+  const state = sanitizeSdkState(game, structuredClone(rawState), userId);
   const phase = String(state.phase ?? "");
   if ((game === "trivia" || game === "quiz" || game === "brainBurst") && phase === "question") state.correct = -1;
   if (game === "twoTruths" && phase === "vote") state.lie = -1;

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { applyServerGameCommand, initialServerGameState } from "../lib/games/engine";
-import { hasDefinition } from "../lib/games/sdk";
+import { getDefinition, hasDefinition } from "../lib/games/sdk";
 
 const players = ["host", "guest"];
 const context = (actorId: string, now: number) => ({ actorId, creatorId: "host", participants: players, now });
@@ -234,6 +234,112 @@ test("Lost Location keeps spy identity private and resolves votes server-side", 
   const reveal = applyServerGameCommand("spyfall", vote.state, "reveal", {}, context("host", 2_300))!;
   assert.equal(reveal.state.outcome, "citizens");
   assert.equal((reveal.state.scores as Record<string, number>).host, 1);
+});
+
+test("Secret Grid keeps clue authority, card reveals and wins on the server", () => {
+  const gridPlayers = ["host", "guest", "third", "fourth"];
+  const ctx = (actorId: string) => ({ actorId, creatorId: "host", participants: gridPlayers, now: 2_000 });
+  const started = initialServerGameState("codenames", gridPlayers, { locale: "en" }, 1_000)!;
+  assert.equal(hasDefinition("codenames"), true);
+  const firstLead = applyServerGameCommand("codenames", started, "setSpymaster", { tm: "a" }, ctx("host"))!;
+  const secondLead = applyServerGameCommand("codenames", firstLead.state, "setSpymaster", { tm: "b" }, ctx("guest"))!;
+  assert.equal(secondLead.state.phase, "clue");
+  const blockedClue = applyServerGameCommand("codenames", secondLead.state, "giveClue", { wd: "fruit", nm: 2 }, ctx("third"))!;
+  assert.match(blockedClue.error ?? "", /spymaster/);
+  const clue = applyServerGameCommand("codenames", secondLead.state, "giveClue", { wd: "fruit", nm: 2 }, ctx("host"))!;
+  assert.equal(clue.state.phase, "guess");
+  const blockedPick = applyServerGameCommand("codenames", clue.state, "pickWord", { idx: 0 }, ctx("host"))!;
+  assert.match(blockedPick.error ?? "", /Spymasters/);
+  const picked = applyServerGameCommand("codenames", clue.state, "pickWord", { idx: 0 }, ctx("third"))!;
+  assert.equal((picked.state.revealed as boolean[])[0], true);
+});
+
+test("Color Cards deals private hands and enforces player turns on the server", () => {
+  const cardPlayers = ["host", "guest"];
+  const ctx = (actorId: string) => ({ actorId, creatorId: "host", participants: cardPlayers, now: 2_000 });
+  const started = initialServerGameState("uno", cardPlayers, {}, 1_000)!;
+  assert.equal(hasDefinition("uno"), true);
+  assert.equal((started.hands as Record<string, unknown[]>).host.length, 7);
+  const blocked = applyServerGameCommand("uno", started, "draw", {}, ctx("guest"))!;
+  assert.match(blocked.error ?? "", /turn/);
+  const drawn = applyServerGameCommand("uno", started, "draw", {}, ctx("host"))!;
+  assert.equal((drawn.state.hands as Record<string, unknown[]>).host.length, 8);
+});
+
+test("Music quiz family keeps answers private and scores guesses on the server", () => {
+  for (const game of ["guessSong", "musicQuiz"] as const) {
+    assert.equal(hasDefinition(game), true);
+    const started = initialServerGameState(game, players, { locale: "en" }, 1_000)!;
+    assert.equal(started.phase, "clue");
+    assert.equal(started.deadline, 7_000);
+    const early = applyServerGameCommand(game, started, "openGuess", {}, context("host", 2_000))!;
+    assert.match(early.error ?? "", /still playing/);
+    const open = applyServerGameCommand(game, started, "openGuess", {}, context("host", 7_000))!;
+    assert.equal(open.state.phase, "guess");
+    const answer = String(open.state.answer);
+    const guessed = applyServerGameCommand(game, open.state, "guess", { title: answer }, context("guest", 8_000))!;
+    assert.equal(guessed.state.phase, "reveal");
+    assert.equal((guessed.state.scores as Record<string, number>).guest, 3);
+    const duplicate = applyServerGameCommand(game, guessed.state, "guess", { title: answer }, context("guest", 8_100))!;
+    assert.equal(duplicate.changed, false);
+    const safe = getDefinition(game)?.sanitizeForViewer?.(guessed.state, "host") as Record<string, unknown>;
+    assert.equal("answer" in safe, false);
+    assert.equal(safe.revealedTitle, answer);
+  }
+});
+
+test("Party tools use a server-selected wheel and shared authoritative cup score", () => {
+  const startedWheel = initialServerGameState("wheel", players, { locale: "en" }, 1_000)!;
+  assert.equal(hasDefinition("wheel"), true);
+  const added = applyServerGameCommand("wheel", startedWheel, "addOption", { text: "Dance" }, context("guest", 2_000))!;
+  assert.equal((added.state.options as string[]).includes("Dance"), true);
+  const spun = applyServerGameCommand("wheel", added.state, "spin", {}, context("host", 3_000))!;
+  assert.equal(spun.state.phase, "result");
+  assert.equal(spun.state.result, (spun.state.options as string[])[Number(spun.state.resultIndex)]);
+  const blockedSpin = applyServerGameCommand("wheel", added.state, "spin", {}, context("guest", 3_000))!;
+  assert.match(blockedSpin.error ?? "", /Only the stage/);
+
+  const startedCup = initialServerGameState("beer", players, {}, 1_000)!;
+  assert.equal(hasDefinition("beer"), true);
+  const hit = applyServerGameCommand("beer", startedCup, "hit", { team: 0 }, context("guest", 2_000))!;
+  assert.deepEqual(hit.state.scores, [9, 10]);
+  const restore = applyServerGameCommand("beer", hit.state, "returnCup", { team: 0 }, context("host", 2_100))!;
+  assert.deepEqual(restore.state.scores, [10, 10]);
+});
+
+test("Night Council keeps roles private and resolves votes on the server", () => {
+  const councilPlayers = ["host", "guest", "third", "fourth", "fifth"];
+  const ctx = (actorId: string, now = 2_000) => ({ actorId, creatorId: "host", participants: councilPlayers, now });
+  for (const game of ["mafia", "werewolf"] as const) {
+    const lobby = initialServerGameState(game, councilPlayers, {}, 1_000)!;
+    assert.equal(hasDefinition(game), true);
+    const started = applyServerGameCommand(game, lobby, "start", {}, ctx("host"))!;
+    assert.equal(started.state.phase, "night");
+    const safe = getDefinition(game)?.sanitizeForViewer?.(started.state, "guest") as Record<string, unknown>;
+    assert.deepEqual(safe.roles, { guest: "doctor" });
+    const mafiaAction = applyServerGameCommand(game, started.state, "nightAction", { target: "fifth" }, ctx("host"))!;
+    const doctorAction = applyServerGameCommand(game, mafiaAction.state, "nightAction", { target: "guest" }, ctx("guest"))!;
+    const night = applyServerGameCommand(game, doctorAction.state, "resolveNight", {}, ctx("host"))!;
+    assert.equal(night.state.phase, "day");
+    const vote = applyServerGameCommand(game, night.state, "openVote", {}, ctx("host"))!;
+    let voted = vote.state;
+    for (const actorId of voted.alive as string[]) voted = applyServerGameCommand(game, voted, "vote", { target: "host" }, ctx(actorId))!.state;
+    const reveal = applyServerGameCommand(game, voted, "revealVote", {}, ctx("host"))!;
+    assert.equal(reveal.state.eliminated, "host");
+    assert.equal(reveal.state.phase, "reveal");
+  }
+});
+
+test("Social tools keep rounds and responses in the server snapshot", () => {
+  for (const game of ["truth", "never", "pairs"] as const) {
+    assert.equal(hasDefinition(game), true);
+    const started = initialServerGameState(game, players, { locale: "en" }, 1_000)!;
+    const round = game === "truth" ? applyServerGameCommand(game, started, "choose", { mode: "dare" }, context("host", 2_000))! : { state: started };
+    const response = game === "pairs" ? round : applyServerGameCommand(game, round.state, "respond", { value: true }, context("guest", 2_100))!;
+    if (game !== "pairs") assert.equal((response.state.responses as Record<string, boolean>).guest, true);
+    const next = applyServerGameCommand(game, response.state, "next", {}, context("host", 2_200))!;
+    assert.equal(next.state.round, 1);
+  }
 });
 
 test("Impostor keeps the word private and resolves clues and votes on the server", () => {

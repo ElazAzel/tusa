@@ -25,19 +25,20 @@ function question(round: number, locale: "ru" | "en") {
   return { question: q.prompt[locale], options: q.options[locale], correct: q.correct };
 }
 
-export default defineGame<State>({
-  id: "trivia",
+export function createTriviaDefinition(id: GameVariant, durationMs: number, fastAnswerSeconds: number, fastAnswerPoints = 2) {
+  return defineGame<State>({
+  id,
   version: 1,
   createInitialState(participants, config, now = Date.now()) {
     const locale = config.locale === "en" ? "en" : "ru";
     return {
       engine: "server-v1",
-      game: "trivia",
+      game: id,
       locale,
       phase: "question",
       round: 0,
       ...question(0, locale),
-      deadline: now + 15_000,
+      deadline: now + durationMs,
       scores: {},
       answered: {},
       players: participants,
@@ -55,7 +56,7 @@ export default defineGame<State>({
       if (state.answered[ctx.actorId]) return { state, changed: false };
       const answer = Number((payload as { index?: unknown }).index);
       const secondsLeft = Math.max(0, Math.ceil((state.deadline - ctx.now) / 1000));
-      const points = answer === state.correct ? (secondsLeft > 8 ? 2 : 1) : 0;
+      const points = answer === state.correct ? (secondsLeft > fastAnswerSeconds ? fastAnswerPoints : 1) : 0;
       return { changed: true, state: { ...state, answered: { ...state.answered, [ctx.actorId]: true }, scores: points ? { ...state.scores, [ctx.actorId]: (state.scores[ctx.actorId] ?? 0) + points } : state.scores } };
     }
     if (actionType === "reveal") {
@@ -70,11 +71,14 @@ export default defineGame<State>({
       if (state.phase !== "result") return { state, changed: false, error: "Reveal the current answer first." };
       const round = state.round + 1;
       if (round >= ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
-      return { changed: true, state: { ...state, phase: "question", round, ...question(round, state.locale), deadline: ctx.now + 15_000, answered: {} } };
+      return { changed: true, state: { ...state, phase: "question", round, ...question(round, state.locale), deadline: ctx.now + durationMs, answered: {} } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },
   deriveScore(s) {
     return Math.max(0, ...Object.values(s.scores));
   },
-});
+  });
+}
+
+export default createTriviaDefinition("trivia", 15_000, 8);

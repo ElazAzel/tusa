@@ -5,6 +5,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { copy, normalizeLocale } from "@/lib/i18n";
 import { GAME_MANIFEST, formatPlayerRange, getGameBySlug } from "@/lib/games/manifest";
 import { gamePageCopy } from "@/lib/games/page-copy";
+import { GAME_RULES } from "@/lib/games/rules";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -40,6 +41,7 @@ export default async function GamePage({ params }: PageProps) {
   const ui = gamePageCopy[locale];
   const title = copy(locale, game.titleKey);
   const description = copy(locale, game.descKey);
+  const rules = GAME_RULES[locale][game.id];
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "VideoGame",
@@ -70,7 +72,10 @@ export default async function GamePage({ params }: PageProps) {
       </section>
       <section className="game-detail-section">
         <h2>{ui.howTitle}</h2>
-        <ol>{ui.howSteps.map((step) => <li key={step}>{step}</li>)}</ol>
+        <p>{rules.overview}</p>
+        <ol>{rules.steps.map((step) => <li key={step}>{step}</li>)}</ol>
+        <h3>{locale === "ru" ? "Общие правила" : "General rules"}</h3>
+        <ul>{rules.tips.map((tip) => <li key={tip}>{tip}</li>)}</ul>
       </section>
       <section className="game-detail-section game-detail-note">
         <h2>{ui.faqTitle}</h2>
