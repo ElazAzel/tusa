@@ -112,3 +112,23 @@ The July 2026 architecture audit and commercial strategy have been reviewed. The
 - Unit and integration coverage reports 47 passing tests. The public mobile E2E matrix reports 52 passing checks from 320 px through 1024 px.
 - The Playwright setup now uses a dedicated output directory and does not retain traces during the overflow matrix, preventing the Windows artifact failure that previously stopped the server mid-run.
 - Marketing copy uses the canonical manifest count of 32 modes rather than stale 8/28 claims.
+
+## SEO/GEO/AEO expansion — 2026-07-16
+
+Added a second programmatic SEO layer targeting high-volume party and group gaming query intents in both RU and EN segments.
+
+### Changes shipped
+
+- **`lib/seo-content.ts`** — Rich unique copy for 10 guide slugs (party-games, games-for-adults, team-building-games, birthday-games, online-party-games, icebreakers, party-planning, game-night, party-invite, games-for-friends) in RU + EN with custom FAQPage JSON-LD schemas.
+- **`lib/seo-programmatic.ts`** — 24 new programmatic landing pages covering player counts (2–12), audience niches (families, couples, college, adults, kids), event types (birthday, wedding, remote-teams, classroom), and comparison/tool queries (no-props, no-app, free-alternatives-to-jackbox, quick-5-minute, drinking). Full RU + EN content, bullet lists, game cards, and FAQs per page.
+- **`app/[locale]/guides/[slug]/RedirectManager.tsx`** — Client-side soft redirect component (1.2s branded loading bar → `router.replace("/")`). Shared across guides and game programmatic pages. Allows crawlers to index full HTML while routing human users to the app.
+- **`app/games/[slug]/page.tsx`** — `generateStaticParams` now returns game slugs + programmatic slugs. Programmatic pages receive rich content, FAQPage JSON-LD, and the RedirectManager.
+- **`app/sitemap.ts`** — All 24 programmatic `/games/[slug]` URLs added to sitemap (priority 0.7). Guide entries for both locales already present.
+
+### Verification
+
+- `npm run typecheck` — 0 errors.
+- `npm run lint` — 0 errors.
+- `npm test` — 47/47 pass.
+- `npm run build` — **122 static pages** generated (up from 98), all 24 programmatic routes compiled.
+- `npm run rag:build` — 926 chunks indexed.

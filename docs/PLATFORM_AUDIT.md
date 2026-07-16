@@ -92,13 +92,17 @@ Source of truth: `tusa-style-guide-v1.4.html`, product PRD and the 28-mode game 
 |---|---|---|
 | `/` | WebApplication + Organization | Landing with hreflang, OG, Twitter |
 | `/games` | CollectionPage | Manifest-driven 32-mode catalogue with i18n |
+| `/games/[slug]` (32 game pages) | VideoGame | Per-game detail, rules, JSON-LD |
+| `/games/for-2-players` … `/games/drinking` (24 pages) | FAQPage | Programmatic SEO — player counts, niches, events, tool queries (RU + EN) |
 | `/faq` | FAQPage (7 Q&A) | Expandable FAQ with JSON-LD |
 | `/about` | Organization | Mission, story, features, tech |
 | `/use-cases/online-parties` | WebPage | "Online party games" SEO landing |
 | `/use-cases/remote-teams` | WebPage | "Virtual team building" SEO landing |
 | `/use-cases/in-person-parties` | WebPage | "Group party games" SEO landing |
+| `/ru/guides/[slug]` (10 guides) | FAQPage | RU guide content — soft-redirects humans to homepage |
+| `/en/guides/[slug]` (10 guides) | FAQPage | EN guide content — soft-redirects humans to homepage |
 | `/robots.txt` | — | AI-bot permissions (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot) |
-| `/sitemap.xml` | — | 11 entries with priorities |
+| `/sitemap.xml` | — | 80+ entries with priorities (games, guides, programmatic, use-cases) |
 
 ## TUSA Growth Operating System
 
