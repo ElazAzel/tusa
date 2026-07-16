@@ -20,6 +20,7 @@ import lostLocation from "./definitions/lost-location";
 import pickThree from "./definitions/pick-three";
 import secretGrid from "./definitions/secret-grid";
 import colorCards from "./definitions/color-cards";
+import guessSong, { createMusicQuizDefinition } from "./definitions/music-quiz";
 
 type Entry = {
   id: string;
@@ -27,6 +28,7 @@ type Entry = {
   commandSchemas: Record<string, z.ZodType>;
   reducer: (state: Record<string, unknown>, actionType: string, payload: unknown, context: ServerGameContext) => ServerGameResult;
   deriveScore: (state: Record<string, unknown>) => number;
+  sanitizeForViewer?: (state: Record<string, unknown>, viewerId: string) => Record<string, unknown>;
 };
 
 const DEFINITIONS = new Map<string, Entry>();
@@ -37,6 +39,7 @@ function register<T extends Record<string, unknown>>(def: {
   commandSchemas: Record<string, z.ZodType>;
   reducer: (state: T, actionType: string, payload: unknown, context: ServerGameContext) => ServerGameResult;
   deriveScore: (state: T) => number;
+  sanitizeForViewer?: (state: T, viewerId: string) => T;
 }) {
   DEFINITIONS.set(def.id, def as unknown as Entry);
 }
@@ -60,6 +63,8 @@ register(lostLocation);
 register(pickThree);
 register(secretGrid);
 register(colorCards);
+register(guessSong);
+register(createMusicQuizDefinition("musicQuiz"));
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);
@@ -107,4 +112,9 @@ export function getAvailableCommandTypes(gameId: string): string[] {
 
 export function isSdkManaged(gameId: string): boolean {
   return DEFINITIONS.has(gameId);
+}
+
+export function sanitizeSdkState(gameId: string, state: Record<string, unknown>, viewerId: string): Record<string, unknown> {
+  const sanitize = DEFINITIONS.get(gameId)?.sanitizeForViewer;
+  return sanitize ? sanitize(state, viewerId) : state;
 }

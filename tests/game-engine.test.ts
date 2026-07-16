@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { applyServerGameCommand, initialServerGameState } from "../lib/games/engine";
-import { hasDefinition } from "../lib/games/sdk";
+import { getDefinition, hasDefinition } from "../lib/games/sdk";
 
 const players = ["host", "guest"];
 const context = (actorId: string, now: number) => ({ actorId, creatorId: "host", participants: players, now });
@@ -264,6 +264,28 @@ test("Color Cards deals private hands and enforces player turns on the server", 
   assert.match(blocked.error ?? "", /turn/);
   const drawn = applyServerGameCommand("uno", started, "draw", {}, ctx("host"))!;
   assert.equal((drawn.state.hands as Record<string, unknown[]>).host.length, 8);
+});
+
+test("Music quiz family keeps answers private and scores guesses on the server", () => {
+  for (const game of ["guessSong", "musicQuiz"] as const) {
+    assert.equal(hasDefinition(game), true);
+    const started = initialServerGameState(game, players, { locale: "en" }, 1_000)!;
+    assert.equal(started.phase, "clue");
+    assert.equal(started.deadline, 7_000);
+    const early = applyServerGameCommand(game, started, "openGuess", {}, context("host", 2_000))!;
+    assert.match(early.error ?? "", /still playing/);
+    const open = applyServerGameCommand(game, started, "openGuess", {}, context("host", 7_000))!;
+    assert.equal(open.state.phase, "guess");
+    const answer = String(open.state.answer);
+    const guessed = applyServerGameCommand(game, open.state, "guess", { title: answer }, context("guest", 8_000))!;
+    assert.equal(guessed.state.phase, "reveal");
+    assert.equal((guessed.state.scores as Record<string, number>).guest, 3);
+    const duplicate = applyServerGameCommand(game, guessed.state, "guess", { title: answer }, context("guest", 8_100))!;
+    assert.equal(duplicate.changed, false);
+    const safe = getDefinition(game)?.sanitizeForViewer?.(guessed.state, "host") as Record<string, unknown>;
+    assert.equal("answer" in safe, false);
+    assert.equal(safe.revealedTitle, answer);
+  }
 });
 
 test("Impostor keeps the word private and resolves clues and votes on the server", () => {
