@@ -1,101 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useStageGame } from "@/app/components/useStageGame";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
+import { useStageGame } from "@/app/components/useStageGame";
 
-const DEFAULTS_EN = ["Do 10 push-ups", "Sing a song", "Tell a joke", "Dance for 15s", "Do an impression", "Take a sip"];
-const DEFAULTS_RU = ["Сделай 10 отжиманий", "Спой песню", "Расскажи анекдот", "Танцуй 15 сек", "Изобрази кого-нибудь", "Глотни глоток"];
+type WheelState = { engine: string; phase: "collect" | "result" | "finished"; options: string[]; result: string; resultIndex: number; angle: number; round: number };
+const initial = (): WheelState => ({ engine: "server-v1", phase: "collect", options: [], result: "", resultIndex: -1, angle: 0, round: 0 });
 
-type GameState = { spinning: boolean; options: string[]; result: string | null; angle: number };
-
-export default function Wheel({ partyId, sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+export default function Wheel({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
   const { locale } = useLocale();
-  const t = (key: string) => locale === "ru" ? (RU[key] ?? key) : (EN[key] ?? key);
-  const defaults = useMemo(() => (locale === "ru" ? [...DEFAULTS_RU] : [...DEFAULTS_EN]), [locale]);
-  const isHost = role === "stage";
-
-  const stageHook = useStageGame<GameState>(isHost ? (sessionId ?? null) : null, () => ({ spinning: false, options: defaults, result: null, angle: 0 }));
-  const controllerHook = useControllerGame<GameState>(!isHost ? (sessionId ?? null) : null, { spinning: false, options: defaults, result: null, angle: 0 });
-
-  const state = isHost ? stageHook.state : controllerHook.state;
-  const sendAction = isHost ? stageHook.sendAction : controllerHook.sendAction;
-  const setState = isHost ? stageHook.setState : undefined;
-  const playerActions = isHost ? stageHook.playerActions : [];
-  const clearActions = isHost ? stageHook.clearActions : undefined;
-  const complete = isHost ? stageHook.complete : undefined;
-
+  const stageRole = role === "stage";
+  const stage = useStageGame<WheelState>(stageRole ? sessionId ?? null : null, initial);
+  const controller = useControllerGame<WheelState>(!stageRole ? sessionId ?? null : null, initial());
+  const state = stageRole ? stage.state : controller.state;
+  const sendAction = stageRole ? stage.sendAction : controller.sendAction;
   const [text, setText] = useState("");
-  const [sent, setSent] = useState(false);
-
-  useEffect(() => { setSent(false); setText(""); }, [state.result]);
-
-  useEffect(() => {
-    if (!isHost || playerActions.length === 0) return;
-    for (const a of playerActions) {
-      if (a.actionType === "addOption") {
-        const txt = (a.payload as { text: string }).text?.trim();
-        if (txt) setState?.((prev) => ({ ...prev, options: [...prev.options, txt] }));
-      }
-    }
-    clearActions?.();
-  }, [playerActions, isHost, setState, clearActions]);
-
-  const add = useCallback(() => {
-    if (!text.trim() || sent) return;
-    setSent(true);
-    sendAction("addOption", { text: text.trim() });
-  }, [text, sent, sendAction]);
-
-  const spin = useCallback(() => {
-    if (!isHost || state.spinning || state.options.length === 0) return;
-    const idx = Math.floor(Math.random() * state.options.length);
-    const segmentAngle = 360 / state.options.length;
-    const targetAngle = 360 * 5 + (360 - idx * segmentAngle - segmentAngle / 2);
-    setState?.((prev) => ({ ...prev, spinning: true, angle: prev.angle + targetAngle }));
-    setTimeout(() => { setState?.((prev) => ({ ...prev, spinning: false, result: prev.options[idx] })); }, 4200);
-  }, [state.spinning, state.options.length, isHost, setState]);
-
-  const reset = useCallback(() => {
-    if (!isHost) return;
-    setState?.((prev) => ({ ...prev, result: null })); complete?.(); onSave(1);
-  }, [isHost, setState, complete, onSave]);
-
-  const segCount = state.options.length;
-  const segAngle = segCount > 0 ? 360 / segCount : 360;
-
-  return <div className="party-game-board game-board-enter">
-    <span className="game-step">{t("wheelTitle")}</span>
-    <div className="bs-input-group">
-      <input className="bs-input" maxLength={40} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder={t("wheelPlaceholder")} value={text} />
-      <button className="demo-action demo-action--lime" disabled={sent || !text.trim()} onClick={add} type="button">{sent ? t("sent") : t("add")}</button>
-    </div>
-    <p style={{ marginTop: 6, opacity: 0.6, fontSize: 13 }}>{state.options.length} {t("optionsAdded")}</p>
-    <div style={{ position: "relative", width: 260, height: 260, margin: "12px auto" }}>
-      <svg viewBox="0 0 260 260" style={{ width: 260, height: 260, transform: `rotate(${state.angle}deg)`, transition: state.spinning ? "transform 4s cubic-bezier(.17,.67,.12,.99)" : "none" }}>
-        {state.options.map((opt, i) => {
-          const start = i * segAngle;
-          const end = start + segAngle;
-          const largeArc = segAngle > 180 ? 1 : 0;
-          const r = 130;
-          const x1 = r + r * Math.sin((start * Math.PI) / 180);
-          const y1 = r - r * Math.cos((start * Math.PI) / 180);
-          const x2 = r + r * Math.sin((end * Math.PI) / 180);
-          const y2 = r - r * Math.cos((end * Math.PI) / 180);
-          const colors = ["var(--lime)", "#facc15", "var(--red)", "#60a5fa", "#c084fc", "#fb923c", "#34d399", "#f472b6"];
-          const mid = start + segAngle / 2;
-          const tx = r + r * 0.55 * Math.sin((mid * Math.PI) / 180);
-          const ty = r - r * 0.55 * Math.cos((mid * Math.PI) / 180);
-          return <g key={i}><path d={`M${r},${r} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`} fill={colors[i % colors.length]} stroke="#181818" strokeWidth="2" /><text x={tx} y={ty} textAnchor="middle" dominantBaseline="middle" fill="#181818" fontSize="13" fontWeight="bold" style={{ pointerEvents: "none" }}>{opt.length > 14 ? opt.slice(0, 13) + "…" : opt}</text></g>;
-        })}
-      </svg>
-      <div style={{ position: "absolute", top: -6, left: "50%", marginLeft: -8, width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "8px solid transparent", borderTop: "14px solid var(--white)" }} />
-    </div>
-    {state.result ? <div><h3 style={{ color: "var(--lime)" }}>{state.result}</h3>{isHost && <div className="game-primary-actions"><button className="demo-action demo-action--lime" onClick={reset} type="button">{t("finish")}</button></div>}</div>
-      : isHost && <div className="game-primary-actions"><button className="demo-action demo-action--lime" disabled={state.spinning || state.options.length < 2} onClick={spin} type="button">{state.spinning ? t("spinning") : t("spin")}</button></div>}
-  </div>;
+  const completed = useRef(false);
+  const copy = locale === "ru" ? { title: "Колесо выбора", placeholder: "Добавить вариант", add: "Добавить", spin: "Крутить", next: "Ещё раз", finish: "Завершить", result: "Выпало", options: "вариантов" } : { title: "Choice Wheel", placeholder: "Add an option", add: "Add", spin: "Spin", next: "Spin again", finish: "Finish", result: "It chose", options: "options" };
+  const segment = state.options.length ? 360 / state.options.length : 360;
+  const palette = ["var(--lime)", "var(--pink)", "var(--blue)", "var(--cream)", "#ffc857", "#6ee7b7", "#a78bfa", "#fb7185"];
+  const add = () => { if (!text.trim()) return; sendAction("addOption", { text: text.trim() }); setText(""); };
+  const wedges = useMemo(() => state.options.map((option, index) => ({ option, index })), [state.options]);
+  useEffect(() => { if (!stageRole || state.phase !== "finished" || completed.current) return; completed.current = true; stage.complete(); onSave(state.round + 1); }, [onSave, stage, stageRole, state.phase, state.round]);
+  return <section className="party-game-board game-board-enter" aria-label={copy.title}><span className="game-step">{copy.title}</span><div className="bs-input-group"><input className="bs-input" value={text} maxLength={60} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") add(); }} placeholder={copy.placeholder} disabled={state.phase !== "collect"} /><button className="demo-action demo-action--lime" onClick={add} disabled={!text.trim() || state.phase !== "collect"} type="button">{copy.add}</button></div><p>{state.options.length} {copy.options}</p><div className="wheel-stage"><svg viewBox="0 0 260 260" style={{ transform: `rotate(${state.angle}deg)`, transition: state.phase === "result" ? "transform 1.2s cubic-bezier(.17,.67,.12,.99)" : "none" }}>{wedges.map(({ option, index }) => { const start = index * segment; const end = start + segment; const rad = 130; const x1 = rad + rad * Math.sin(start * Math.PI / 180); const y1 = rad - rad * Math.cos(start * Math.PI / 180); const x2 = rad + rad * Math.sin(end * Math.PI / 180); const y2 = rad - rad * Math.cos(end * Math.PI / 180); const mid = start + segment / 2; return <g key={`${option}-${index}`}><path d={`M130,130 L${x1},${y1} A130,130 0 ${segment > 180 ? 1 : 0},1 ${x2},${y2} Z`} fill={palette[index % palette.length]} stroke="var(--black)" strokeWidth="3" /><text x={130 + 76 * Math.sin(mid * Math.PI / 180)} y={130 - 76 * Math.cos(mid * Math.PI / 180)} textAnchor="middle" dominantBaseline="middle" fill="var(--black)" fontSize="11" fontWeight="800">{option.slice(0, 14)}</text></g>; })}</svg><span className="wheel-pointer" aria-hidden="true" /></div>{state.phase === "result" && <div className="trivia-result"><p>{copy.result}</p><h3>{state.result}</h3></div>}{stageRole && <div className="game-primary-actions">{state.phase === "collect" && <button className="demo-action demo-action--lime" onClick={() => sendAction("spin")} disabled={state.options.length < 2} type="button">{copy.spin}</button>}{state.phase === "result" && <><button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{copy.next}</button><button className="demo-action demo-action--white" onClick={() => sendAction("finish")} type="button">{copy.finish}</button></>}</div>}{sessionId && <span className="multiplayer-badge">LIVE</span>}</section>;
 }
-
-const EN: Record<string, string> = { wheelTitle: "Wheel of Fate", spin: "Spin!", spinning: "Spinning…", wheelResult: "The wheel chose:", wheelPlaceholder: "Type an option…", add: "Add", sent: "Added!", optionsAdded: "options so far", finish: "Done" };
-const RU: Record<string, string> = { wheelTitle: "Колесо Судьбы", spin: "Крутить!", spinning: "Крутится…", wheelResult: "Колесо выбрало:", wheelPlaceholder: "Напиши вариант…", add: "Добавить", sent: "Добавлено!", optionsAdded: "вариантов пока", finish: "Готово" };

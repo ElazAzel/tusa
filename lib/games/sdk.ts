@@ -21,6 +21,7 @@ import pickThree from "./definitions/pick-three";
 import secretGrid from "./definitions/secret-grid";
 import colorCards from "./definitions/color-cards";
 import guessSong, { createMusicQuizDefinition } from "./definitions/music-quiz";
+import { cupToss, wheel } from "./definitions/party-tools";
 
 type Entry = {
   id: string;
@@ -65,6 +66,8 @@ register(secretGrid);
 register(colorCards);
 register(guessSong);
 register(createMusicQuizDefinition("musicQuiz"));
+register(wheel);
+register(cupToss);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);

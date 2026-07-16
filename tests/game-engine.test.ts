@@ -288,6 +288,25 @@ test("Music quiz family keeps answers private and scores guesses on the server",
   }
 });
 
+test("Party tools use a server-selected wheel and shared authoritative cup score", () => {
+  const startedWheel = initialServerGameState("wheel", players, { locale: "en" }, 1_000)!;
+  assert.equal(hasDefinition("wheel"), true);
+  const added = applyServerGameCommand("wheel", startedWheel, "addOption", { text: "Dance" }, context("guest", 2_000))!;
+  assert.equal((added.state.options as string[]).includes("Dance"), true);
+  const spun = applyServerGameCommand("wheel", added.state, "spin", {}, context("host", 3_000))!;
+  assert.equal(spun.state.phase, "result");
+  assert.equal(spun.state.result, (spun.state.options as string[])[Number(spun.state.resultIndex)]);
+  const blockedSpin = applyServerGameCommand("wheel", added.state, "spin", {}, context("guest", 3_000))!;
+  assert.match(blockedSpin.error ?? "", /Only the stage/);
+
+  const startedCup = initialServerGameState("beer", players, {}, 1_000)!;
+  assert.equal(hasDefinition("beer"), true);
+  const hit = applyServerGameCommand("beer", startedCup, "hit", { team: 0 }, context("guest", 2_000))!;
+  assert.deepEqual(hit.state.scores, [9, 10]);
+  const restore = applyServerGameCommand("beer", hit.state, "returnCup", { team: 0 }, context("host", 2_100))!;
+  assert.deepEqual(restore.state.scores, [10, 10]);
+});
+
 test("Impostor keeps the word private and resolves clues and votes on the server", () => {
   const started = initialServerGameState("impostor", players, { locale: "en" }, 1_001)!;
   assert.equal(started.impostorId, "guest");
