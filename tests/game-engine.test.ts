@@ -254,6 +254,18 @@ test("Secret Grid keeps clue authority, card reveals and wins on the server", ()
   assert.equal((picked.state.revealed as boolean[])[0], true);
 });
 
+test("Color Cards deals private hands and enforces player turns on the server", () => {
+  const cardPlayers = ["host", "guest"];
+  const ctx = (actorId: string) => ({ actorId, creatorId: "host", participants: cardPlayers, now: 2_000 });
+  const started = initialServerGameState("uno", cardPlayers, {}, 1_000)!;
+  assert.equal(hasDefinition("uno"), true);
+  assert.equal((started.hands as Record<string, unknown[]>).host.length, 7);
+  const blocked = applyServerGameCommand("uno", started, "draw", {}, ctx("guest"))!;
+  assert.match(blocked.error ?? "", /turn/);
+  const drawn = applyServerGameCommand("uno", started, "draw", {}, ctx("host"))!;
+  assert.equal((drawn.state.hands as Record<string, unknown[]>).host.length, 8);
+});
+
 test("Impostor keeps the word private and resolves clues and votes on the server", () => {
   const started = initialServerGameState("impostor", players, { locale: "en" }, 1_001)!;
   assert.equal(started.impostorId, "guest");

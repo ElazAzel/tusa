@@ -18,6 +18,7 @@ import foreheadGuess from "./definitions/forehead-guess";
 import lostLocation from "./definitions/lost-location";
 import pickThree from "./definitions/pick-three";
 import secretGrid from "./definitions/secret-grid";
+import colorCards from "./definitions/color-cards";
 
 type Entry = {
   id: string;
@@ -56,6 +57,7 @@ register(foreheadGuess);
 register(lostLocation);
 register(pickThree);
 register(secretGrid);
+register(colorCards);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);
