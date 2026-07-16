@@ -1,10 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { applyServerGameCommand, initialServerGameState } from "../lib/games/engine";
+import { GAME_MANIFEST } from "../lib/games/manifest";
 import { getDefinition, hasDefinition } from "../lib/games/sdk";
 
 const players = ["host", "guest"];
 const context = (actorId: string, now: number) => ({ actorId, creatorId: "host", participants: players, now });
+
+test("every manifest game has a server-authoritative SDK definition", () => {
+  assert.equal(GAME_MANIFEST.length, 32);
+  assert.deepEqual(GAME_MANIFEST.filter((game) => !hasDefinition(game.id)).map((game) => game.id), []);
+});
 
 test("server trivia scores an answer once and ignores a duplicate", () => {
   const started = initialServerGameState("trivia", players, { locale: "en" }, 1_000)!;
@@ -340,6 +346,56 @@ test("Social tools keep rounds and responses in the server snapshot", () => {
     const next = applyServerGameCommand(game, response.state, "next", {}, context("host", 2_200))!;
     assert.equal(next.state.round, 1);
   }
+});
+
+test("Word Blast keeps timer and scoring on the server", () => {
+  const lobby = initialServerGameState("alias", players, { locale: "en" }, 1_000)!;
+  assert.equal(hasDefinition("alias"), true);
+  const started = applyServerGameCommand("alias", lobby, "start", {}, context("host", 2_000))!;
+  assert.equal(started.state.deadline, 62_000);
+  const correct = applyServerGameCommand("alias", started.state, "correct", {}, context("host", 3_000))!;
+  assert.equal(correct.state.score, 1);
+  const blocked = applyServerGameCommand("alias", correct.state, "correct", {}, context("guest", 3_100))!;
+  assert.match(blocked.error ?? "", /Only the stage/);
+});
+
+test("Bunker assigns private traits and resolves player voting on the server", () => {
+  const party = ["host", "a", "b", "c", "d"];
+  const ctx = (actorId: string, now = 1_000) => ({ actorId, creatorId: "host", participants: party, now });
+  const lobby = initialServerGameState("bunker", party, {}, 1_000)!;
+  const started = applyServerGameCommand("bunker", lobby, "start", {}, ctx("host", 2_000))!;
+  assert.equal(started.state.phase, "argue");
+  assert.equal(Object.keys(started.state.traits as Record<string,string>).length, 5);
+  const vote = applyServerGameCommand("bunker", { ...started.state, phase:"vote" }, "vote", { target:"a" }, ctx("b"))!;
+  assert.equal((vote.state.votes as Record<string,string>).b, "a");
+  const resolved = applyServerGameCommand("bunker", vote.state, "resolve", {}, ctx("host"))!;
+  assert.equal(resolved.state.phase, "result");
+});
+
+test("Pictionary protects drawing authority and scores a correct guess", () => {
+  const party = ["host", "drawer", "guest"];
+  const ctx = (actorId: string, now = 1_000) => ({ actorId, creatorId: "host", participants: party, now });
+  const lobby = initialServerGameState("pictionary", party, {}, 1_000)!;
+  const started = applyServerGameCommand("pictionary", lobby, "start", {}, ctx("host", 2_000))!;
+  assert.equal(started.state.drawerId, "host");
+  const blocked = applyServerGameCommand("pictionary", started.state, "stroke", { points:[{x:1,y:1,draw:false}] }, ctx("guest"))!;
+  assert.match(blocked.error ?? "", /Only the drawer/);
+  const guessed = applyServerGameCommand("pictionary", started.state, "guess", { text:started.state.word }, ctx("guest"))!;
+  assert.equal(guessed.state.phase, "result");
+  assert.equal((guessed.state.scores as Record<string,number>).guest, 3);
+});
+
+test("Draw Chain requires every player through prompt, drawing and guessing", () => {
+  const party = ["host", "a", "b", "c"];
+  const ctx = (actorId: string, now = 1_000) => ({ actorId, creatorId: "host", participants: party, now });
+  let state = initialServerGameState("gartic", party, {}, 1_000)!;
+  state = applyServerGameCommand("gartic", state, "start", {}, ctx("host", 2_000))!.state;
+  for (const id of party) state = applyServerGameCommand("gartic", state, "prompt", { text:`prompt-${id}` }, ctx(id, 3_000))!.state;
+  assert.equal(state.phase, "draw");
+  for (const id of party) state = applyServerGameCommand("gartic", state, "drawingDone", {}, ctx(id, 4_000))!.state;
+  assert.equal(state.phase, "guess");
+  for (const id of party) state = applyServerGameCommand("gartic", state, "guess", { text:`guess-${id}` }, ctx(id, 5_000))!.state;
+  assert.equal(state.phase, "reveal");
 });
 
 test("Impostor keeps the word private and resolves clues and votes on the server", () => {

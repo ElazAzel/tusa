@@ -12,8 +12,7 @@ This document is the current operational checkpoint for continuing the master pl
 ## Verified current state
 
 - Game manifest is the source of truth for the public catalogue and contains 32 canonical modes.
-- SDK definitions exist for 16 games in `lib/games/definitions/`, including Mime Riot, Forehead Guess, Lost Location and Pick Three.
-- Zod command schemas exist for 25 game IDs in `lib/games/commands.ts`.
+- Every one of the 32 manifest games now has an SDK definition, Zod command contract and server-side reducer. The catalogue invariant is covered by a test so a UI-only mode cannot be added accidentally.
 - Tests currently cover server reducers and platform invariants through `npm test`.
 - CI exists and recent PRs have been merged through GitHub/Vercel.
 - `/admin/system` exposes a permission-gated, secret-free runtime health report. Ably and Upstash are integrated with local fallback; `TUSA_REQUIRE_DISTRIBUTED_SERVICES=true` turns a missing realtime provider into a controlled `503` instead of a silent single-instance fallback.
@@ -56,12 +55,11 @@ External action still required:
 3. Runtime DDL must be replaced by versioned migrations for core business tables.
 4. Ably/Upstash production env must be verified and fail-closed or visibly degraded.
 5. All authenticated app pages and critical APIs need deterministic error states, not generic RSC failure.
-6. Multiplayer command state must be server-authoritative for all 32 modes, not only command-validated.
+6. Maintain the server-authoritative reducer invariant while adding certification and operational coverage.
 
 ### P1 — game completion
 
-1. Finish migrating remaining games from legacy reducer/local state into SDK definitions.
-2. Add multiplayer E2E for host + at least two controllers per certified game.
+1. Add multiplayer E2E for host + at least two controllers per certified game.
 3. Add privacy tests for every hidden role/card/word/answer.
 4. Add reconnect/session recovery tests per game.
 5. Keep UI labels honest: Beta until certification gates pass.

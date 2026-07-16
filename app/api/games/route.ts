@@ -224,11 +224,11 @@ export async function GET(request: NextRequest) {
 type SessionView = NonNullable<Awaited<ReturnType<typeof getGameSessionById>>>;
 
 function sanitizeControllerSession(session: SessionView, userId: string) {
-  return { ...session, state: sanitizeControllerState(session.game, session.state, userId) };
+  return { ...session, state: sanitizeControllerState(session.game, session.state, userId, session.createdBy) };
 }
 
-function sanitizeControllerState(game: string, rawState: Record<string, unknown>, userId: string) {
-  const state = sanitizeSdkState(game, structuredClone(rawState), userId);
+function sanitizeControllerState(game: string, rawState: Record<string, unknown>, userId: string, creatorId = "") {
+  const state = sanitizeSdkState(game, structuredClone(rawState), userId === creatorId ? "__stage__" : userId);
   const phase = String(state.phase ?? "");
   if ((game === "trivia" || game === "quiz" || game === "brainBurst") && phase === "question") state.correct = -1;
   if (game === "twoTruths" && phase === "vote") state.lie = -1;
