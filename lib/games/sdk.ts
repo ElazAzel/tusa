@@ -3,6 +3,7 @@ import type { ServerGameContext, ServerGameResult } from "./definition";
 import { deriveVerifiedScore } from "./scoring";
 import impostor from "./definitions/impostor";
 import trivia from "./definitions/trivia";
+import quiz from "./definitions/quiz";
 import bombParty from "./definitions/bomb-party";
 import punchline from "./definitions/punchline";
 import fakeFact from "./definitions/fake-fact";
@@ -42,6 +43,7 @@ function register<T extends Record<string, unknown>>(def: {
 
 register(impostor);
 register(trivia);
+register(quiz);
 register(bombParty);
 register(punchline);
 register(fakeFact);
