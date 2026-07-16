@@ -10,6 +10,7 @@ import wouldRather from "./definitions/would-rather";
 import twoTruths from "./definitions/two-truths";
 import brainBurst from "./definitions/brain-burst";
 import spectrum from "./definitions/spectrum";
+import blankSlate from "./definitions/blank-slate";
 
 type Entry = {
   id: string;
@@ -40,6 +41,7 @@ register(wouldRather);
 register(twoTruths);
 register(brainBurst);
 register(spectrum);
+register(blankSlate);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);
