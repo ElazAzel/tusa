@@ -3048,7 +3048,9 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 }
 .shopping-list--detailed input[type="number"]::-webkit-inner-spin-button,
 .shopping-list--detailed input[type="number"]::-webkit-outer-spin-button {
-  opacity: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
 }
 
 /* ===== BRAND BOOK: Custom Select ===== */

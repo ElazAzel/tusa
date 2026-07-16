@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export function useLiveStream<T = unknown>(channel: string | null) {
   const [events, setEvents] = useState<T[]>([]);
   const [connected, setConnected] = useState(false);
+  const [hasConnectedOnce, setHasConnectedOnce] = useState(false);
   const [connectionEpoch, setConnectionEpoch] = useState(0);
   const listenerRef = useRef<((event: T) => void) | undefined>(undefined);
 
@@ -25,6 +26,7 @@ export function useLiveStream<T = unknown>(channel: string | null) {
       es.onopen = () => {
         attempts = 0;
         setConnected(true);
+        setHasConnectedOnce(true);
         setConnectionEpoch((value) => value + 1);
       };
       es.onmessage = (msg) => {
@@ -49,5 +51,5 @@ export function useLiveStream<T = unknown>(channel: string | null) {
 
   const onEvent = useCallback((handler: (event: T) => void) => { listenerRef.current = handler; }, []);
 
-  return { events, connected, connectionEpoch, onEvent, clear: useCallback(() => setEvents([]), []) };
+  return { events, connected, hasConnectedOnce, connectionEpoch, onEvent, clear: useCallback(() => setEvents([]), []) };
 }

@@ -20,7 +20,8 @@ export default function ShoppingList({ partyId, members = [], canManage = false 
 
   function addItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const text = String(form.get("text") || "").trim();
     const quantity = Math.max(1, Number(form.get("quantity") || 1));
     const unit = String(form.get("unit") || "шт.");
@@ -31,11 +32,11 @@ export default function ShoppingList({ partyId, members = [], canManage = false 
     });
     if (existing) {
       fetch("/api/shopping", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", itemId: existing.id, updates: { quantity: existing.quantity + quantity } }) })
-        .then(() => { loadItems(); event.currentTarget.reset(); });
+        .then(() => { loadItems(); formElement.reset(); });
       return;
     }
     fetch("/api/shopping", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", partyId, text, quantity, unit }) })
-      .then(() => { loadItems(); event.currentTarget.reset(); });
+      .then(() => { loadItems(); formElement.reset(); });
   }
 
   function loadItems() {

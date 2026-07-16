@@ -6,7 +6,7 @@ const csp = [
   "script-src-elem 'self' 'unsafe-inline' https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https://images.unsplash.com https://api.dicebear.com",
+  "img-src 'self' data: blob: https://images.unsplash.com https://api.dicebear.com https://img.clerk.com https://images.clerk.dev",
   "connect-src 'self' https://*.vercel-insights.com https://vitals.vercel-insights.com https://*.vercel.app https://challenges.cloudflare.com https://*.ably.io wss://*.ably.io https://*.ably-realtime.com wss://*.ably-realtime.com",
   "worker-src 'self' blob:",
   "frame-src 'self' https://challenges.cloudflare.com",

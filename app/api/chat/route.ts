@@ -45,6 +45,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid message.", details: parsed.error.flatten() }, { status: 400 });
   const body = parsed.data;
 
+  const requestId = crypto.randomUUID();
   try {
     await requirePartyMember(body.partyId, actor.id);
     if (body.action === "react") {
@@ -67,6 +68,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ message, duplicate: !created }, { status: created ? 201 : 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not send message.";
-    return NextResponse.json({ error: message }, { status: /member/i.test(message) ? 403 : 500 });
+    const forbidden = /member/i.test(message);
+    console.error("[api/chat] send failed", { requestId, partyId: body.partyId, actorId: actor.id, error: message });
+    return NextResponse.json({ error: forbidden ? "Not a party member." : "Could not send message. Please try again.", requestId }, { status: forbidden ? 403 : 500 });
   }
 }
