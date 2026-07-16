@@ -13,6 +13,8 @@ import spectrum from "./definitions/spectrum";
 import blankSlate from "./definitions/blank-slate";
 import cardsChaos from "./definitions/cards-chaos";
 import charades from "./definitions/charades";
+import mimeRiot from "./definitions/mime-riot";
+import foreheadGuess from "./definitions/forehead-guess";
 
 type Entry = {
   id: string;
@@ -46,6 +48,8 @@ register(spectrum);
 register(blankSlate);
 register(cardsChaos);
 register(charades);
+register(mimeRiot);
+register(foreheadGuess);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);
