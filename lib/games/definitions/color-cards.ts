@@ -98,5 +98,6 @@ export default defineGame<State>({
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },
+  sanitizeForViewer(state, viewerId) { return viewerId === "__stage__" ? state : { ...state, hands: state.hands[viewerId] ? { [viewerId]: state.hands[viewerId] } : {}, drawPile: [] }; },
   deriveScore(state) { return state.winner ? Math.max(1, state.hands[state.winner]?.length ?? 0) : 0; },
 });

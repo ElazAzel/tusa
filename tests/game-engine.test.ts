@@ -272,6 +272,16 @@ test("Color Cards deals private hands and enforces player turns on the server", 
   assert.equal((drawn.state.hands as Record<string, unknown[]>).host.length, 8);
 });
 
+test("Secret Grid and Color Cards do not expose hidden state to another controller", () => {
+  const grid = initialServerGameState("codenames", ["host", "guest", "third", "fourth"], { locale: "en" }, 1_000)!;
+  const safeGrid = getDefinition("codenames")!.sanitizeForViewer!(grid, "guest");
+  assert.equal((safeGrid.colors as string[]).every((color) => color === "neutral"), true);
+  const cards = initialServerGameState("uno", ["host", "guest"], {}, 1_000)!;
+  const safeCards = getDefinition("uno")!.sanitizeForViewer!(cards, "guest");
+  assert.deepEqual(Object.keys(safeCards.hands as Record<string, unknown>), ["guest"]);
+  assert.deepEqual(safeCards.drawPile, []);
+});
+
 test("Music quiz family keeps answers private and scores guesses on the server", () => {
   for (const game of ["guessSong", "musicQuiz"] as const) {
     assert.equal(hasDefinition(game), true);

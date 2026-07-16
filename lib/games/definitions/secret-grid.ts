@@ -101,6 +101,10 @@ export default defineGame<State>({
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },
+  sanitizeForViewer(state, viewerId) {
+    if (viewerId === "__stage__" || viewerId === state.spymasterA || viewerId === state.spymasterB) return state;
+    return { ...state, colors: state.colors.map((color, index) => state.revealed[index] ? color : "neutral") };
+  },
   deriveScore(state) {
     return Math.max(state.scores.a, state.scores.b);
   },
