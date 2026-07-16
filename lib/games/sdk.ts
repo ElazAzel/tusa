@@ -17,6 +17,7 @@ import mimeRiot from "./definitions/mime-riot";
 import foreheadGuess from "./definitions/forehead-guess";
 import lostLocation from "./definitions/lost-location";
 import pickThree from "./definitions/pick-three";
+import secretGrid from "./definitions/secret-grid";
 
 type Entry = {
   id: string;
@@ -54,6 +55,7 @@ register(mimeRiot);
 register(foreheadGuess);
 register(lostLocation);
 register(pickThree);
+register(secretGrid);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);

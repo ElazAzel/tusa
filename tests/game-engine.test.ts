@@ -236,6 +236,24 @@ test("Lost Location keeps spy identity private and resolves votes server-side", 
   assert.equal((reveal.state.scores as Record<string, number>).host, 1);
 });
 
+test("Secret Grid keeps clue authority, card reveals and wins on the server", () => {
+  const gridPlayers = ["host", "guest", "third", "fourth"];
+  const ctx = (actorId: string) => ({ actorId, creatorId: "host", participants: gridPlayers, now: 2_000 });
+  const started = initialServerGameState("codenames", gridPlayers, { locale: "en" }, 1_000)!;
+  assert.equal(hasDefinition("codenames"), true);
+  const firstLead = applyServerGameCommand("codenames", started, "setSpymaster", { tm: "a" }, ctx("host"))!;
+  const secondLead = applyServerGameCommand("codenames", firstLead.state, "setSpymaster", { tm: "b" }, ctx("guest"))!;
+  assert.equal(secondLead.state.phase, "clue");
+  const blockedClue = applyServerGameCommand("codenames", secondLead.state, "giveClue", { wd: "fruit", nm: 2 }, ctx("third"))!;
+  assert.match(blockedClue.error ?? "", /spymaster/);
+  const clue = applyServerGameCommand("codenames", secondLead.state, "giveClue", { wd: "fruit", nm: 2 }, ctx("host"))!;
+  assert.equal(clue.state.phase, "guess");
+  const blockedPick = applyServerGameCommand("codenames", clue.state, "pickWord", { idx: 0 }, ctx("host"))!;
+  assert.match(blockedPick.error ?? "", /Spymasters/);
+  const picked = applyServerGameCommand("codenames", clue.state, "pickWord", { idx: 0 }, ctx("third"))!;
+  assert.equal((picked.state.revealed as boolean[])[0], true);
+});
+
 test("Impostor keeps the word private and resolves clues and votes on the server", () => {
   const started = initialServerGameState("impostor", players, { locale: "en" }, 1_001)!;
   assert.equal(started.impostorId, "guest");
