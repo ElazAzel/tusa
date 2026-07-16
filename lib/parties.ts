@@ -220,7 +220,7 @@ export function ensurePartyV2() {
   try { await seedCosmetics(sql); } catch { /* already seeded */ }
   try { await seedQuests(sql); } catch { /* already seeded */ }
   await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
-  await sql`DO $$ BEGIN ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_mutation_unique UNIQUE (party_id, client_mutation_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$`;
+  await sql`DO $$ BEGIN ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_mutation_unique UNIQUE (party_id, clerk_user_id, client_mutation_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$`;
   await sql`ALTER TABLE game_scores ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
   await sql`DO $$ BEGIN ALTER TABLE game_scores ADD CONSTRAINT game_scores_mutation_unique UNIQUE (session_id, client_mutation_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$`;
   })().catch((error) => {
@@ -455,7 +455,7 @@ export function ensurePartySchema() {
   await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reactions JSONB NOT NULL DEFAULT '{}'::jsonb`;
   await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
   await sql`ALTER TABLE chat_messages DROP CONSTRAINT IF EXISTS chat_messages_mutation_unique`;
-  await sql`ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_mutation_unique UNIQUE (party_id, client_mutation_id)`;
+  await sql`ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_mutation_unique UNIQUE (party_id, clerk_user_id, client_mutation_id)`;
   await sql`ALTER TABLE game_scores ADD COLUMN IF NOT EXISTS client_mutation_id TEXT`;
   await sql`ALTER TABLE game_scores DROP CONSTRAINT IF EXISTS game_scores_mutation_unique`;
   await sql`ALTER TABLE game_scores ADD CONSTRAINT game_scores_mutation_unique UNIQUE (session_id, client_mutation_id)`;
@@ -1145,6 +1145,7 @@ export type ChatMessage = {
   voiceUrl: string;
   stickerId: string;
   reactions: Record<string, string[]>;
+  clientMutationId: string;
   createdAt: string;
 };
 
@@ -1161,20 +1162,22 @@ export async function sendMessage(userId: string, partyId: string, text: string,
   const nameColor = profile?.cosmetics?.nameColor ?? "#000000";
   let [row] = await db()`INSERT INTO chat_messages (id, party_id, clerk_user_id, display_name, handle, name_color, text, type, voice_url, sticker_id, client_mutation_id)
     VALUES (${randomUUID()}, ${partyId}, ${userId}, ${profile?.displayName ?? "TUSA friend"}, ${handle}, ${nameColor}, ${text.slice(0, 1000)}, ${type}, ${voiceUrl}, ${stickerId}, ${mutationId})
-    ON CONFLICT (party_id, client_mutation_id) DO NOTHING
+    ON CONFLICT (party_id, clerk_user_id, client_mutation_id) DO NOTHING
     RETURNING *` as unknown as Record<string, unknown>[];
+  const created = Boolean(row);
   if (!row && mutationId) {
-    const [existing] = await db()`SELECT * FROM chat_messages WHERE party_id = ${partyId} AND client_mutation_id = ${mutationId} LIMIT 1` as unknown as Record<string, unknown>[];
+    const [existing] = await db()`SELECT * FROM chat_messages WHERE party_id = ${partyId} AND clerk_user_id = ${userId} AND client_mutation_id = ${mutationId} LIMIT 1` as unknown as Record<string, unknown>[];
     row = existing;
   }
-  return row ? {
+  const message = row ? {
     id: String(row.id), partyId: String(row.party_id), userId: String(row.clerk_user_id),
     displayName: String(row.display_name), handle: String(row.handle ?? ""), nameColor: String(row.name_color ?? "#000000"),
     text: String(row.text), type: String(row.type) as ChatMessage["type"],
     voiceUrl: String(row.voice_url), stickerId: String(row.sticker_id),
-    reactions: (row.reactions ?? {}) as Record<string, string[]>,
+    reactions: (row.reactions ?? {}) as Record<string, string[]>, clientMutationId: String(row.client_mutation_id ?? ""),
     createdAt: new Date(row.created_at as string | Date).toISOString(),
   } as ChatMessage : null;
+  return { message, created };
 }
 
 export async function toggleReaction(messageId: string, userId: string, emoji: string) {
@@ -1205,9 +1208,9 @@ export async function getMessages(partyId: string, limit = 50, after?: string) {
   const ordered = after ? rows : rows.reverse();
   return ordered.map((row) => ({
     id: String(row.id), partyId: String(row.party_id), userId: String(row.clerk_user_id),
-    displayName: String(row.display_name), text: String(row.text), type: String(row.type ?? "text") as ChatMessage["type"],
+    displayName: String(row.display_name), handle: String(row.handle ?? ""), nameColor: String(row.name_color ?? "#000000"), text: String(row.text), type: String(row.type ?? "text") as ChatMessage["type"],
     voiceUrl: String(row.voice_url ?? ""), stickerId: String(row.sticker_id ?? ""),
-    reactions: (row.reactions ?? {}) as Record<string, string[]>,
+    reactions: (row.reactions ?? {}) as Record<string, string[]>, clientMutationId: String(row.client_mutation_id ?? ""),
     createdAt: new Date(row.created_at as string | Date).toISOString(),
   } as ChatMessage));
 }

@@ -89,10 +89,19 @@ External action still required:
 ## Next implementation order
 
 1. Stabilize auth runtime and production login.
-2. Keep product claims aligned with the certification matrix and production environment.
-3. Continue SDK migration for the remaining high-impact games.
-4. Add the first real multiplayer E2E harness for one certified game.
-5. Start migration plan from runtime DDL to versioned schema.
+2. Ship the chat reliability and mobile UX phase described below.
+3. Keep product claims aligned with the certification matrix and production environment.
+4. Continue SDK migration for the remaining high-impact games.
+5. Add the first real multiplayer E2E harness for one certified game.
+6. Start migration plan from runtime DDL to versioned schema.
+
+## Chat reliability and brand-book UX phase
+
+The current working phase makes chat delivery idempotent per party, actor and client mutation ID. A duplicate POST now returns the original message without publishing it twice or awarding engagement twice. Chat history and realtime payloads consistently include profile handle, name color and client mutation ID so optimistic messages reconcile correctly.
+
+The party room refreshes its chat snapshot after a realtime reconnect, preserves a user reading history instead of forcing scroll-to-bottom, and exposes a branded jump-to-latest action. The composer now has explicit sending and failure states, keyboard-safe multiline behavior, visible touch reaction controls and RU/EN copy. The visual treatment follows `tusa-style-guide-v1.4.html`: cream stream, white incoming bubbles, lime outgoing bubbles, black offset shadows, mono metadata, compact pink notification and reduced-motion fallback.
+
+This phase does not yet move voice media from base64 payloads to Vercel Blob. That storage migration remains a P1 production task because it needs signed upload and retention/moderation paths rather than a client-only replacement.
 
 ## External audit reconciliation
 

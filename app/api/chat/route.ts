@@ -14,7 +14,7 @@ const messageSchema = z.object({
   type: z.enum(["text", "voice", "sticker"]).default("text"),
   voiceUrl: z.string().max(1_500_000).optional(),
   stickerId: z.string().max(80).optional(),
-  clientMutationId: z.string().min(8).max(64).optional(),
+  clientMutationId: z.string().uuid().optional(),
 }).strict();
 
 export async function GET(request: NextRequest) {
@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
   try {
     await requirePartyMember(partyId, actor.id);
     const after = request.nextUrl.searchParams.get("after") || undefined;
-    const messages = await getMessages(partyId, 50, after);
+    const requestedLimit = Number(request.nextUrl.searchParams.get("limit") ?? "50");
+    const messages = await getMessages(partyId, Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 50, 1), 100), after);
     return NextResponse.json({ messages });
   } catch (error) {
     const forbidden = error instanceof Error && /member/i.test(error.message);
@@ -56,12 +57,14 @@ export async function POST(request: Request) {
 
     const hasPayload = Boolean(body.text?.trim()) || (body.type === "voice" && body.voiceUrl) || (body.type === "sticker" && body.stickerId);
     if (!hasPayload) return NextResponse.json({ error: "Message content is required." }, { status: 400 });
-    const mutationId = body.clientMutationId || `${actor.id}_${Date.now()}`;
-    const message = await sendMessage(actor.id, body.partyId, body.text?.trim() ?? "", { type: body.type, voiceUrl: body.voiceUrl, stickerId: body.stickerId, clientMutationId: mutationId });
+    const mutationId = body.clientMutationId || crypto.randomUUID();
+    const { message, created } = await sendMessage(actor.id, body.partyId, body.text?.trim() ?? "", { type: body.type, voiceUrl: body.voiceUrl, stickerId: body.stickerId, clientMutationId: mutationId });
     if (!message) return NextResponse.json({ message: null, ok: true });
-    publish(`chat:${body.partyId}`, message);
-    void grantEngagementReward(actor.id, "chat", body.partyId).catch(() => undefined);
-    return NextResponse.json({ message }, { status: 201 });
+    if (created) {
+      publish(`chat:${body.partyId}`, message);
+      void grantEngagementReward(actor.id, "chat", body.partyId).catch(() => undefined);
+    }
+    return NextResponse.json({ message, duplicate: !created }, { status: created ? 201 : 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not send message.";
     return NextResponse.json({ error: message }, { status: /member/i.test(message) ? 403 : 500 });
