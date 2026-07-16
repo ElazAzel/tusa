@@ -43,7 +43,7 @@ export function fallbackProfile(user: Awaited<ReturnType<typeof requireAppUser>>
     bio: "",
     imageUrl: user.imageUrl ?? "",
     compashka: "",
-    cosmetics: { cover: "lime", avatarFrame: "none", chatEffect: "none", nameColor: "#000000", badge: "newcomer", xpMultiplier: 1, betaAccess: false, unlocked: [] },
+    cosmetics: { cover: "lime", avatarFrame: "none", chatEffect: "none", chatBackground: "paper", nameColor: "#000000", badge: "newcomer", xpMultiplier: 1, betaAccess: false, unlocked: [] },
     xp: 0,
     hasPartyCreation: false,
     updatedAt: new Date().toISOString(),

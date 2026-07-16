@@ -11,8 +11,8 @@ import CosmeticsCustomizer from "./CosmeticsCustomizer";
 const badgeFamilies = ["Организатор", "Игрок", "Хроникёр", "Казначей", "Душа компании", "Пунктуальный", "Командный", "Исследователь", "Мемолог", "Голос вечера"];
 const badgeCatalogue = Array.from({ length: 60 }, (_, index) => ({ id: `badge_${index + 1}`, name: `${badgeFamilies[index % badgeFamilies.length]} \u00b7 ${Math.floor(index / badgeFamilies.length) + 1}`, threshold: (index + 1) * 120 }));
 
-const benefitIcons: Record<string, string> = { beta_access: "vpn_key", profile_cover: "wallpaper", avatar_frame: "frame_person", chat_effect: "auto_awesome", name_color: "palette", badge: "verified", xp_multiplier: "trending_up", party_creation: "add_box" };
-const benefitLabels: Record<string, { ru: string; en: string }> = { beta_access: { ru: "Бета-доступ", en: "Beta access" }, profile_cover: { ru: "Обложка", en: "Cover" }, avatar_frame: { ru: "Рамка профиля", en: "Avatar frame" }, chat_effect: { ru: "Эффект чата", en: "Chat effect" }, name_color: { ru: "Цвет имени", en: "Name color" }, badge: { ru: "Ачивка", en: "Badge" }, xp_multiplier: { ru: "XP-множитель", en: "XP multiplier" }, party_creation: { ru: "Создание тус", en: "Party creation" } };
+const benefitIcons: Record<string, string> = { beta_access: "vpn_key", profile_cover: "wallpaper", avatar_frame: "frame_person", chat_effect: "auto_awesome", chat_background: "format_color_fill", name_color: "palette", badge: "verified", xp_multiplier: "trending_up", party_creation: "add_box" };
+const benefitLabels: Record<string, { ru: string; en: string }> = { beta_access: { ru: "Бета-доступ", en: "Beta access" }, profile_cover: { ru: "Обложка", en: "Cover" }, avatar_frame: { ru: "Рамка профиля", en: "Avatar frame" }, chat_effect: { ru: "Эффект чата", en: "Chat effect" }, chat_background: { ru: "Фон чата", en: "Chat background" }, name_color: { ru: "Цвет имени", en: "Name color" }, badge: { ru: "Ачивка", en: "Badge" }, xp_multiplier: { ru: "XP-множитель", en: "XP multiplier" }, party_creation: { ru: "Создание тус", en: "Party creation" } };
 
 const frameStyles: Record<string, { border: string; shadow: string; label: string }> = {
   lime:  { border: "#c9ff05", shadow: "0 0 12px #c9ff05", label: "Lime" },
@@ -286,7 +286,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
                       {profile.displayName}
                     </span>
                     <span className="cosmetics-quick-items">
-                      {profile.cosmetics.cover} · {profile.cosmetics.avatarFrame} · {profile.cosmetics.chatEffect}
+                      {profile.cosmetics.cover} · {profile.cosmetics.avatarFrame} · {profile.cosmetics.chatEffect} · {profile.cosmetics.chatBackground}
                     </span>
                   </div>
                 </div>

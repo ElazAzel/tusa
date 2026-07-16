@@ -6,17 +6,18 @@ import type { CosmeticsItem, CosmeticsItemType } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleToggle from "@/app/components/LocaleToggle";
 
-const types: CosmeticsItemType[] = ["cover", "avatarFrame", "chatEffect", "nameColor", "badge"];
+const types: CosmeticsItemType[] = ["cover", "avatarFrame", "chatEffect", "chatBackground", "nameColor", "badge"];
 
 const typeLabels: Record<CosmeticsItemType, { ru: string; en: string }> = {
   cover: { ru: "Обложка", en: "Cover" },
   avatarFrame: { ru: "Рамка", en: "Frame" },
   chatEffect: { ru: "Эффект чата", en: "Chat effect" },
+  chatBackground: { ru: "Фон чата", en: "Chat background" },
   nameColor: { ru: "Цвет имени", en: "Name color" },
   badge: { ru: "Бейдж", en: "Badge" },
 };
 
-export default function CosmeticsAdmin({ initialItems }: { initialItems: CosmeticsItem[] }) {
+export default function CosmeticsAdmin({ initialItems, canWrite }: { initialItems: CosmeticsItem[]; canWrite: boolean }) {
   const [items, setItems] = useState(initialItems);
   const [notice, setNotice] = useState("");
   const [editTarget, setEditTarget] = useState<CosmeticsItem | null>(null);
@@ -105,7 +106,7 @@ export default function CosmeticsAdmin({ initialItems }: { initialItems: Cosmeti
       {types.map((type) => <button key={type} className={filterType === type ? "active" : ""} onClick={() => setFilterType(type)}>{typeLabels[type][locale]}</button>)}
     </div>
     <div className="cosmetics-grid">
-      <form className="cosmetics-create-card" onSubmit={create}>
+      {canWrite && <form className="cosmetics-create-card" onSubmit={create}>
         <span className="admin-kicker">{r ? "новый" : "new"}</span>
         <h2>{r ? "Добавить предмет" : "Add item"}</h2>
         <label>{r ? "Тип" : "Type"}<select name="type" required>{types.map((t) => <option key={t} value={t}>{typeLabels[t][locale]}</option>)}</select></label>
@@ -116,18 +117,18 @@ export default function CosmeticsAdmin({ initialItems }: { initialItems: Cosmeti
         <label>{r ? "URL картинки" : "Image URL"}<input name="imageUrl" placeholder="/cosmetics/frames/summer.png" /></label>
         <label>{r ? "Порядок" : "Sort order"}<input name="sortOrder" type="number" min="0" defaultValue="0" /></label>
         <button className="admin-button admin-button--lime">{r ? "Создать" : "Create"}</button>
-      </form>
+      </form>}
       <div className="cosmetics-list-card">
         <div className="admin-table-head"><div><span className="admin-kicker">{r ? "каталог" : "catalogue"}</span><h2>{filtered.length} {r ? "шт" : "items"}</h2></div></div>
         <div className="cosmetics-list">{filtered.length === 0 ? <p className="empty-state">{r ? "Нет предметов" : "No items"}</p> : filtered.map((item) => <article key={item.id} className="cosmetics-row">
           <div><strong>{item.slug}</strong><span>{typeLabels[item.type][locale]} &middot; {locale === "ru" ? item.nameRu : item.nameEn}</span><em>{item.value}{item.imageUrl ? ` &middot; ${item.imageUrl}` : ""}</em></div>
           <span className={`cosmetics-status ${item.active ? "is-active" : "is-paused"}`}>{item.active ? (r ? "актив." : "active") : (r ? "выкл." : "off")}</span>
-          <button className="admin-button admin-button--outline" onClick={() => setEditTarget(item)}>{r ? "Править" : "Edit"}</button>
-          <button className="admin-delete" onClick={() => remove(item.id)}>{r ? "Удалить" : "Delete"}</button>
+          {canWrite && <button className="admin-button admin-button--outline" onClick={() => setEditTarget(item)}>{r ? "Править" : "Edit"}</button>}
+          {canWrite && <button className="admin-delete" onClick={() => remove(item.id)}>{r ? "Удалить" : "Delete"}</button>}
         </article>)}</div>
       </div>
     </div>
-    {editTarget && <div className="admin-modal-backdrop" onClick={() => setEditTarget(null)}><form className="admin-modal" onSubmit={saveEdit} onClick={(e) => e.stopPropagation()}>
+    {canWrite && editTarget && <div className="admin-modal-backdrop" onClick={() => setEditTarget(null)}><form className="admin-modal" onSubmit={saveEdit} onClick={(e) => e.stopPropagation()}>
       <span className="admin-kicker">{r ? "редактирование" : "editing"}</span>
       <h2>{editTarget.slug}</h2>
       <label>{r ? "Тип" : "Type"}<select name="type" defaultValue={editTarget.type} required>{types.map((t) => <option key={t} value={t}>{typeLabels[t][locale]}</option>)}</select></label>

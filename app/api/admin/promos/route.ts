@@ -3,7 +3,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { isAdmin } from "@/lib/admin-auth";
 import { PROMO_STATUS, type PromoBenefit, createPromoCode, deletePromoCode, getAdminProductStats, getPromoRedemptions, listPromoCodes, updatePromoCode } from "@/lib/parties";
 
-const benefitTypes = new Set(["beta_access", "profile_cover", "avatar_frame", "chat_effect", "name_color", "badge", "xp_multiplier", "party_creation"]);
+const benefitTypes = new Set(["beta_access", "profile_cover", "avatar_frame", "chat_effect", "chat_background", "name_color", "badge", "xp_multiplier", "party_creation"]);
 function benefits(value: unknown): PromoBenefit[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is PromoBenefit => Boolean(item && typeof item === "object" && benefitTypes.has((item as PromoBenefit).type))).map((item) => ({ type: item.type, value: item.value }));
