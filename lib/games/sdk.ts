@@ -16,6 +16,7 @@ import charades from "./definitions/charades";
 import mimeRiot from "./definitions/mime-riot";
 import foreheadGuess from "./definitions/forehead-guess";
 import lostLocation from "./definitions/lost-location";
+import pickThree from "./definitions/pick-three";
 
 type Entry = {
   id: string;
@@ -52,6 +53,7 @@ register(charades);
 register(mimeRiot);
 register(foreheadGuess);
 register(lostLocation);
+register(pickThree);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);
