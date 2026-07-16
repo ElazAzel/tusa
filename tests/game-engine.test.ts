@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { applyServerGameCommand, initialServerGameState } from "../lib/games/engine";
+import { hasDefinition } from "../lib/games/sdk";
 
 const players = ["host", "guest"];
 const context = (actorId: string, now: number) => ({ actorId, creatorId: "host", participants: players, now });
@@ -88,6 +89,7 @@ test("Pick Three accepts one complete assignment per player", () => {
 });
 
 test("Brain Burst uses a ten-second server timer and server scoring", () => {
+  assert.equal(hasDefinition("brainBurst"), true);
   const started = initialServerGameState("brainBurst", players, { locale: "ru" }, 5_000)!;
   assert.equal(started.deadline, 15_000);
   assert.equal(started.question, "Столица Казахстана?");
