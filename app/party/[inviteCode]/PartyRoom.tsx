@@ -167,7 +167,7 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
   async function submitChat(payload: { text?: string; type?: "text" | "voice" | "sticker"; voiceUrl?: string; stickerId?: string }, optimisticText?: string) {
     const clientMutationId = crypto.randomUUID();
     const optimistic: ChatEntry | null = optimisticText ? {
-      id: `pending-${clientMutationId}`, partyId: party.id, userId: actorId, displayName: "", handle: "", nameColor: "#000000",
+      id: `pending-${clientMutationId}`, partyId: party.id, userId: actorId, displayName: "", handle: "", nameColor: "#000000", chatEffect: "none",
       text: optimisticText, type: "text", voiceUrl: "", stickerId: "", reactions: {}, clientMutationId, createdAt: new Date().toISOString(), pending: true,
     } : null;
     if (optimistic) setChatMessages((current) => [...current, optimistic]);
@@ -546,7 +546,7 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
           const isMe = item.userId === actorId;
           const sticker = item.type === "sticker" ? tusaStickers.find((s) => s.id === item.stickerId) : null;
           const reactionEntries = item.reactions ? Object.entries(item.reactions) : [];
-          return <article className={`party-chat-bubble ${isMe ? "is-me" : "is-other"} ${item.type === "voice" ? "is-voice" : ""} ${item.type === "sticker" ? "is-sticker" : ""} ${item.pending ? "is-pending" : ""} ${item.failed ? "is-failed" : ""}`} key={item.id || index}>
+          return <article className={`party-chat-bubble ${isMe ? "is-me" : "is-other"} ${item.type === "voice" ? "is-voice" : ""} ${item.type === "sticker" ? "is-sticker" : ""} ${item.chatEffect && item.chatEffect !== "none" ? `chat-effect-${item.chatEffect}` : ""} ${item.pending ? "is-pending" : ""} ${item.failed ? "is-failed" : ""}`} key={item.id || index}>
             {!isMe && <span className="chat-name" style={item.nameColor && item.nameColor !== "#000000" ? { color: item.nameColor } : undefined}>{item.displayName}</span>}
             {item.type === "sticker" && sticker ? (
               <span className="chat-sticker" dangerouslySetInnerHTML={{ __html: sticker.svg }} />

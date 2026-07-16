@@ -20,6 +20,9 @@ const commandRegistry = readFileSync(new URL("../lib/games/commands.ts", import.
 const chatApi = readFileSync(new URL("../app/api/chat/route.ts", import.meta.url), "utf8");
 const systemApi = readFileSync(new URL("../app/api/admin/system/route.ts", import.meta.url), "utf8");
 const runtimeStatus = readFileSync(new URL("../lib/runtime-status.ts", import.meta.url), "utf8");
+const cosmeticsApi = readFileSync(new URL("../app/api/cosmetics/route.ts", import.meta.url), "utf8");
+const cosmeticsAdminApi = readFileSync(new URL("../app/api/admin/cosmetics/route.ts", import.meta.url), "utf8");
+const profileApi = readFileSync(new URL("../app/api/profile/route.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -110,4 +113,15 @@ test("runtime schema upgrades do not drop and recreate idempotency constraints",
   assert.doesNotMatch(partiesSource, /DROP CONSTRAINT IF EXISTS chat_messages_mutation_unique/);
   assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS chat_messages_mutation_idx/);
   assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS game_scores_mutation_idx/);
+});
+
+test("cosmetics are catalogue-backed, entitlement-gated and safe to render in chat", () => {
+  assert.match(cosmeticsApi, /items\.filter\(\(item\) => item\.active\)/);
+  assert.match(cosmeticsAdminApi, /getAdminAccess/);
+  assert.match(cosmeticsAdminApi, /itemSchema/);
+  assert.match(profileApi, /profileSchema/);
+  assert.match(partiesSource, /chatBackground/);
+  assert.match(partiesSource, /chat_effect TEXT NOT NULL DEFAULT 'none'/);
+  assert.match(partiesSource, /Unknown cosmetic item/);
+  assert.match(partiesSource, /This cosmetic item is not unlocked/);
 });

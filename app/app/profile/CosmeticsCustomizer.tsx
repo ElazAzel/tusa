@@ -10,6 +10,7 @@ const TYPE_TO_FIELD: Record<string, keyof ProfileCosmetics> = {
   cover: "cover",
   avatarFrame: "avatarFrame",
   chatEffect: "chatEffect",
+  chatBackground: "chatBackground",
   nameColor: "nameColor",
   badge: "badge",
 };
@@ -18,16 +19,27 @@ const TYPE_TO_UNLOCK: Record<string, PromoBenefitType> = {
   cover: "profile_cover",
   avatarFrame: "avatar_frame",
   chatEffect: "chat_effect",
+  chatBackground: "chat_background",
   nameColor: "name_color",
   badge: "badge",
 };
 
-const CATEGORY_TABS = ["cover", "avatarFrame", "chatEffect", "nameColor", "badge"] as const;
+const CATEGORY_TABS = ["cover", "avatarFrame", "chatEffect", "chatBackground", "nameColor", "badge"] as const;
+
+const DEFAULT_VALUES: Record<(typeof CATEGORY_TABS)[number], string> = {
+  cover: "lime",
+  avatarFrame: "none",
+  chatEffect: "none",
+  chatBackground: "paper",
+  nameColor: "#000000",
+  badge: "newcomer",
+};
 
 const categoryLabels: Record<string, { ru: string; en: string }> = {
   cover: { ru: "Обложка", en: "Cover" },
   avatarFrame: { ru: "Рамка", en: "Frame" },
   chatEffect: { ru: "Эффект чата", en: "Chat Effect" },
+  chatBackground: { ru: "Фон чата", en: "Chat Background" },
   nameColor: { ru: "Цвет имени", en: "Name Color" },
   badge: { ru: "Ачивка", en: "Badge" },
 };
@@ -43,13 +55,13 @@ export default function CosmeticsCustomizer({
 }) {
   const { t, locale } = useLocale();
   const [catalogue, setCatalogue] = useState<CosmeticsItem[]>([]);
-  const [activeTab, setActiveTab] = useState<keyof ProfileCosmetics>("cover");
+  const [activeTab, setActiveTab] = useState<(typeof CATEGORY_TABS)[number]>("cover");
   const [preview, setPreview] = useState<ProfileCosmetics>(profileCosmetics);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/cosmetics")
+    fetch("/api/cosmetics")
       .then((r) => r.json())
       .then((d) => { if (d.items) setCatalogue(d.items); })
       .catch(() => undefined);
@@ -70,14 +82,13 @@ export default function CosmeticsCustomizer({
   const unlockType = TYPE_TO_UNLOCK[activeTab];
   const unlocked = profileCosmetics.unlocked.includes(unlockType);
 
-  const handleSelect = useCallback((item: CosmeticsItem) => {
+  const handleSelect = useCallback((item: CosmeticsItem, allowed: boolean) => {
     soundTap();
+    if (!allowed) return;
     const fieldKey = TYPE_TO_FIELD[item.type] || item.type;
     setPreview((prev) => ({ ...prev, [fieldKey as keyof ProfileCosmetics]: item.value }));
-    if (unlocked) {
-      setDirty(true);
-    }
-  }, [unlocked]);
+    setDirty(true);
+  }, []);
 
   const handleSave = useCallback(async () => {
     soundTap();
@@ -86,7 +97,7 @@ export default function CosmeticsCustomizer({
     for (const key of CATEGORY_TABS) {
       const unlock = TYPE_TO_UNLOCK[key];
       const isUnlocked = profileCosmetics.unlocked.includes(unlock);
-      if (isUnlocked) {
+      if (isUnlocked || preview[key] === DEFAULT_VALUES[key]) {
         changed[key] = preview[key] as string;
       }
     }
@@ -110,7 +121,7 @@ export default function CosmeticsCustomizer({
 
         <div className="cosmetics-customizer-body">
           <div className="cosmetics-preview-panel">
-            <div className="cosmetics-preview-card" style={{ background: preview.cover === "lime" ? "var(--lime)" : preview.cover === "midnight" ? "#1a1a2e" : preview.cover === "beta" ? "linear-gradient(135deg,#2D00F7,#b829ff)" : "var(--cream)" }}>
+            <div className={`cosmetics-preview-card chat-background-${preview.chatBackground}`} style={{ background: preview.cover === "lime" ? "var(--lime)" : preview.cover === "midnight" ? "#1a1a2e" : preview.cover === "beta" ? "linear-gradient(135deg,#2D00F7,#b829ff)" : "var(--cream)" }}>
               <div className="cosmetics-preview-avatar" style={preview.avatarFrame !== "none" ? { borderColor: preview.avatarFrame === "lime" ? "var(--lime)" : preview.avatarFrame === "pink" ? "var(--pink)" : preview.avatarFrame === "blue" ? "var(--blue)" : preview.avatarFrame === "neon" ? "#b829ff" : preview.avatarFrame === "gold" ? "#ffd700" : preview.avatarFrame === "crystal" ? "#80deea" : preview.avatarFrame === "inferno" ? "#ff6f00" : preview.avatarFrame === "frost" ? "#e0f7fa" : preview.avatarFrame === "rainbow" ? "#ff9800" : preview.avatarFrame === "animated_pulse" ? "var(--lime)" : preview.avatarFrame === "animated_glow" ? "#ff1791" : preview.avatarFrame === "animated_rotate" ? "#ff0000" : preview.avatarFrame === "animated_chrome" ? "#b0bec5" : preview.avatarFrame === "animated_neon_pulse" ? "#b829ff" : undefined} : undefined}>
                 <span>{profileCosmetics.cover?.slice(0, 2).toUpperCase() || "TU"}</span>
               </div>
@@ -147,12 +158,12 @@ export default function CosmeticsCustomizer({
               {items.length === 0 && <p className="cosmetics-empty">{t("cosmeticsEmpty")}</p>}
               {items.map((item) => {
                 const isEquipped = preview[field] === item.value;
-                const isLocked = !unlocked && !["none", "newcomer"].includes(item.slug);
+                const isLocked = !unlocked && item.value !== DEFAULT_VALUES[activeTab];
                 return (
                   <button
                     key={item.id}
                     className={`cosmetics-item ${isEquipped ? "equipped" : ""} ${isLocked ? "locked" : ""}`}
-                    onClick={() => handleSelect(item)}
+                    onClick={() => handleSelect(item, !isLocked)}
                   >
                     <InlineSvg
                       url={item.imageUrl}

@@ -7,11 +7,11 @@ export type PromoStatus = (typeof PROMO_STATUS)[number];
 export type PartyRole = "owner" | "co_host" | "guest";
 export type RsvpStatus = "going" | "maybe" | "pass";
 export type PromoMode = "single" | "multi";
-export type PromoBenefitType = "beta_access" | "profile_cover" | "avatar_frame" | "chat_effect" | "name_color" | "badge" | "xp_multiplier" | "party_creation";
+export type PromoBenefitType = "beta_access" | "profile_cover" | "avatar_frame" | "chat_effect" | "chat_background" | "name_color" | "badge" | "xp_multiplier" | "party_creation";
 export type PromoBenefit = { type: PromoBenefitType; value?: string | number };
-export type CosmeticsItemType = "cover" | "avatarFrame" | "chatEffect" | "nameColor" | "badge";
+export type CosmeticsItemType = "cover" | "avatarFrame" | "chatEffect" | "chatBackground" | "nameColor" | "badge";
 export type CosmeticsItem = { id: string; type: CosmeticsItemType; slug: string; nameRu: string; nameEn: string; value: string; imageUrl: string; sortOrder: number; active: boolean; createdAt: string };
-export type ProfileCosmetics = { cover: string; avatarFrame: string; chatEffect: string; nameColor: string; badge: string; xpMultiplier: number; betaAccess: boolean; unlocked: PromoBenefitType[] };
+export type ProfileCosmetics = { cover: string; avatarFrame: string; chatEffect: string; chatBackground: string; nameColor: string; badge: string; xpMultiplier: number; betaAccess: boolean; unlocked: PromoBenefitType[] };
 
 export type UserProfile = {
   id: string;
@@ -145,7 +145,7 @@ function partyFromRow(row: Record<string, unknown>): Party {
 }
 
 function profileFromRow(row: Record<string, unknown>): UserProfile {
-  const defaults: ProfileCosmetics = { cover: "lime", avatarFrame: "none", chatEffect: "none", nameColor: "#000000", badge: "newcomer", xpMultiplier: 1, betaAccess: false, unlocked: [] };
+  const defaults: ProfileCosmetics = { cover: "lime", avatarFrame: "none", chatEffect: "none", chatBackground: "paper", nameColor: "#000000", badge: "newcomer", xpMultiplier: 1, betaAccess: false, unlocked: [] };
   const raw = row.cosmetics;
   const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
   const cosmetics = parsed && typeof parsed === "object" ? { ...defaults, ...(parsed as Partial<ProfileCosmetics>) } : defaults;
@@ -201,6 +201,7 @@ export function ensurePartyV2() {
   await sql`ALTER TABLE game_sessions ADD COLUMN IF NOT EXISTS spectators JSONB NOT NULL DEFAULT '[]'::jsonb`;
   await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS handle TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS name_color TEXT NOT NULL DEFAULT '#000000'`;
+  await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS chat_effect TEXT NOT NULL DEFAULT 'none'`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_xp INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_tier INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS pass_season TEXT NOT NULL DEFAULT ''`;
@@ -276,6 +277,10 @@ async function seedCosmetics(sql: ReturnType<typeof db>) {
     { type: "chatEffect", slug: "lightning", name_ru: "Молния", name_en: "Lightning", value: "lightning", image_url: "/cosmetics/chat-effects/lightning.svg", sort_order: 7 },
     { type: "chatEffect", slug: "heart", name_ru: "Сердце", name_en: "Heart", value: "heart", image_url: "/cosmetics/chat-effects/heart.svg", sort_order: 8 },
     { type: "chatEffect", slug: "star", name_ru: "Звезда", name_en: "Star", value: "star", image_url: "/cosmetics/chat-effects/star.svg", sort_order: 9 },
+    { type: "chatBackground", slug: "paper", name_ru: "Бумага", name_en: "Paper", value: "paper", image_url: "/cosmetics/chat-backgrounds/paper.svg", sort_order: 0 },
+    { type: "chatBackground", slug: "midnight", name_ru: "Полночь", name_en: "Midnight", value: "midnight", image_url: "/cosmetics/chat-backgrounds/midnight.svg", sort_order: 1 },
+    { type: "chatBackground", slug: "candy", name_ru: "Конфетти", name_en: "Candy", value: "candy", image_url: "/cosmetics/chat-backgrounds/candy.svg", sort_order: 2 },
+    { type: "chatBackground", slug: "neon", name_ru: "Неон", name_en: "Neon", value: "neon", image_url: "/cosmetics/chat-backgrounds/neon.svg", sort_order: 3 },
     { type: "nameColor", slug: "black", name_ru: "Чёрный", name_en: "Black", value: "#000000", image_url: "/cosmetics/name-colors/black.svg", sort_order: 0 },
     { type: "nameColor", slug: "lime", name_ru: "Лаймовый", name_en: "Lime", value: "#c9ff05", image_url: "/cosmetics/name-colors/lime.svg", sort_order: 1 },
     { type: "nameColor", slug: "pink", name_ru: "Розовый", name_en: "Pink", value: "#ff1791", image_url: "/cosmetics/name-colors/pink.svg", sort_order: 2 },
@@ -343,7 +348,7 @@ export function ensurePartySchema() {
     city TEXT NOT NULL DEFAULT '',
     bio TEXT NOT NULL DEFAULT '',
     image_url TEXT NOT NULL DEFAULT '',
-    cosmetics JSONB NOT NULL DEFAULT '{"cover":"lime","avatarFrame":"none","chatEffect":"none","nameColor":"#000000","badge":"newcomer","xpMultiplier":1,"betaAccess":false,"unlocked":[]}'::jsonb,
+    cosmetics JSONB NOT NULL DEFAULT '{"cover":"lime","avatarFrame":"none","chatEffect":"none","chatBackground":"paper","nameColor":"#000000","badge":"newcomer","xpMultiplier":1,"betaAccess":false,"unlocked":[]}'::jsonb,
     xp INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -398,7 +403,7 @@ export function ensurePartySchema() {
     redeemed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (promo_code_id, clerk_user_id)
   )`;
-  await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS cosmetics JSONB NOT NULL DEFAULT '{"cover":"lime","avatarFrame":"none","chatEffect":"none","nameColor":"#000000","badge":"newcomer","xpMultiplier":1,"betaAccess":false,"unlocked":[]}'::jsonb`;
+  await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS cosmetics JSONB NOT NULL DEFAULT '{"cover":"lime","avatarFrame":"none","chatEffect":"none","chatBackground":"paper","nameColor":"#000000","badge":"newcomer","xpMultiplier":1,"betaAccess":false,"unlocked":[]}'::jsonb`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS xp INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS compashka TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS redemption_mode TEXT NOT NULL DEFAULT 'single'`;
@@ -414,6 +419,8 @@ export function ensurePartySchema() {
     party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
     clerk_user_id TEXT NOT NULL,
     display_name TEXT NOT NULL DEFAULT '',
+    name_color TEXT NOT NULL DEFAULT '#000000',
+    chat_effect TEXT NOT NULL DEFAULT 'none',
     text TEXT NOT NULL,
     type TEXT NOT NULL DEFAULT 'text' CHECK (type IN ('text', 'voice', 'sticker')),
     voice_url TEXT NOT NULL DEFAULT '',
@@ -556,7 +563,7 @@ export function ensurePartySchema() {
   const earlyBenefits: PromoBenefit[] = [{ type: "beta_access" }, { type: "profile_cover", value: "beta" }, { type: "avatar_frame", value: "neon" }, { type: "chat_effect", value: "sparkle" }, { type: "badge", value: "beta" }, { type: "party_creation" }];
   const earlyBenefitsJson = JSON.stringify(earlyBenefits);
   await sql`UPDATE promo_codes SET benefits = ${earlyBenefitsJson}::jsonb WHERE benefits = '[]'::jsonb`;
-  await sql`UPDATE user_profiles SET cosmetics = ${JSON.stringify(mergedCosmetics({ cover: "lime", avatarFrame: "none", chatEffect: "none", nameColor: "#000000", badge: "newcomer", xpMultiplier: 1, betaAccess: false, unlocked: [] }, earlyBenefits))}::jsonb, xp = GREATEST(xp, 120) WHERE clerk_user_id IN (SELECT clerk_user_id FROM promo_redemptions redemptions JOIN promo_codes promos ON promos.id = redemptions.promo_code_id WHERE promos.code IN ('ELAZ', 'JEDAI', 'TUSA02'))`;
+  await sql`UPDATE user_profiles SET cosmetics = ${JSON.stringify(mergedCosmetics({ cover: "lime", avatarFrame: "none", chatEffect: "none", chatBackground: "paper", nameColor: "#000000", badge: "newcomer", xpMultiplier: 1, betaAccess: false, unlocked: [] }, earlyBenefits))}::jsonb, xp = GREATEST(xp, 120) WHERE clerk_user_id IN (SELECT clerk_user_id FROM promo_redemptions redemptions JOIN promo_codes promos ON promos.id = redemptions.promo_code_id WHERE promos.code IN ('ELAZ', 'JEDAI', 'TUSA02'))`;
   await sql`CREATE TABLE IF NOT EXISTS party_highlights (id UUID PRIMARY KEY, party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE, session_id UUID REFERENCES game_sessions(id) ON DELETE SET NULL, clerk_user_id TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'score' CHECK (type IN ('score','achievement','funny','quote','photo')), data JSONB NOT NULL DEFAULT '{}'::jsonb, thumbnail TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
   await sql`CREATE INDEX IF NOT EXISTS highlights_party_idx ON party_highlights (party_id, created_at DESC)`;
   await sql`ALTER TABLE parties ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ`;
@@ -606,17 +613,20 @@ export async function getProfile(userId: string) {
   return rows[0] ? profileFromRow(rows[0]) : null;
 }
 
-export async function updateProfile(userId: string, input: { displayName: string; handle: string; city: string; bio: string; compashka?: string; cosmetics?: Partial<Pick<ProfileCosmetics, "cover" | "avatarFrame" | "chatEffect" | "nameColor" | "badge">> }) {
+export async function updateProfile(userId: string, input: { displayName: string; handle: string; city: string; bio: string; compashka?: string; cosmetics?: Partial<Pick<ProfileCosmetics, "cover" | "avatarFrame" | "chatEffect" | "chatBackground" | "nameColor" | "badge">> }) {
   await ensurePartySchema();
   const current = await getProfile(userId);
   if (!current) throw new Error("Profile not found");
   const cosmetics = { ...current.cosmetics, ...(input.cosmetics ?? {}) };
-  const permissions: Record<keyof NonNullable<typeof input.cosmetics>, PromoBenefitType> = { cover: "profile_cover", avatarFrame: "avatar_frame", chatEffect: "chat_effect", nameColor: "name_color", badge: "badge" };
+  const permissions: Record<keyof NonNullable<typeof input.cosmetics>, PromoBenefitType> = { cover: "profile_cover", avatarFrame: "avatar_frame", chatEffect: "chat_effect", chatBackground: "chat_background", nameColor: "name_color", badge: "badge" };
+  const baseValues: Record<keyof NonNullable<typeof input.cosmetics>, string> = { cover: "lime", avatarFrame: "none", chatEffect: "none", chatBackground: "paper", nameColor: "#000000", badge: "newcomer" };
+  const catalogue = await getCosmeticsCatalogue();
   for (const [key, benefit] of Object.entries(permissions) as [keyof typeof permissions, PromoBenefitType][]) {
-    if (input.cosmetics?.[key] !== undefined && input.cosmetics[key] !== current.cosmetics[key] && !current.cosmetics.unlocked.includes(benefit)) {
-      if (current.handle !== "elazart") throw new Error("Этот предмет пока не открыт.");
-      current.cosmetics.unlocked.push(benefit);
-    }
+    const nextValue = input.cosmetics?.[key];
+    if (nextValue === undefined || nextValue === current.cosmetics[key]) continue;
+    const valid = catalogue.some((item) => item.active && item.type === key && item.value === nextValue);
+    if (!valid) throw new Error("Unknown cosmetic item.");
+    if (nextValue !== baseValues[key] && !current.cosmetics.unlocked.includes(benefit)) throw new Error("This cosmetic item is not unlocked.");
   }
   const compashka = input.compashka !== undefined ? input.compashka : current.compashka;
   const [row] = await db()`UPDATE user_profiles SET display_name = ${input.displayName.slice(0, 80)}, handle = ${cleanHandle(input.handle)}, city = ${input.city.slice(0, 80)}, bio = ${input.bio.slice(0, 300)}, compashka = ${compashka.slice(0, 80)}, cosmetics = ${JSON.stringify(cosmetics)}::jsonb, updated_at = NOW()
@@ -691,10 +701,13 @@ export async function grantEngagementReward(userId: string, activity: string, pa
   const usedToday = countRow?.cnt ?? 0;
   if (usedToday >= config.daily) return { granted: false, reason: "daily limit reached", usedToday, daily: config.daily };
 
+  const profile = await getProfile(userId);
+  const multiplier = Math.min(3, Math.max(1, Number(profile?.cosmetics.xpMultiplier ?? 1)));
+  const xpAmount = Math.round(config.amount * multiplier);
   await db()`INSERT INTO engagement_rewards (id, clerk_user_id, activity, party_id, amount, granted_at) VALUES (${randomUUID()}, ${userId}, ${activity}, ${partyId ?? null}, ${config.amount}, ${today})`;
-  await db()`UPDATE user_profiles SET koins_balance = GREATEST(0, koins_balance + ${config.amount}), xp = xp + ${config.amount}, updated_at = NOW() WHERE clerk_user_id = ${userId}`;
+  await db()`UPDATE user_profiles SET koins_balance = GREATEST(0, koins_balance + ${config.amount}), xp = xp + ${xpAmount}, updated_at = NOW() WHERE clerk_user_id = ${userId}`;
   await addKoinsTransaction(userId, partyId ?? null, config.amount, `Reward: ${activity}`);
-  return { granted: true, amount: config.amount, activity, usedToday: usedToday + 1, daily: config.daily };
+  return { granted: true, amount: config.amount, xpAmount, activity, usedToday: usedToday + 1, daily: config.daily };
 }
 
 export async function getEngagementStats(userId: string) {
@@ -900,6 +913,7 @@ function mergedCosmetics(current: ProfileCosmetics, benefits: PromoBenefit[]) {
     if (benefit.type === "profile_cover") next.cover = String(benefit.value ?? "beta");
     if (benefit.type === "avatar_frame") next.avatarFrame = String(benefit.value ?? "neon");
     if (benefit.type === "chat_effect") next.chatEffect = String(benefit.value ?? "sparkle");
+    if (benefit.type === "chat_background") next.chatBackground = String(benefit.value ?? "paper");
     if (benefit.type === "name_color") next.nameColor = String(benefit.value ?? "#c9ff05");
     if (benefit.type === "badge") next.badge = String(benefit.value ?? "beta");
     if (benefit.type === "xp_multiplier") next.xpMultiplier = Number(benefit.value ?? 1.25);
@@ -1138,6 +1152,7 @@ export type ChatMessage = {
   displayName: string;
   handle: string;
   nameColor: string;
+  chatEffect: string;
   text: string;
   type: "text" | "voice" | "sticker";
   voiceUrl: string;
@@ -1158,8 +1173,9 @@ export async function sendMessage(userId: string, partyId: string, text: string,
   const mutationId = extra?.clientMutationId ? extra.clientMutationId.slice(0, 64) : null;
   const handle = profile?.handle ?? "";
   const nameColor = profile?.cosmetics?.nameColor ?? "#000000";
-  let [row] = await db()`INSERT INTO chat_messages (id, party_id, clerk_user_id, display_name, handle, name_color, text, type, voice_url, sticker_id, client_mutation_id)
-    VALUES (${randomUUID()}, ${partyId}, ${userId}, ${profile?.displayName ?? "TUSA friend"}, ${handle}, ${nameColor}, ${text.slice(0, 1000)}, ${type}, ${voiceUrl}, ${stickerId}, ${mutationId})
+  const chatEffect = profile?.cosmetics?.chatEffect ?? "none";
+  let [row] = await db()`INSERT INTO chat_messages (id, party_id, clerk_user_id, display_name, handle, name_color, chat_effect, text, type, voice_url, sticker_id, client_mutation_id)
+    VALUES (${randomUUID()}, ${partyId}, ${userId}, ${profile?.displayName ?? "TUSA friend"}, ${handle}, ${nameColor}, ${chatEffect}, ${text.slice(0, 1000)}, ${type}, ${voiceUrl}, ${stickerId}, ${mutationId})
     ON CONFLICT (party_id, clerk_user_id, client_mutation_id) DO NOTHING
     RETURNING *` as unknown as Record<string, unknown>[];
   const created = Boolean(row);
@@ -1169,7 +1185,7 @@ export async function sendMessage(userId: string, partyId: string, text: string,
   }
   const message = row ? {
     id: String(row.id), partyId: String(row.party_id), userId: String(row.clerk_user_id),
-    displayName: String(row.display_name), handle: String(row.handle ?? ""), nameColor: String(row.name_color ?? "#000000"),
+    displayName: String(row.display_name), handle: String(row.handle ?? ""), nameColor: String(row.name_color ?? "#000000"), chatEffect: String(row.chat_effect ?? chatEffect),
     text: String(row.text), type: String(row.type) as ChatMessage["type"],
     voiceUrl: String(row.voice_url), stickerId: String(row.sticker_id),
     reactions: (row.reactions ?? {}) as Record<string, string[]>, clientMutationId: String(row.client_mutation_id ?? ""),
@@ -1206,7 +1222,7 @@ export async function getMessages(partyId: string, limit = 50, after?: string) {
   const ordered = after ? rows : rows.reverse();
   return ordered.map((row) => ({
     id: String(row.id), partyId: String(row.party_id), userId: String(row.clerk_user_id),
-    displayName: String(row.display_name), handle: String(row.handle ?? ""), nameColor: String(row.name_color ?? "#000000"), text: String(row.text), type: String(row.type ?? "text") as ChatMessage["type"],
+    displayName: String(row.display_name), handle: String(row.handle ?? ""), nameColor: String(row.name_color ?? "#000000"), chatEffect: String(row.chat_effect ?? "none"), text: String(row.text), type: String(row.type ?? "text") as ChatMessage["type"],
     voiceUrl: String(row.voice_url ?? ""), stickerId: String(row.sticker_id ?? ""),
     reactions: (row.reactions ?? {}) as Record<string, string[]>, clientMutationId: String(row.client_mutation_id ?? ""),
     createdAt: new Date(row.created_at as string | Date).toISOString(),

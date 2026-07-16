@@ -7,7 +7,7 @@ import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleToggle from "@/app/components/LocaleToggle";
 
 type Stats = { users: number; parties: number; joins: number; redemptions: number };
-const typeToCosmetic: Record<string, string> = { profile_cover: "cover", avatar_frame: "avatarFrame", chat_effect: "chatEffect", name_color: "nameColor", badge: "badge" };
+const typeToCosmetic: Record<string, string> = { profile_cover: "cover", avatar_frame: "avatarFrame", chat_effect: "chatEffect", chat_background: "chatBackground", name_color: "nameColor", badge: "badge" };
 const cosmeticTypes = new Set(Object.values(typeToCosmetic));
 
 export default function PromoConsole({ initialPromos, initialStats, canWrite }: { initialPromos: PromoCode[]; initialStats: Stats; canWrite: boolean }) {
@@ -29,8 +29,8 @@ export default function PromoConsole({ initialPromos, initialStats, canWrite }: 
     : { queue: "Waitlist", kicker: "rewards, access and limits", title: <>Promo<br /><span>control.</span></>, lead: "Codes can be one-time or reusable, have an expiry date, and grant a set of profile items.", profiles: "profiles", parties: "hangouts created", joins: "invite joins", redemptions: "activations", accounts: "accounts in TUSA.game", through: "via promo access", guest: "guest joins", used: "promo codes used", new: "new access", createTitle: "Issue a code", code: "Promo code", mode: "Mode", single: "One-time", multi: "Reusable", limit: "Activation limit", expiry: "Expiry date", benefits: "What it gives", create: "Create promo code", creating: "Creating\u2026", all: "all codes", system: "in the system", note: "A code with activations cannot be deleted \u2014 pause it instead.", active: "active", paused: "paused", once: "one time", many: "many uses", until: "until", access: "access only", pause: "Pause", enable: "Enable", remove: "Remove", created: "created.", activated: "Code activated.", deactivated: "Code paused.", deleted: "Code removed.", removeConfirm: "Delete promo code" };
 
   const benefitLabels: Record<PromoBenefit["type"], string> = r
-    ? { beta_access: "бета-доступ", profile_cover: "обложка", avatar_frame: "рамка", chat_effect: "эффект чата", name_color: "цвет имени", badge: "ачивка", xp_multiplier: "XP-модификатор", party_creation: "создание тусы" }
-    : { beta_access: "beta access", profile_cover: "profile cover", avatar_frame: "avatar frame", chat_effect: "chat effect", name_color: "name color", badge: "badge", xp_multiplier: "XP modifier", party_creation: "create hangout" };
+    ? { beta_access: "бета-доступ", profile_cover: "обложка", avatar_frame: "рамка", chat_effect: "эффект чата", chat_background: "фон чата", name_color: "цвет имени", badge: "ачивка", xp_multiplier: "XP-модификатор", party_creation: "создание тусы" }
+    : { beta_access: "beta access", profile_cover: "profile cover", avatar_frame: "avatar frame", chat_effect: "chat effect", chat_background: "chat background", name_color: "name color", badge: "badge", xp_multiplier: "XP modifier", party_creation: "create hangout" };
 
   function getCosmeticByType(type: string): CosmeticsItem[] {
     const ct = typeToCosmetic[type];
