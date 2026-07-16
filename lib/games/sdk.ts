@@ -22,6 +22,7 @@ import secretGrid from "./definitions/secret-grid";
 import colorCards from "./definitions/color-cards";
 import guessSong, { createMusicQuizDefinition } from "./definitions/music-quiz";
 import { cupToss, wheel } from "./definitions/party-tools";
+import nightCouncil, { createNightCouncil } from "./definitions/night-council";
 
 type Entry = {
   id: string;
@@ -68,6 +69,8 @@ register(guessSong);
 register(createMusicQuizDefinition("musicQuiz"));
 register(wheel);
 register(cupToss);
+register(nightCouncil);
+register(createNightCouncil("mafia"));
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);

@@ -307,6 +307,29 @@ test("Party tools use a server-selected wheel and shared authoritative cup score
   assert.deepEqual(restore.state.scores, [10, 10]);
 });
 
+test("Night Council keeps roles private and resolves votes on the server", () => {
+  const councilPlayers = ["host", "guest", "third", "fourth", "fifth"];
+  const ctx = (actorId: string, now = 2_000) => ({ actorId, creatorId: "host", participants: councilPlayers, now });
+  for (const game of ["mafia", "werewolf"] as const) {
+    const lobby = initialServerGameState(game, councilPlayers, {}, 1_000)!;
+    assert.equal(hasDefinition(game), true);
+    const started = applyServerGameCommand(game, lobby, "start", {}, ctx("host"))!;
+    assert.equal(started.state.phase, "night");
+    const safe = getDefinition(game)?.sanitizeForViewer?.(started.state, "guest") as Record<string, unknown>;
+    assert.deepEqual(safe.roles, { guest: "doctor" });
+    const mafiaAction = applyServerGameCommand(game, started.state, "nightAction", { target: "fifth" }, ctx("host"))!;
+    const doctorAction = applyServerGameCommand(game, mafiaAction.state, "nightAction", { target: "guest" }, ctx("guest"))!;
+    const night = applyServerGameCommand(game, doctorAction.state, "resolveNight", {}, ctx("host"))!;
+    assert.equal(night.state.phase, "day");
+    const vote = applyServerGameCommand(game, night.state, "openVote", {}, ctx("host"))!;
+    let voted = vote.state;
+    for (const actorId of voted.alive as string[]) voted = applyServerGameCommand(game, voted, "vote", { target: "host" }, ctx(actorId))!.state;
+    const reveal = applyServerGameCommand(game, voted, "revealVote", {}, ctx("host"))!;
+    assert.equal(reveal.state.eliminated, "host");
+    assert.equal(reveal.state.phase, "reveal");
+  }
+});
+
 test("Impostor keeps the word private and resolves clues and votes on the server", () => {
   const started = initialServerGameState("impostor", players, { locale: "en" }, 1_001)!;
   assert.equal(started.impostorId, "guest");
