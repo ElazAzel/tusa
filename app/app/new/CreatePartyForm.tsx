@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 import ProductHeader from "@/app/components/ProductHeader";
+import EventDateTimeFields from "@/app/components/EventDateTimeFields";
 
 export default function CreatePartyForm() {
   const [error, setError] = useState("");
@@ -47,10 +48,7 @@ export default function CreatePartyForm() {
         </div>
         <form onSubmit={submit}>
           <label>{t("createName")}<input name="title" placeholder={t("createTitlePlaceholder")} maxLength={100} required /></label>
-          <div className="form-split">
-            <label>{t("createDate")}<input name="date" className="event-date-input" placeholder="DD.MM.YYYY" inputMode="numeric" pattern="\d{2}\.\d{2}\.\d{4}" title="DD.MM.YYYY" required /></label>
-            <label>{t("createTime")}<input name="time" className="event-time-input" placeholder="21:00" inputMode="numeric" pattern="\d{2}:\d{2}" title="HH:MM" required /></label>
-          </div>
+          <EventDateTimeFields dateLabel={t("createDate")} timeLabel={t("createTime")} />
           <label>{t("createVenue")}<input name="venue" placeholder={t("createPlace")} maxLength={120} required /></label>
           <label className="brand-select">{t("createFormat")}<select name="category" defaultValue={formatOptions[0]}>{formatOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
           <label className="age-toggle"><input checked={adultOnly} onChange={(event) => setAdultOnly(event.target.checked)} type="checkbox" /><span><b>{t("createAdult")}</b><small>{adultOnly ? t("createAdultOn") : t("createAdultOff")}</small></span></label>
