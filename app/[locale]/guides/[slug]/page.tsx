@@ -1,4 +1,114 @@
-import type { Metadata } from "next";import Link from "next/link";import {notFound} from "next/navigation";import{SEO_GUIDES,getSeoGuide}from"@/lib/seo-guides";
-export function generateStaticParams(){return["ru","en"].flatMap(locale=>SEO_GUIDES.map(([slug])=>({locale,slug})));}
-export async function generateMetadata({params}:{params:Promise<{locale:string;slug:string}>}):Promise<Metadata>{const{locale,slug}=await params;const g=getSeoGuide(slug);if(!g)return{};const en=locale==="en",title=en?g[2]:g[1],description=en?`Practical guide: ${title.toLowerCase()} with TUSA.game.`:`Практический гид: ${title.toLowerCase()} с TUSA.game.`;return{title:`${title} — TUSA.game`,description,alternates:{canonical:`/${locale}/guides/${slug}`,languages:{ru:`/ru/guides/${slug}`,en:`/en/guides/${slug}`}}};}
-export default async function Guide({params}:{params:Promise<{locale:string;slug:string}>}){const{locale,slug}=await params;const g=getSeoGuide(slug);if(!g)notFound();const en=locale==="en",title=en?g[2]:g[1],answer=en?"TUSA.game puts an invite, guests and multiplayer games in one shared party space.":"TUSA.game собирает инвайт, гостей и мультиплеерные игры в одном пространстве тусы.";const faq=[[en?"Do guests need an account?":"Нужен ли гостям аккаунт?",en?"No. Guests join through an invite.":"Нет. Гости входят по инвайту."],[en?"How do we start?":"Как начать?",en?"Create one party link and choose a game.":"Создай одну ссылку тусы и выбери игру."]];const json={"@context":"https://schema.org","@type":"FAQPage",mainEntity:faq.map(([name,text])=>({"@type":"Question",name,acceptedAnswer:{"@type":"Answer",text}}))};return <main className="legal-page"><article><span className="app-kicker">TUSA.GAME GUIDE</span><h1>{title}</h1><p>{answer}</p><h2>{en?"How it works":"Как это работает"}</h2><ol><li>{en?"Open one party link.":"Открой одну ссылку тусы."}</li><li>{en?"Everyone joins from a phone.":"Все входят с телефона."}</li><li>{en?"Choose a game and play together.":"Выберите игру и играйте вместе."}</li></ol><h2>FAQ</h2>{faq.map(([q,a])=><section key={q}><h3>{q}</h3><p>{a}</p></section>)}<Link className="demo-action demo-action--lime" href="/">{en?"Create a party":"Создать тусу"}</Link></article><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(json)}}/></main>}
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { SEO_GUIDES } from "@/lib/seo-guides";
+import { SEO_CONTENT } from "@/lib/seo-content";
+import RedirectManager from "./RedirectManager";
+
+export function generateStaticParams() {
+  return ["ru", "en"].flatMap((locale) =>
+    SEO_GUIDES.map(([slug]) => ({ locale, slug }))
+  );
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}): Promise<Metadata> {
+  const { locale, slug } = await params;
+  const content = SEO_CONTENT[slug]?.[locale as "ru" | "en"];
+  if (!content) return {};
+
+  return {
+    title: `${content.title} — TUSA.game`,
+    description: content.description,
+    alternates: {
+      canonical: `/${locale}/guides/${slug}`,
+      languages: {
+        ru: `/ru/guides/${slug}`,
+        en: `/en/guides/${slug}`,
+      },
+    },
+  };
+}
+
+export default async function Guide({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}) {
+  const { locale, slug } = await params;
+  const content = SEO_CONTENT[slug]?.[locale as "ru" | "en"];
+  if (!content) notFound();
+
+  const json = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: content.faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.a,
+      },
+    })),
+  };
+
+  return (
+    <main className="legal-page">
+      <RedirectManager slug={slug} locale={locale} />
+      <article>
+        <span className="app-kicker">{content.kicker}</span>
+        <h1>{content.h1}</h1>
+        <p style={{ fontWeight: "bold", fontSize: "1.1rem" }}>{content.intro}</p>
+        <p>{content.body}</p>
+
+        <h2>{content.stepsTitle}</h2>
+        <ol>
+          {content.steps.map((step, index) => (
+            <li key={index}>{step}</li>
+          ))}
+        </ol>
+
+        <h2>{content.gamesTitle}</h2>
+        <div style={{ display: "grid", gap: "15px", margin: "20px 0" }}>
+          {content.games.map((game, index) => (
+            <div
+              key={index}
+              style={{
+                border: "var(--line, 3px solid #000)",
+                boxShadow: "var(--shadow, 6px 6px 0 #000)",
+                backgroundColor: "var(--cream, #f7f7f2)",
+                color: "var(--black, #000)",
+                padding: "15px",
+              }}
+            >
+              <h3 style={{ margin: "0 0 5px 0", fontSize: "1.2rem", fontWeight: 800 }}>
+                {game.name}
+              </h3>
+              <p style={{ margin: 0, fontSize: "0.95rem" }}>{game.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <h2>FAQ</h2>
+        {content.faqs.map((faq, index) => (
+          <section key={index} style={{ marginBottom: "20px" }}>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{faq.q}</h3>
+            <p>{faq.a}</p>
+          </section>
+        ))}
+
+        <Link className="demo-action demo-action--lime" href="/">
+          {locale === "en" ? "Create a party" : "Создать тусу"}
+        </Link>
+      </article>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }}
+      />
+    </main>
+  );
+}
+
