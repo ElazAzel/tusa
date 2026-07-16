@@ -28,7 +28,7 @@ lib/
   games/engine.ts     ← Monolithic server game reducer (legacy, 560 lines)
   games/sdk.ts        ← Game SDK registry (definitions dispatch)
   games/definition.ts ← GameDefinition<TState> type system
-  games/definitions/  ← Individual game definitions (8 migrated; remaining migration tracked in readiness audit)
+  games/definitions/  ← Individual game definitions (9 migrated; remaining migration tracked in readiness audit)
   games/commands.ts   ← Zod validation schemas + SDK dispatch
   games/scoring.ts    ← Server-only score derivation
   i18n.ts             ← 32 modes × RU/EN UI strings

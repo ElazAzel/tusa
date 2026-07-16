@@ -123,6 +123,7 @@ test("Word Bomb validates letters, uniqueness, deadlines, and elimination", () =
 });
 
 test("Spectrum hides authority on the server and scores the team average", () => {
+  assert.equal(hasDefinition("wavelength"), true);
   const started = initialServerGameState("wavelength", players, { locale: "en" }, 1_003)!;
   assert.equal(started.target, 4);
   const clue = applyServerGameCommand("wavelength", started, "clue", { text: "A warm shower" }, context("host", 2_000))!;

@@ -9,6 +9,7 @@ import fakeFact from "./definitions/fake-fact";
 import wouldRather from "./definitions/would-rather";
 import twoTruths from "./definitions/two-truths";
 import brainBurst from "./definitions/brain-burst";
+import spectrum from "./definitions/spectrum";
 
 type Entry = {
   id: string;
@@ -38,6 +39,7 @@ register(fakeFact);
 register(wouldRather);
 register(twoTruths);
 register(brainBurst);
+register(spectrum);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);
