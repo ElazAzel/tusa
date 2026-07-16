@@ -72,6 +72,7 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
   const [qrUrl, setQrUrl] = useState("");
   const [gameSession, setGameSession] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<GameId | null>(null);
+  const [roomPickerGame, setRoomPickerGame] = useState<GameId | null>(null);
   const [members, setMembers] = useState<Array<{ clerkUserId: string; displayName: string; role: PartyRole; rsvpStatus: RsvpStatus }>>([]);
   const [activeSessions, setActiveSessions] = useState<(GameSession & { participants: string[] })[]>([]);
   const [paymentAssignee, setPaymentAssignee] = useState("");
@@ -92,6 +93,7 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
   const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/join/${party.inviteCode}` : "";
   const filteredMembers = rsvpFilter === "all" ? members : members.filter((m) => m.rsvpStatus === rsvpFilter);
   const activeSession = activeSessions.find((s) => s.id === gameSession);
+  const gameRooms = roomPickerGame ? activeSessions.filter((session) => session.game === roomPickerGame) : [];
   const gameRole = useGameRole(activeSession?.participants ?? [], actorId, activeSession?.status);
 
   const liveChat = useLiveStream<Record<string, unknown>>(`chat:${party.id}`);
@@ -229,6 +231,14 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
           setActiveSessions((prev) => [data.session, ...prev.filter((s) => s.id !== data.session.id)]);
         }
       }).catch(() => undefined);
+  }
+
+  function openGameRooms(game: GameId) {
+    if (activeSessions.some((session) => session.game === game)) {
+      setRoomPickerGame(game);
+      return;
+    }
+    launchGame(game);
   }
 
   function joinSession(sessionId: string, game: string) {
@@ -433,14 +443,32 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
             {game.category === "quick_tool" && <strong>{t("partyTool")}</strong>}
             <span className="game-status">{game.releaseStatus === "beta" ? "beta" : "✓"}</span>
             <div className="game-card-actions">
-              <button className="game-launch-btn" onClick={() => launchGame(game.id)} type="button">{t("gamesLaunch")} <span className="material-symbols-rounded">arrow_forward</span></button>
-              {existingSession && <button className="game-join-btn" onClick={() => joinSession(existingSession.id, game.id)} type="button">
-                <span className="material-symbols-rounded">login</span> {t("gameJoinSession")}
-              </button>}
+              <button className="game-launch-btn" onClick={() => openGameRooms(game.id)} type="button">{existingSession ? t("gameRoomsOpen") : t("gamesLaunch")} <span className="material-symbols-rounded">arrow_forward</span></button>
             </div>
           </article>;
         })}
       </div>
+
+      {roomPickerGame && (() => {
+        const pickerGame = gameCatalogue.find((game) => game.id === roomPickerGame);
+        return <div className="demo-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setRoomPickerGame(null); }}>
+          <section aria-modal="true" className="demo-modal game-room-picker" role="dialog">
+            <div className="game-room-picker__head"><div><span className="demo-kicker">{t("gameRoomsTitle")}</span><h2>{pickerGame ? t(pickerGame.titleKey) : ""}</h2></div><button aria-label={t("gameRoomsClose")} className="game-room-picker__close" onClick={() => setRoomPickerGame(null)} type="button"><span className="material-symbols-rounded">close</span></button></div>
+            <p>{t("gameRoomsSubtitle")}</p>
+            <div className="game-room-picker__list">
+              {gameRooms.map((session, index) => {
+                const host = members.find((member) => member.clerkUserId === session.createdBy)?.displayName || (locale === "ru" ? "Ведущий" : "Host");
+                const isLobby = session.status === "lobby";
+                return <article className={`game-room-choice ${isLobby ? "is-lobby" : "is-active"}`} key={session.id}>
+                  <span className="game-room-choice__number">{index + 1}</span><div><strong>{host}</strong><span>{isLobby ? t("gameRoomsLobby") : t("gameRoomsLive")} · {session.participants.length} {t("gameRoomsPlayers")}</span></div>
+                  <button className="demo-action demo-action--lime" onClick={() => { joinSession(session.id, session.game); setRoomPickerGame(null); }} type="button"><span className="material-symbols-rounded">{isLobby ? "login" : "visibility"}</span>{isLobby ? t("gameRoomsJoin") : t("gameRoomsWatch")}</button>
+                </article>;
+              })}
+            </div>
+            <button className="demo-action demo-action--pink game-room-picker__create" onClick={() => { launchGame(roomPickerGame); setRoomPickerGame(null); }} type="button"><span className="material-symbols-rounded">add</span>{t("gameRoomsCreate")}</button>
+          </section>
+        </div>;
+      })()}
 
       {isOwner && <div className="payment-delegation-block">
         <h3>{t("gamePaymentAssign")}</h3>
