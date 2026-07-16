@@ -52,6 +52,7 @@ const permissionGroups: {
     items: ["analytics_read", "ads_read", "ads_write"],
   },
   { titleRu: "Команда", titleEn: "Team", items: ["team_read", "team_manage"] },
+  { titleRu: "Система", titleEn: "System", items: ["system_read"] },
 ];
 
 function PermissionPicker({
@@ -68,6 +69,7 @@ function PermissionPicker({
   const labels: Record<AdminPermission, string> =
     locale === "ru"
       ? {
+          system_read: "Состояние системы",
           dashboard_read: "Дашборд",
           waitlist_read: "Смотреть очередь",
           waitlist_write: "Менять очередь",
@@ -92,6 +94,7 @@ function PermissionPicker({
           analytics_read: "Analytics",
           ads_read: "View ads",
           ads_write: "Edit ads",
+          system_read: "View system health",
           team_read: "View team",
           team_manage: "Manage team",
         };

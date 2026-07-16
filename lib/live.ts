@@ -1,11 +1,16 @@
 import { randomUUID } from "node:crypto";
 import * as Ably from "ably";
+import { hasAblyConfiguration, realtimeTransportAvailable } from "@/lib/runtime-status";
 
 type Listener = (data: unknown) => void;
 const localChannels = new Map<string, Set<Listener>>();
 let restClient: Ably.Rest | null = null;
 
-function getAblyKey() { return process.env.ABLY_API_KEY?.trim() || null; }
+function getAblyKey() { return hasAblyConfiguration() ? process.env.ABLY_API_KEY!.trim() : null; }
+
+export function isRealtimeTransportAvailable() {
+  return realtimeTransportAvailable();
+}
 
 function getRestClient() {
   const key = getAblyKey();

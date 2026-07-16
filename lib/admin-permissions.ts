@@ -18,6 +18,7 @@ export const ADMIN_PERMISSIONS = [
   "analytics_read",
   "ads_read",
   "ads_write",
+  "system_read",
   "team_read",
   "team_manage",
 ] as const;

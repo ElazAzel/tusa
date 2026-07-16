@@ -18,6 +18,8 @@ const commandClient = readFileSync(new URL("../app/components/sendGameCommand.ts
 const commandMigration = readFileSync(new URL("../drizzle/0001_game_command_idempotency.sql", import.meta.url), "utf8");
 const commandRegistry = readFileSync(new URL("../lib/games/commands.ts", import.meta.url), "utf8");
 const chatApi = readFileSync(new URL("../app/api/chat/route.ts", import.meta.url), "utf8");
+const systemApi = readFileSync(new URL("../app/api/admin/system/route.ts", import.meta.url), "utf8");
+const runtimeStatus = readFileSync(new URL("../lib/runtime-status.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -93,4 +95,13 @@ test("chat messages are member-scoped, idempotent and recover after reconnect", 
   assert.match(partiesSource, /ON CONFLICT \(party_id, clerk_user_id, client_mutation_id\) DO NOTHING/);
   assert.match(room, /liveChat\.connectionEpoch/);
   assert.match(room, /chatSendFailed/);
+});
+
+test("runtime health never exposes secrets and strict realtime can fail closed", () => {
+  assert.match(systemApi, /getAdminAccess/);
+  assert.match(systemApi, /system_read/);
+  assert.match(systemApi, /getRuntimeStatus/);
+  assert.match(runtimeStatus, /TUSA_REQUIRE_DISTRIBUTED_SERVICES/);
+  assert.match(liveApi, /isRealtimeTransportAvailable/);
+  assert.doesNotMatch(systemApi, /ABLY_API_KEY|UPSTASH_REDIS_REST_TOKEN|DATABASE_URL/);
 });
