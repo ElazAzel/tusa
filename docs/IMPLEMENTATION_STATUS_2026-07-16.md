@@ -16,7 +16,7 @@ This document is the current operational checkpoint for continuing the master pl
 - Zod command schemas exist for 25 game IDs in `lib/games/commands.ts`.
 - Tests currently cover server reducers and platform invariants through `npm test`.
 - CI exists and recent PRs have been merged through GitHub/Vercel.
-- Ably and Upstash are integrated with local fallback, but production readiness still depends on env configuration.
+- `/admin/system` exposes a permission-gated, secret-free runtime health report. Ably and Upstash are integrated with local fallback; `TUSA_REQUIRE_DISTRIBUTED_SERVICES=true` turns a missing realtime provider into a controlled `503` instead of a silent single-instance fallback.
 - `llms.txt`, `llms-full.txt`, `/api/public/content`, `/api/knowledge/search` and `/api/assistant` exist.
 - Runtime DDL still exists in `lib/parties.ts`; versioned migrations are not the source of truth for all business tables.
 - URL-based locale routing (`/ru`, `/en`) is not complete; current locale behavior still relies heavily on cookie/runtime locale.
