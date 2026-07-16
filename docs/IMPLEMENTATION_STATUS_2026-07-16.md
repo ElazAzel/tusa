@@ -12,7 +12,7 @@ This document is the current operational checkpoint for continuing the master pl
 ## Verified current state
 
 - Game manifest is the source of truth for the public catalogue and contains 32 canonical modes.
-- SDK definitions exist for 7 games in `lib/games/definitions/`.
+- SDK definitions exist for 8 games in `lib/games/definitions/`.
 - Zod command schemas exist for 25 game IDs in `lib/games/commands.ts`.
 - Tests currently cover server reducers and platform invariants through `npm test`.
 - CI exists and recent PRs have been merged through GitHub/Vercel.
@@ -43,15 +43,20 @@ External action still required:
   - `CLERK_SECRET_KEY=sk_live...`
 - The warning cannot be removed safely in code while production still uses `pk_test`/`sk_test`.
 
+## Domain status
+
+`tusa.game` is attached to the Vercel project, but its external DNS is not yet delegated to Vercel and does not resolve publicly. At the DNS provider, either point the apex `A` record to `76.76.21.21` or delegate the domain to `ns1.vercel-dns.com` and `ns2.vercel-dns.com`. Until this is done, `https://tusagame.vercel.app` remains the reachable production alias.
+
 ## Completion gaps against the master plan
 
 ### P0 — production blockers
 
 1. Clerk production keys and custom domain must be configured in Vercel/Clerk.
-2. Runtime DDL must be replaced by versioned migrations for core business tables.
-3. Ably/Upstash production env must be verified and fail-closed or visibly degraded.
-4. All authenticated app pages and critical APIs need deterministic error states, not generic RSC failure.
-5. Multiplayer command state must be server-authoritative for all 32 modes, not only command-validated.
+2. External DNS for `tusa.game` must be pointed at Vercel.
+3. Runtime DDL must be replaced by versioned migrations for core business tables.
+4. Ably/Upstash production env must be verified and fail-closed or visibly degraded.
+5. All authenticated app pages and critical APIs need deterministic error states, not generic RSC failure.
+6. Multiplayer command state must be server-authoritative for all 32 modes, not only command-validated.
 
 ### P1 — game completion
 

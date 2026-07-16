@@ -8,6 +8,7 @@ import punchline from "./definitions/punchline";
 import fakeFact from "./definitions/fake-fact";
 import wouldRather from "./definitions/would-rather";
 import twoTruths from "./definitions/two-truths";
+import brainBurst from "./definitions/brain-burst";
 
 type Entry = {
   id: string;
@@ -36,6 +37,7 @@ register(punchline);
 register(fakeFact);
 register(wouldRather);
 register(twoTruths);
+register(brainBurst);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);
