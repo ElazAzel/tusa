@@ -11,6 +11,7 @@ import twoTruths from "./definitions/two-truths";
 import brainBurst from "./definitions/brain-burst";
 import spectrum from "./definitions/spectrum";
 import blankSlate from "./definitions/blank-slate";
+import cardsChaos from "./definitions/cards-chaos";
 
 type Entry = {
   id: string;
@@ -42,6 +43,7 @@ register(twoTruths);
 register(brainBurst);
 register(spectrum);
 register(blankSlate);
+register(cardsChaos);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);

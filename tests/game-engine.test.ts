@@ -161,6 +161,7 @@ test("Fake Fact protects the truth and scores correct and deceptive votes", () =
 });
 
 test("Cards of Chaos enforces hands, judge authority, and round scoring", () => {
+  assert.equal(hasDefinition("cardsChaos"), true);
   const cardPlayers = ["host", "guest", "third"];
   const ctx = (actorId: string) => ({ actorId, creatorId: "host", participants: cardPlayers, now: 2_000 });
   const started = initialServerGameState("cardsChaos", cardPlayers, { locale: "en" }, 1_000)!;
