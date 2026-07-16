@@ -176,6 +176,7 @@ test("Cards of Chaos enforces hands, judge authority, and round scoring", () => 
 });
 
 test("Charades rotates active players and keeps turn scoring authoritative", () => {
+  assert.equal(hasDefinition("charades"), true);
   const started = initialServerGameState("charades", players, { locale: "ru" }, 1_000)!;
   const forbidden = applyServerGameCommand("charades", started, "correct", {}, context("guest", 2_000))!;
   assert.match(forbidden.error ?? "", /active player/);

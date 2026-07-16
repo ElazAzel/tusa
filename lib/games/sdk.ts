@@ -12,6 +12,7 @@ import brainBurst from "./definitions/brain-burst";
 import spectrum from "./definitions/spectrum";
 import blankSlate from "./definitions/blank-slate";
 import cardsChaos from "./definitions/cards-chaos";
+import charades from "./definitions/charades";
 
 type Entry = {
   id: string;
@@ -44,6 +45,7 @@ register(brainBurst);
 register(spectrum);
 register(blankSlate);
 register(cardsChaos);
+register(charades);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);
