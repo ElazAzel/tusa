@@ -21,7 +21,6 @@ function bm25Score(
   entry: { tf: Record<string, number>; docLen: number },
   idf: Record<string, number>,
   avgDocLen: number,
-  docCount: number,
 ): number {
   const k1 = 1.5;
   const b = 0.75;
@@ -51,7 +50,7 @@ export function search(index: RAGIndex, query: string, options: SearchOptions = 
     if (type && entry.type !== type) continue;
     if (file && !entry.file.includes(file)) continue;
 
-    const score = bm25Score(queryTokens, entry, index.idf, index.avgDocLen, index.docCount);
+    const score = bm25Score(queryTokens, entry, index.idf, index.avgDocLen);
     if (score >= minScore) {
       const chunk = index.chunks.find((c) => c.id === entry.chunkId);
       if (chunk) {

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 
 export default function Gratitude({ partyId, members }: { partyId: string; members: Array<{ id: string; displayName: string; imageUrl?: string }> }) {
-  const { locale, t } = useLocale();
+  const { t } = useLocale();
   const [tips, setTips] = useState<Array<{ id: string; fromUser: string; fromName: string; toUser: string; toName: string; amount: number; message: string; createdAt: string }>>([]);
   const [toUser, setToUser] = useState("");
   const [amount, setAmount] = useState(5);

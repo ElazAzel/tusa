@@ -17,12 +17,13 @@ export function useStageGame<T extends Record<string, unknown>>(
   const [state, _setState] = useState<T>(initialState);
   const [playerActions, setPlayerActions] = useState<PlayerAction[]>([]);
   const esRef = useRef<EventSource | null>(null);
+  const initialStateRef = useRef(initialState);
   const versionRef = useRef<number>(1);
   const seenActionsRef = useRef<Set<string>>(new Set());
   const syncQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
-    if (!sessionId) { _setState(initialState); return; }
+    if (!sessionId) { _setState(initialStateRef.current); return; }
 
     const applySnapshot = (data: { viewerId?: string; session?: { state?: Partial<T>; version?: number; participants?: string[] }; actions?: PlayerAction[] }) => {
         const snap = data.session?.state;

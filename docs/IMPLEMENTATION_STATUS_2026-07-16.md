@@ -104,3 +104,11 @@ This phase does not yet move voice media from base64 payloads to Vercel Blob. Th
 ## External audit reconciliation
 
 The July 2026 architecture audit and commercial strategy have been reviewed. Their central conclusion is adopted: product breadth must not outrun the invite-to-first-game path. `docs/PRODUCT_STRATEGY_2026-07-16.md` records the resulting operating model: free guest core, host monetization, B2B first, then partner integrations and only later creator marketplace/API work.
+
+## Validation checkpoint — 2026-07-16
+
+- The verified branch is `main`; the checkpoint began after `77daaee`.
+- `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, and `npm run test:e2e` pass locally.
+- Unit and integration coverage reports 47 passing tests. The public mobile E2E matrix reports 52 passing checks from 320 px through 1024 px.
+- The Playwright setup now uses a dedicated output directory and does not retain traces during the overflow matrix, preventing the Windows artifact failure that previously stopped the server mid-run.
+- Marketing copy uses the canonical manifest count of 32 modes rather than stale 8/28 claims.

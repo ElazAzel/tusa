@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 import type { KoinsTransaction, PartyBet } from "@/lib/parties";
 
@@ -17,11 +17,11 @@ export default function Koins({ partyId }: { partyId: string }) {
   const [error, setError] = useState("");
   const [rewards, setRewards] = useState<RewardStats>({});
 
-  function loadBets() {
+  const loadBets = useCallback(() => {
     fetch(`/api/koins?partyId=${partyId}`).then((r) => r.json()).then((data) => {
       if (data.bets) setBets(data.bets);
     }).catch(() => undefined);
-  }
+  }, [partyId]);
 
   function loadBalance() {
     fetch(`/api/koins?action=balance`).then((r) => r.json()).then((data) => {
@@ -36,7 +36,7 @@ export default function Koins({ partyId }: { partyId: string }) {
     }).catch(() => undefined);
   }
 
-  useEffect(() => { loadBets(); loadBalance(); loadRewards(); }, [partyId]);
+  useEffect(() => { loadBets(); loadBalance(); loadRewards(); }, [partyId, loadBets]);
 
   const activeStake = useMemo(() => bets.filter((b) => b.status === "open").flatMap((b) => b.entries).filter((e) => e.userId === "me").reduce((sum, e) => sum + e.stake, 0), [bets]);
 
@@ -57,18 +57,6 @@ export default function Koins({ partyId }: { partyId: string }) {
     if (stake > balance) { setError(t("koinsNotEnough")); return; }
     setError("");
     const res = await fetch("/api/koins", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "join", betId, option, stake }) });
-    if (res.ok) { loadBets(); loadBalance(); } else { const data = await res.json(); setError(data.error || t("createError")); }
-  }
-
-  async function settleBetAction(betId: string, winner: string) {
-    setError("");
-    const res = await fetch("/api/koins", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "settle", betId, winner }) });
-    if (res.ok) { loadBets(); loadBalance(); } else { const data = await res.json(); setError(data.error || t("createError")); }
-  }
-
-  async function cancelBetAction(betId: string) {
-    setError("");
-    const res = await fetch("/api/koins", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "cancel", betId }) });
     if (res.ok) { loadBets(); loadBalance(); } else { const data = await res.json(); setError(data.error || t("createError")); }
   }
 

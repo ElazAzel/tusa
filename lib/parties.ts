@@ -1878,7 +1878,6 @@ export async function addPassXp(userId: string, amount: number) {
   await ensurePartySchema();
   const season = await getActivePartyPassSeason();
   if (!season) return { xp: 0, tier: 0 };
-  const nextTier = season.tiers.find((t) => t.tier > 0);
   await db()`UPDATE user_profiles SET pass_xp = pass_xp + ${amount}, pass_season = ${season.id} WHERE clerk_user_id = ${userId}`;
   const tiers = season.tiers.sort((a, b) => a.tier - b.tier);
   for (const t of tiers) {

@@ -104,10 +104,11 @@ function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   </form>;
 }
 
-export function SignIn(_: Record<string, unknown>) { return <AuthForm mode="sign-in" />; }
-export function SignUp(_: Record<string, unknown>) { return <AuthForm mode="sign-up" />; }
+export function SignIn(props: Record<string, unknown>) { void props; return <AuthForm mode="sign-in" />; }
+export function SignUp(props: Record<string, unknown>) { void props; return <AuthForm mode="sign-up" />; }
 
-export function UserButton(_: { appearance?: unknown }) {
+export function UserButton({ appearance }: { appearance?: unknown }) {
+  void appearance;
   const { user } = useAuthState();
   const { signOut } = useClerk();
   if (!user) return null;

@@ -8,11 +8,12 @@ export function useMultiplayerGame<T extends Record<string, unknown>>(
 ) {
   const [state, _setState] = useState<T>(initialState);
   const esRef = useRef<EventSource | null>(null);
+  const initialStateRef = useRef(initialState);
   const versionRef = useRef<number>(1);
   const syncQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
-    if (!sessionId) { _setState(initialState); return; }
+    if (!sessionId) { _setState(initialStateRef.current); return; }
 
     const applySnapshot = (data: { session?: { state?: Partial<T>; version?: number } }) => {
         const snap = data.session?.state;

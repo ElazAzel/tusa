@@ -6,7 +6,7 @@ import { useLocale } from "@/app/components/LocaleProvider";
 type Highlight = { id: string; partyId: string; sessionId: string | null; userId: string; displayName: string; type: string; data: Record<string, unknown>; thumbnail: string; createdAt: string };
 
 export default function Highlights({ partyId }: { partyId: string }) {
-  const { locale, t } = useLocale();
+  const { t } = useLocale();
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(true);
 

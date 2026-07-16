@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useLocale } from "./LocaleProvider";
 
 export default function CookieConsent() {
@@ -21,5 +22,5 @@ export default function CookieConsent() {
 
   if (!visible) return null;
 
-  return <div className="cookie-banner"><p>{t("privacyCookiesText")} <a href="/privacy">{t("privacyTitle")}</a></p><button onClick={accept}>OK</button></div>;
+  return <div className="cookie-banner"><p>{t("privacyCookiesText")} <Link href="/privacy">{t("privacyTitle")}</Link></p><button onClick={accept}>OK</button></div>;
 }

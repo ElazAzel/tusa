@@ -4,7 +4,7 @@ import { z } from "zod";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import {
   addGameAction, addGameScore, createGameSession, getActiveGameSessions, getGameScores, getGameActionByMutationId,
-  getGameSessionById, getPartyMembers, getPendingGameActions, joinGameSession,
+  getGameSessionById, getPendingGameActions, joinGameSession,
   leaveGameSession, requirePartyMember, updateGameSession, trackAnalytics, grantEngagementReward,
   addPassXp, trackQuestProgress,
 } from "@/lib/parties";

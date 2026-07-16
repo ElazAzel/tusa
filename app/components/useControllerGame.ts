@@ -9,11 +9,12 @@ export function useControllerGame<T extends Record<string, unknown>>(
 ) {
   const [state, setState] = useState<T>(initialState);
   const esRef = useRef<EventSource | null>(null);
+  const initialStateRef = useRef(initialState);
   const [connected, setConnected] = useState(true);
   const versionRef = useRef(0);
 
   useEffect(() => {
-    if (!sessionId) { setState(initialState); return; }
+    if (!sessionId) { setState(initialStateRef.current); return; }
 
     let disposed = false;
     let attempts = 0;

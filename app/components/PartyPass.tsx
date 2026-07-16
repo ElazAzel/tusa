@@ -1,14 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 
 type PassTier = { tier: number; xpRequired: number; rewards: Array<{ type: string; value: string }> };
 type PartyPassSeason = { id: string; name: string; startDate: string; endDate: string; tiers: PassTier[]; active: boolean };
 type UserPass = { xp: number; tier: number; seasonId: string };
 
-export default function PartyPass({ partyId }: { partyId: string }) {
-  const { locale, t } = useLocale();
+export default function PartyPass() {
+  const { t } = useLocale();
   const [season, setSeason] = useState<PartyPassSeason | null>(null);
   const [progress, setProgress] = useState<UserPass>({ xp: 0, tier: 0, seasonId: "" });
   const [loading, setLoading] = useState(true);

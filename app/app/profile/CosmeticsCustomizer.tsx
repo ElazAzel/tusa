@@ -65,7 +65,6 @@ export default function CosmeticsCustomizer({
   const [catalogue, setCatalogue] = useState<CosmeticsItem[]>([]);
   const [activeTab, setActiveTab] = useState<(typeof CATEGORY_TABS)[number]>("cover");
   const [preview, setPreview] = useState<ProfileCosmetics>(profileCosmetics);
-  const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -94,7 +93,6 @@ export default function CosmeticsCustomizer({
     soundTap();
     const fieldKey = TYPE_TO_FIELD[item.type] || item.type;
     setPreview((prev) => ({ ...prev, [fieldKey as keyof ProfileCosmetics]: item.value }));
-    setDirty(true);
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -111,7 +109,6 @@ export default function CosmeticsCustomizer({
     await onSave(changed);
     soundSuccess();
     setSaving(false);
-    setDirty(false);
   }, [preview, profileCosmetics.unlocked, onSave]);
 
   const hasSaveableChanges = CATEGORY_TABS.some((key) => {

@@ -8,7 +8,6 @@ import LocaleToggle from "@/app/components/LocaleToggle";
 
 type Stats = { users: number; parties: number; joins: number; redemptions: number };
 const typeToCosmetic: Record<string, string> = { profile_cover: "cover", avatar_frame: "avatarFrame", chat_effect: "chatEffect", chat_background: "chatBackground", name_color: "nameColor", badge: "badge" };
-const cosmeticTypes = new Set(Object.values(typeToCosmetic));
 
 export default function PromoConsole({ initialPromos, initialStats, canWrite }: { initialPromos: PromoCode[]; initialStats: Stats; canWrite: boolean }) {
   const [promos, setPromos] = useState(initialPromos);

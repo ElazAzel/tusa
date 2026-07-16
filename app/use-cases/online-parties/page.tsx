@@ -4,12 +4,10 @@ import { cookies, headers } from "next/headers";
 import { copy, normalizeLocale } from "@/lib/i18n";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const store = await cookies();
-  const locale = normalizeLocale(store.get("tusa_locale")?.value);
   return {
     title: "Online Party Games — Play with Friends | TUSA.game",
     description:
-      "Host online parties with 28 browser-based games. No downloads. Just a link.",
+      "Host online parties with 32 browser-based game modes. No downloads. Just a link.",
   };
 }
 

@@ -122,7 +122,7 @@ export default function AdminDashboard({ access, initialApplications, initialSta
       </section>}
       <section className="admin-toolbar">
         <div className="admin-filters"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("adminSearch")} aria-label={t("adminSearch")} /><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as "all" | WaitlistStatus)} aria-label={t("adminAllStatuses")}><option value="all">{t("adminAllStatuses")}</option>{Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><label className="admin-check"><input checked={betaOnly} onChange={(e) => setBetaOnly(e.target.checked)} type="checkbox" /> {t("adminOnlyBeta")}</label></div>
-        <div className="admin-toolbar-actions"><button className="admin-button" onClick={refresh} disabled={busy === "refresh"}>{busy === "refresh" ? t("adminRefreshing") : t("adminRefresh")}</button><a className="admin-button admin-button--dark" href="/api/admin/waitlist/export">{t("adminCsv")}</a></div>
+        <div className="admin-toolbar-actions"><button className="admin-button" onClick={refresh} disabled={busy === "refresh"}>{busy === "refresh" ? t("adminRefreshing") : t("adminRefresh")}</button><Link className="admin-button admin-button--dark" href="/api/admin/waitlist/export">{t("adminCsv")}</Link></div>
       </section>
       {message && <p className="admin-notice" role="status">{message}</p>}
       <section className="admin-table-card">

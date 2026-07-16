@@ -73,7 +73,7 @@ export function GamesHub() {
       }
     }, 1000);
     return () => clearTimeout(timer);
-  }, [aliasRunning, aliasSeconds, notify]);
+  }, [aliasRunning, aliasSeconds, notify, t]);
 
   const leaderboard = useMemo(() => {
     const totals = new Map<string, number>();

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -9,7 +10,7 @@ function Icon({ name }: { name: string }) { return <span className="material-sym
 function haptic(ms = 10) { try { navigator.vibrate?.(ms); } catch {} }
 
 export default function FriendsPage({ profile, friends: initialFriends, requests: initialRequests }: { profile: UserProfile; friends: FriendConnection[]; requests: FriendConnection[] }) {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const [friends, setFriends] = useState(initialFriends);
   const [requests, setRequests] = useState(initialRequests);
   const [handle, setHandle] = useState("");

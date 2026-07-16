@@ -1,6 +1,7 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 import type { GalleryPhoto } from "@/lib/parties";
 
@@ -44,13 +45,13 @@ export default function Gallery({ partyId }: { partyId: string }) {
   const [flashbackId, setFlashbackId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  function loadPhotos() {
+  const loadPhotos = useCallback(() => {
     fetch(`/api/gallery?partyId=${partyId}`).then((r) => r.json()).then((data) => {
       if (data.photos) setPhotos(data.photos);
     }).catch(() => undefined);
-  }
+  }, [partyId]);
 
-  useEffect(() => { loadPhotos(); }, [partyId]);
+  useEffect(() => { loadPhotos(); }, [loadPhotos]);
 
   const sortedPhotos = useMemo(() => [...photos].sort((a, b) => Number(b.cover) - Number(a.cover) || b.createdAt.localeCompare(a.createdAt)), [photos]);
   const flashback = photos.find((p) => p.id === flashbackId);

@@ -4,8 +4,6 @@ import { cookies, headers } from "next/headers";
 import { copy, normalizeLocale } from "@/lib/i18n";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const store = await cookies();
-  const locale = normalizeLocale(store.get("tusa_locale")?.value);
   return {
     title:
       "Remote Team Building Games — Icebreakers for Virtual Teams | TUSA.game",

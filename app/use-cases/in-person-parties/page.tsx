@@ -4,8 +4,6 @@ import { cookies, headers } from "next/headers";
 import { copy, normalizeLocale } from "@/lib/i18n";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const store = await cookies();
-  const locale = normalizeLocale(store.get("tusa_locale")?.value);
   return {
     title: "Party Games for In-Person Gatherings | TUSA.game",
     description:
@@ -35,7 +33,7 @@ export default async function InPersonPartiesPage() {
           <p>
             Board games need setup, lost pieces, and a rulebook nobody reads.
             Browser-based party games need a link. Everyone grabs their phone,
-            taps join, and the game starts in 10 seconds. TUSA.game brings 28
+            taps join, and the game starts in 10 seconds. TUSA.game brings 32
             games to your living room, backyard, or house party — no download,
             no clutter, no cleanup.
           </p>
@@ -116,7 +114,7 @@ export default async function InPersonPartiesPage() {
         <section>
           <h2>Start Your Next Gathering with TUSA</h2>
           <p>
-            Open the demo to get a feel for the flow, then discover all 28
+            Open the demo to get a feel for the flow, then discover all 32
             games for your next in-person party.
           </p>
           <p>

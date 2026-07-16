@@ -5,8 +5,6 @@ import type { Chunk, ChunkType } from "./types.js";
 const ROOT = process.cwd();
 const SKIP_DIRS = new Set(["node_modules", ".next", "dist", ".git", ".vercel", "coverage", "tmp"]);
 const INCLUDE_DIRS = new Set([".opencode"]);
-const INDEX_FILES = new Set(["index.ts", "index.tsx", "index.js", "index.jsx", "page.tsx", "page.ts", "layout.tsx", "layout.ts", "route.ts", "route.ts", "proxy.ts", "middleware.ts"]);
-const MAX_CHUNK_LINES = 300;
 const MIN_CHUNK_LINES = 5;
 
 let chunkIdCounter = 0;

@@ -1,9 +1,10 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Party, PartyRole, RsvpStatus, GameSession, ChatMessage, GameScore } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleToggle from "@/app/components/LocaleToggle";
@@ -56,7 +57,7 @@ import EmojiPicker from "@/app/components/chat/EmojiPicker";
 import { tusaStickers } from "@/app/components/chat/stickers";
 import { eventDateInputValue, formatEventDate } from "@/lib/event-format";
 import EventDateTimeFields from "@/app/components/EventDateTimeFields";
-import { soundChat, soundTap, soundReward } from "@/lib/audio";
+import { soundChat } from "@/lib/audio";
 
 import { GAME_MANIFEST, formatPlayerRange, isGameId, type GameId } from "@/lib/games/manifest";
 
@@ -300,7 +301,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       }).catch(() => undefined);
   }
 
-  function saveGameScore(_clientScore: number) {
+  function saveGameScore() {
     if (!gameSession || !selectedGame) return;
     const game = gameCatalogue.find((g) => g.id === selectedGame);
     fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "score", sessionId: gameSession, metadata: { game: selectedGame } }) })
@@ -534,11 +535,11 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
     {tab === "shop" && <ShoppingList partyId={party.id} members={members} canManage={isOwner || party.role === "co_host"} />}
     {tab === "gallery" && <Gallery partyId={party.id} />}
     {tab === "koins" && <Koins partyId={party.id} />}
-    {tab === "pass" && <PartyPass partyId={party.id} />}
+    {tab === "pass" && <PartyPass />}
     {tab === "quests" && <SocialQuests partyId={party.id} />}
     {tab === "highlights" && <Highlights partyId={party.id} />}
     {tab === "gratitude" && <Gratitude partyId={party.id} members={members.map((m) => ({ id: m.clerkUserId, displayName: m.displayName }))} />}
-    {tab === "daily" && <DailyChallenge partyId={party.id} />}
+    {tab === "daily" && <DailyChallenge />}
     {tab === "theme" && <RoomTheme inviteCode={party.inviteCode} currentTheme={themeId} ownedThemes={party.ownedThemes} onThemeChange={(th) => setThemeId(th)} />}
     {tab === "chat" && <section className={`party-room-panel party-chat party-chat-background-${chatBackground}`}>
       <h2>{t("roomChatTitle")}</h2>

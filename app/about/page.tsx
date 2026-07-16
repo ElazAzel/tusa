@@ -4,7 +4,7 @@ import { cookies, headers } from "next/headers";
 import { copy, normalizeLocale } from "@/lib/i18n";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: "About | TUSA.game", description: "TUSA.game is a browser-based social gaming platform — 28 party games, one link, no downloads. Learn about our mission and story." };
+  return { title: "About | TUSA.game", description: "TUSA.game is a browser-based social gaming platform — 32 party game modes, one link, no downloads. Learn about our mission and story." };
 }
 
 export default async function AboutPage() {

@@ -6,7 +6,7 @@ import { useLocale } from "@/app/components/LocaleProvider";
 type PublicQuestion = { id: string; prompt: { ru: string; en: string }; options: { ru: string[]; en: string[] } };
 type Challenge = { id: string; game: string; questions: PublicQuestion[] };
 
-export default function DailyChallenge({ partyId: _partyId }: { partyId: string }) {
+export default function DailyChallenge() {
   const { locale, t } = useLocale();
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [leaderboard, setLeaderboard] = useState<Array<{ userId: string; displayName: string; score: number }>>([]);
