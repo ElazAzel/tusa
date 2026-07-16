@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { GAME_MANIFEST } from "@/lib/games/manifest";
 import { CONTENT_UPDATED_AT, SITE_ORIGIN } from "@/lib/site";
 import { SEO_GUIDES } from "@/lib/seo-guides";
+import { PROGRAMMATIC_SLUGS } from "@/lib/seo-programmatic";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages = [
@@ -29,6 +30,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly",
     priority: game.category === "full_game" ? 0.8 : 0.6,
   }));
+  const programmaticEntries: MetadataRoute.Sitemap = PROGRAMMATIC_SLUGS.map((slug) => ({
+    url: `${SITE_ORIGIN}/games/${slug}`,
+    lastModified: CONTENT_UPDATED_AT,
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
   const guideEntries: MetadataRoute.Sitemap = ["ru", "en"].flatMap((locale) => SEO_GUIDES.map(([slug]) => ({ url: `${SITE_ORIGIN}/${locale}/guides/${slug}`, lastModified: CONTENT_UPDATED_AT, changeFrequency: "monthly" as const, priority: 0.75 })));
-  return [...staticEntries, ...gameEntries, ...guideEntries];
+  return [...staticEntries, ...gameEntries, ...programmaticEntries, ...guideEntries];
 }
