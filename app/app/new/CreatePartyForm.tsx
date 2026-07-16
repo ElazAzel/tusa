@@ -26,6 +26,11 @@ export default function CreatePartyForm() {
     setError("");
     const body: Record<string, unknown> = Object.fromEntries(data);
     body.adultOnly = adultOnly;
+    if (typeof body.date !== "string" || !body.date || typeof body.time !== "string" || !body.time) {
+      setError(`${t("createDate")} и ${t("createTime")} нужно выбрать перед созданием тусы.`);
+      setLoading(false);
+      return;
+    }
     if (hasAccess) delete body.promoCode;
     try {
       const response = await fetch("/api/parties", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
