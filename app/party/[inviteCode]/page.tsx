@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { joinParty, syncProfile } from "@/lib/parties";
+import { getProfile, joinParty, syncProfile } from "@/lib/parties";
 import { resolveActor } from "@/lib/guest-session";
 import PartyRoom from "./PartyRoom";
 
@@ -15,5 +15,6 @@ export default async function PartyRoomPage({ params }: { params: Promise<{ invi
   let party;
   try { party = await joinParty(actor.id, inviteCode); } catch { redirect(actor.kind === "guest" ? `/join/${inviteCode}` : "/app"); }
   if (!party) redirect(actor.kind === "guest" ? `/join/${inviteCode}` : "/app");
-  return <PartyRoom party={party!} actorId={actor.id} actorKind={actor.kind} />;
+  const profile = await getProfile(actor.id).catch(() => null);
+  return <PartyRoom party={party!} actorId={actor.id} actorKind={actor.kind} chatBackground={profile?.cosmetics.chatBackground ?? "paper"} />;
 }

@@ -63,7 +63,7 @@ import { GAME_MANIFEST, formatPlayerRange, isGameId, type GameId } from "@/lib/g
 const gameCatalogue = GAME_MANIFEST;
 type ChatEntry = ChatMessage & { pending?: boolean; failed?: boolean };
 
-export default function PartyRoom({ party, actorId, actorKind }: { party: Party; actorId: string; actorKind?: string }) {
+export default function PartyRoom({ party, actorId, actorKind, chatBackground = "paper" }: { party: Party; actorId: string; actorKind?: string; chatBackground?: string }) {
   const [tab, setTab] = useState<"space" | "games" | "chat" | "shop" | "gallery" | "koins" | "pass" | "quests" | "highlights" | "gratitude" | "theme" | "daily">("space");
   const [moreOpen, setMoreOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatEntry[]>([]);
@@ -540,7 +540,7 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
     {tab === "gratitude" && <Gratitude partyId={party.id} members={members.map((m) => ({ id: m.clerkUserId, displayName: m.displayName }))} />}
     {tab === "daily" && <DailyChallenge partyId={party.id} />}
     {tab === "theme" && <RoomTheme inviteCode={party.inviteCode} currentTheme={themeId} ownedThemes={party.ownedThemes} onThemeChange={(th) => setThemeId(th)} />}
-    {tab === "chat" && <section className="party-room-panel party-chat">
+    {tab === "chat" && <section className={`party-room-panel party-chat party-chat-background-${chatBackground}`}>
       <h2>{t("roomChatTitle")}</h2>
       <div className="party-chat-stream" ref={chatStreamRef} onScroll={handleChatScroll} aria-live="polite" aria-label={t("roomChatTitle")}>
         {allChatMessages.length ? allChatMessages.map((item, index) => {

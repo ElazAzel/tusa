@@ -2382,10 +2382,42 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 
 /* Profile */
 .profile-hero { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 24px; padding: 30px; border: var(--line); border-radius: 19px; background: var(--lime); box-shadow: 6px 6px 0 var(--black); }
+.profile-cover-beta, .cosmetics-cover-beta { background: linear-gradient(135deg, var(--blue), #b829ff) !important; color: var(--white); }
+.profile-cover-midnight, .cosmetics-cover-midnight { background: linear-gradient(135deg, #10101c, #34304f) !important; color: var(--white); }
+.profile-cover-sunset, .cosmetics-cover-sunset { background: linear-gradient(135deg, #ff8a2a, var(--pink)) !important; }
+.profile-cover-ocean, .cosmetics-cover-ocean { background: linear-gradient(135deg, #88e6ff, var(--blue)) !important; color: var(--white); }
+.profile-cover-forest, .cosmetics-cover-forest { background: linear-gradient(135deg, #baff05, #157a42) !important; }
+.profile-cover-nebula, .cosmetics-cover-nebula { background: radial-gradient(circle at 20% 20%, var(--pink), transparent 35%), linear-gradient(135deg, var(--blue), #21103f) !important; color: var(--white); }
+.profile-cover-cosmos, .cosmetics-cover-cosmos { background: radial-gradient(circle at 72% 25%, var(--lime) 0 3px, transparent 4px), linear-gradient(135deg, #09091b, var(--blue)) !important; color: var(--white); }
+.profile-cover-retro, .cosmetics-cover-retro { background: repeating-linear-gradient(45deg, #ffec92 0 12px, #ff779b 12px 24px, #827cff 24px 36px) !important; }
+.profile-cover-gold, .cosmetics-cover-gold { background: linear-gradient(135deg, #ffed83, #e8a726) !important; }
+.profile-cover-animated_wave, .cosmetics-cover-animated_wave { background: linear-gradient(120deg, var(--blue), #89e8ff, var(--blue)) !important; background-size: 200% 200% !important; animation: tusa-cover-wave 4s ease infinite; color: var(--white); }
+.profile-cover-animated_aurora, .cosmetics-cover-animated_aurora { background: linear-gradient(120deg, var(--blue), var(--lime), var(--pink), var(--blue)) !important; background-size: 300% 300% !important; animation: tusa-cover-wave 5s ease infinite; }
+.profile-cover-animated_fireflies, .cosmetics-cover-animated_fireflies { background: radial-gradient(circle at 20% 30%, var(--lime) 0 2px, transparent 3px), radial-gradient(circle at 75% 60%, var(--lime) 0 2px, transparent 3px), #183629 !important; color: var(--white); animation: tusa-cover-pulse 2s ease-in-out infinite alternate; }
+.profile-cover-animated_storm, .cosmetics-cover-animated_storm { background: linear-gradient(130deg, #151536, #4f46c6, #151536) !important; background-size: 200% 200% !important; animation: tusa-cover-wave 2s linear infinite; color: var(--white); }
+.profile-cover-animated_rainbow, .cosmetics-cover-animated_rainbow { background: linear-gradient(110deg, var(--pink), #ffcc44, var(--lime), #54c7ff, var(--blue), var(--pink)) !important; background-size: 300% 300% !important; animation: tusa-cover-wave 4s linear infinite; }
+.profile-avatar.frame-rainbow { border-color: #ff9800; box-shadow: 0 0 0 3px var(--pink), 6px 6px 0 var(--black); }
+.profile-avatar.frame-gold { border-color: #ffd700; box-shadow: 0 0 16px #ffd700, 6px 6px 0 var(--black); }
+.profile-avatar.frame-crystal { border-color: #80deea; box-shadow: 0 0 16px #80deea, 6px 6px 0 var(--black); }
+.profile-avatar.frame-inferno { border-color: #ff6f00; box-shadow: 0 0 16px #ff6f00, 6px 6px 0 var(--black); }
+.profile-avatar.frame-frost { border-color: #d6f6ff; box-shadow: 0 0 16px #80deea, 6px 6px 0 var(--black); }
 .profile-avatar { position:relative; width: 110px; height: 110px; display: grid; place-items: center; overflow:hidden; border: 6px solid var(--black); border-radius: 30px; background: var(--white); box-shadow: 6px 6px 0 var(--black); font-family: var(--font-unbounded), sans-serif; font-size: 34px; font-weight: 900; }
 .profile-avatar-image { position:relative; z-index:1; width:100%; height:100%; border-radius:inherit; object-fit:cover; }
 .profile-avatar.frame-animated_rotate::before { position:absolute; z-index:2; inset:-10px; border:7px dashed var(--pink); border-radius:36px; content:""; animation:tusa-frame-spin 3s linear infinite; pointer-events:none; }
 .profile-avatar.frame-animated_rotate .profile-avatar-image { transform:none; }
+.profile-avatar.frame-animated_pulse { border-color: var(--lime); animation: tusa-frame-pulse 1.4s ease-in-out infinite; }
+.profile-avatar.frame-animated_glow { border-color: var(--pink); animation: tusa-frame-glow 1.5s ease-in-out infinite alternate; }
+.profile-avatar.frame-animated_chrome { border-color: #b0bec5; box-shadow: 0 0 12px #fff, 6px 6px 0 var(--black); }
+.profile-avatar.frame-animated_neon_pulse { border-color: #b829ff; animation: tusa-frame-neon 1.3s ease-in-out infinite alternate; }
+@keyframes tusa-frame-pulse { 50% { transform: scale(1.045); } }
+@keyframes tusa-frame-glow { to { box-shadow: 0 0 22px var(--pink), 6px 6px 0 var(--black); } }
+@keyframes tusa-frame-neon { to { box-shadow: 0 0 20px #b829ff, 6px 6px 0 var(--black); } }
+@keyframes tusa-cover-wave { 50% { background-position: 100% 50%; } }
+@keyframes tusa-cover-pulse { to { filter: brightness(1.2); } }
+.profile-name-color-animated_cycle, .profile-name-color-animated_gradient, .profile-name-color-animated_shift, .profile-name-color-animated_neon { background: linear-gradient(90deg, var(--pink), var(--lime), var(--blue), var(--pink)); background-size: 300% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: tusa-name-shift 3s linear infinite; }
+.profile-name-color-animated_pulse { color: var(--pink); animation: tusa-name-pulse 1.3s ease-in-out infinite alternate; }
+@keyframes tusa-name-shift { to { background-position: 300% center; } }
+@keyframes tusa-name-pulse { to { color: var(--blue); text-shadow: 0 0 12px var(--pink); } }
 @keyframes tusa-frame-spin { to { transform:rotate(360deg); } }
 .avatar-upload { display:flex; align-items:center; gap:12px; cursor:pointer; }.avatar-upload input { position:absolute; width:1px; height:1px; opacity:0; }.avatar-upload b { padding:10px 12px; border:2px solid var(--black); background:var(--lime); box-shadow:3px 3px 0 var(--black); }
 .profile-avatar.frame-pink { border-color: var(--pink); }
@@ -4000,8 +4032,18 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .cosmetics-item.equipped { border-color: var(--lime); background: #f0ffe0; box-shadow: 0 0 0 1px var(--lime); }
 .cosmetics-item.locked { opacity: .55; filter: grayscale(.4); }
 .cosmetics-item.locked:hover { opacity: .8; filter: grayscale(.1); }
-.cosmetics-item-img { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-.cosmetics-item-img svg { width: 100%; height: 100%; display: block; }
+.cosmetics-item-img { width: 48px; height: 48px; display: grid; place-items: center; overflow: hidden; border: 2px solid var(--black); border-radius: 12px; background: var(--cream); color: var(--black); pointer-events: none; }
+.cosmetics-item-img .material-symbols-rounded { font-size: 25px; }
+.cosmetics-item-img--cover { background: linear-gradient(135deg, var(--lime), var(--blue)); }
+.cosmetics-item-img--avatarFrame { border-width: 6px; background: var(--white); }
+.cosmetics-item-img--chatEffect { background: linear-gradient(135deg, #fff4b6, var(--pink)); }
+.cosmetics-item-img--chatBackground { background: repeating-linear-gradient(45deg, var(--cream) 0 8px, #d9d5ff 8px 16px); }
+.cosmetics-item-img--nameColor { background: linear-gradient(135deg, var(--pink), var(--lime), var(--blue)); }
+.cosmetics-item-img--badge { background: var(--lime); }
+.cosmetics-item-value-midnight { background: #181529; color: var(--white); }
+.cosmetics-item-value-neon { background: linear-gradient(135deg, var(--blue), var(--pink)); color: var(--white); }
+.cosmetics-item-value-paper { background: var(--cream); }
+.cosmetics-item-value-candy { background: repeating-linear-gradient(45deg, #fff 0 8px, #ffb8db 8px 16px); }
 .cosmetics-item-name { font-size: 10px; font-weight: 800; text-align: center; line-height: 1.2; color: var(--dark); }
 .cosmetics-item-status { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; }
 .cosmetics-anim-indicator { position: absolute; top: 4px; left: 4px; font-size: 12px; color: var(--pink); }
@@ -4043,6 +4085,9 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .connection-banner .material-symbols-rounded { font-size: 18px; }
 
 .party-chat-stream { position: relative; overscroll-behavior: contain; }
+.party-chat-background-midnight .party-chat-stream { background: radial-gradient(circle at 20% 20%, rgba(201,255,5,.25) 0 2px, transparent 3px), #181529; color: var(--white); }
+.party-chat-background-candy .party-chat-stream { background: repeating-linear-gradient(45deg, #fff 0 14px, #fff2f8 14px 28px); }
+.party-chat-background-neon .party-chat-stream { background: radial-gradient(circle at 15% 15%, rgba(201,255,5,.4), transparent 18%), linear-gradient(135deg, #21005a, var(--blue)); }
 .party-chat-bubble { position: relative; min-width: 0; overflow-wrap: anywhere; animation: chat-message-in 240ms var(--ease) both; }
 .party-chat-bubble.is-pending { opacity: .64; }
 .party-chat-bubble.is-failed { border-color: var(--pink); background: #fff2f7; }

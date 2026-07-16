@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import type { CosmeticsItem, ProfileCosmetics, PromoBenefitType } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { soundTap, soundSuccess } from "@/lib/audio";
-import InlineSvg from "@/app/components/InlineSvg";
 
 const TYPE_TO_FIELD: Record<string, keyof ProfileCosmetics> = {
   cover: "cover",
@@ -33,6 +32,15 @@ const DEFAULT_VALUES: Record<(typeof CATEGORY_TABS)[number], string> = {
   chatBackground: "paper",
   nameColor: "#000000",
   badge: "newcomer",
+};
+
+const TYPE_ICONS: Record<(typeof CATEGORY_TABS)[number], string> = {
+  cover: "wallpaper",
+  avatarFrame: "frame_person",
+  chatEffect: "auto_awesome",
+  chatBackground: "format_color_fill",
+  nameColor: "palette",
+  badge: "workspace_premium",
 };
 
 const categoryLabels: Record<string, { ru: string; en: string }> = {
@@ -82,9 +90,8 @@ export default function CosmeticsCustomizer({
   const unlockType = TYPE_TO_UNLOCK[activeTab];
   const unlocked = profileCosmetics.unlocked.includes(unlockType);
 
-  const handleSelect = useCallback((item: CosmeticsItem, allowed: boolean) => {
+  const handleSelect = useCallback((item: CosmeticsItem) => {
     soundTap();
-    if (!allowed) return;
     const fieldKey = TYPE_TO_FIELD[item.type] || item.type;
     setPreview((prev) => ({ ...prev, [fieldKey as keyof ProfileCosmetics]: item.value }));
     setDirty(true);
@@ -107,7 +114,10 @@ export default function CosmeticsCustomizer({
     setDirty(false);
   }, [preview, profileCosmetics.unlocked, onSave]);
 
-  const hasChanges = dirty || CATEGORY_TABS.some((key) => preview[key] !== profileCosmetics[key]);
+  const hasSaveableChanges = CATEGORY_TABS.some((key) => {
+    const canSave = profileCosmetics.unlocked.includes(TYPE_TO_UNLOCK[key]) || preview[key] === DEFAULT_VALUES[key];
+    return canSave && preview[key] !== profileCosmetics[key];
+  });
 
   return (
     <div className="cosmetics-customizer-overlay">
@@ -121,7 +131,7 @@ export default function CosmeticsCustomizer({
 
         <div className="cosmetics-customizer-body">
           <div className="cosmetics-preview-panel">
-            <div className={`cosmetics-preview-card chat-background-${preview.chatBackground}`} style={{ background: preview.cover === "lime" ? "var(--lime)" : preview.cover === "midnight" ? "#1a1a2e" : preview.cover === "beta" ? "linear-gradient(135deg,#2D00F7,#b829ff)" : "var(--cream)" }}>
+            <div className={`cosmetics-preview-card cosmetics-cover-${preview.cover} chat-background-${preview.chatBackground}`}>
               <div className="cosmetics-preview-avatar" style={preview.avatarFrame !== "none" ? { borderColor: preview.avatarFrame === "lime" ? "var(--lime)" : preview.avatarFrame === "pink" ? "var(--pink)" : preview.avatarFrame === "blue" ? "var(--blue)" : preview.avatarFrame === "neon" ? "#b829ff" : preview.avatarFrame === "gold" ? "#ffd700" : preview.avatarFrame === "crystal" ? "#80deea" : preview.avatarFrame === "inferno" ? "#ff6f00" : preview.avatarFrame === "frost" ? "#e0f7fa" : preview.avatarFrame === "rainbow" ? "#ff9800" : preview.avatarFrame === "animated_pulse" ? "var(--lime)" : preview.avatarFrame === "animated_glow" ? "#ff1791" : preview.avatarFrame === "animated_rotate" ? "#ff0000" : preview.avatarFrame === "animated_chrome" ? "#b0bec5" : preview.avatarFrame === "animated_neon_pulse" ? "#b829ff" : undefined} : undefined}>
                 <span>{profileCosmetics.cover?.slice(0, 2).toUpperCase() || "TU"}</span>
               </div>
@@ -163,12 +173,11 @@ export default function CosmeticsCustomizer({
                   <button
                     key={item.id}
                     className={`cosmetics-item ${isEquipped ? "equipped" : ""} ${isLocked ? "locked" : ""}`}
-                    onClick={() => handleSelect(item, !isLocked)}
+                    onClick={() => handleSelect(item)}
                   >
-                    <InlineSvg
-                      url={item.imageUrl}
-                      className="cosmetics-item-img"
-                    />
+                    <span className={`cosmetics-item-img cosmetics-item-img--${item.type} cosmetics-item-value-${item.slug}`} aria-hidden="true">
+                      <span className="material-symbols-rounded">{TYPE_ICONS[item.type]}</span>
+                    </span>
                     <span className="cosmetics-item-name">
                       {locale === "ru" ? item.nameRu : item.nameEn}
                     </span>
@@ -193,7 +202,7 @@ export default function CosmeticsCustomizer({
           </p>
           <div className="cosmetics-footer-actions">
             <button className="admin-text-button" onClick={onClose}>{t("cancel")}</button>
-            <button className="admin-button" onClick={handleSave} disabled={!hasChanges || saving}>
+            <button className="admin-button" onClick={handleSave} disabled={!hasSaveableChanges || saving}>
               {saving ? t("saving") : t("profileSave")}
             </button>
           </div>

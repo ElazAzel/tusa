@@ -131,13 +131,13 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
       <div className="profile-editor-layout">
         <div>
           {/* ── Hero ── */}
-          <div className="profile-hero">
+          <div className={`profile-hero profile-cover-${profile.cosmetics.cover}`}>
             <div className={`profile-avatar frame-${profile.cosmetics.avatarFrame !== "none" ? profile.cosmetics.avatarFrame : "lime"}`}>
               {avatarUrl ? <img className="profile-avatar-image" src={avatarUrl} alt="" /> : profile.displayName.slice(0, 2).toUpperCase()}
             </div>
             <div>
               <span>{t("profileHero")}</span>
-              <h2 style={profile.cosmetics.nameColor !== "#000000" ? { color: profile.cosmetics.nameColor } : undefined}>{profile.cosmetics.badge !== "newcomer" && <span className="material-symbols-rounded" style={{ fontSize: 20, color: "var(--lime)", verticalAlign: "middle", marginRight: 4 }}>verified</span>}{profile.displayName}</h2>
+              <h2 className={`profile-name-color-${profile.cosmetics.nameColor.startsWith("animated_") ? profile.cosmetics.nameColor : "static"}`} style={profile.cosmetics.nameColor !== "#000000" && !profile.cosmetics.nameColor.startsWith("animated_") ? { color: profile.cosmetics.nameColor } : undefined}>{profile.cosmetics.badge !== "newcomer" && <span className="material-symbols-rounded" style={{ fontSize: 20, color: "var(--lime)", verticalAlign: "middle", marginRight: 4 }}>verified</span>}{profile.displayName}</h2>
               <p>{profile.bio}</p>
               <div className="profile-meta">
                 <b><Icon name="location_on" /> {profile.city || "\u2014"}</b>
@@ -286,7 +286,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
                 <div className="cosmetics-quick-view">
                   <div className="cosmetics-quick-avatars">
                     <div className={`profile-avatar frame-${profile.cosmetics.avatarFrame !== "none" ? profile.cosmetics.avatarFrame : "lime"}`} style={{ width: 60, height: 60, fontSize: 20, borderWidth: 4 }}>
-                      {profile.displayName.slice(0, 2).toUpperCase()}
+                      {avatarUrl ? <img className="profile-avatar-image" src={avatarUrl} alt="" /> : profile.displayName.slice(0, 2).toUpperCase()}
                     </div>
                   </div>
                   <div className="cosmetics-quick-info">
