@@ -613,7 +613,7 @@ export async function getProfile(userId: string) {
   return rows[0] ? profileFromRow(rows[0]) : null;
 }
 
-export async function updateProfile(userId: string, input: { displayName: string; handle: string; city: string; bio: string; compashka?: string; cosmetics?: Partial<Pick<ProfileCosmetics, "cover" | "avatarFrame" | "chatEffect" | "chatBackground" | "nameColor" | "badge">> }) {
+export async function updateProfile(userId: string, input: { displayName: string; handle: string; city: string; bio: string; imageUrl?: string; compashka?: string; cosmetics?: Partial<Pick<ProfileCosmetics, "cover" | "avatarFrame" | "chatEffect" | "chatBackground" | "nameColor" | "badge">> }) {
   await ensurePartySchema();
   const current = await getProfile(userId);
   if (!current) throw new Error("Profile not found");
@@ -629,7 +629,7 @@ export async function updateProfile(userId: string, input: { displayName: string
     if (nextValue !== baseValues[key] && !current.cosmetics.unlocked.includes(benefit)) throw new Error("This cosmetic item is not unlocked.");
   }
   const compashka = input.compashka !== undefined ? input.compashka : current.compashka;
-  const [row] = await db()`UPDATE user_profiles SET display_name = ${input.displayName.slice(0, 80)}, handle = ${cleanHandle(input.handle)}, city = ${input.city.slice(0, 80)}, bio = ${input.bio.slice(0, 300)}, compashka = ${compashka.slice(0, 80)}, cosmetics = ${JSON.stringify(cosmetics)}::jsonb, updated_at = NOW()
+  const [row] = await db()`UPDATE user_profiles SET display_name = ${input.displayName.slice(0, 80)}, handle = ${cleanHandle(input.handle)}, city = ${input.city.slice(0, 80)}, bio = ${input.bio.slice(0, 300)}, image_url = ${input.imageUrl?.slice(0, 1_500_000) ?? current.imageUrl}, compashka = ${compashka.slice(0, 80)}, cosmetics = ${JSON.stringify(cosmetics)}::jsonb, updated_at = NOW()
     WHERE clerk_user_id = ${userId} RETURNING *` as unknown as Record<string, unknown>[];
   return profileFromRow(row);
 }

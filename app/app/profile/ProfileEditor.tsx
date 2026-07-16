@@ -37,6 +37,8 @@ function Icon({ name }: { name: string }) {
 }
 
 export default function ProfileEditor({ profile, parties }: { profile: UserProfile; parties: Party[] }) {
+  const [avatarUrl, setAvatarUrl] = useState(profile.imageUrl);
+  const [avatarError, setAvatarError] = useState("");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [promo, setPromo] = useState("");
@@ -66,6 +68,13 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
     const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
     if (response.ok) { setSaved(true); setError(""); soundSuccess(); setTimeout(() => setSaved(false), 2000); }
     else setError((await response.json()).error);
+  }
+
+  async function uploadAvatar(file: File) {
+    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) { setAvatarError("Выбери изображение до 5 МБ."); return; }
+    setAvatarError("");
+    try { const imageUrl = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file); }); const response = await fetch("/api/profile", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ displayName:profile.displayName, handle:profile.handle, city:profile.city, bio:profile.bio, imageUrl }) }); if (!response.ok) throw new Error(); setAvatarUrl(imageUrl); }
+    catch { setAvatarError("Не получилось загрузить аватар. Попробуй другое изображение."); }
   }
 
   async function redeem(event: FormEvent<HTMLFormElement>) {
@@ -124,7 +133,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
           {/* ── Hero ── */}
           <div className="profile-hero">
             <div className={`profile-avatar frame-${profile.cosmetics.avatarFrame !== "none" ? profile.cosmetics.avatarFrame : "lime"}`}>
-              {profile.displayName.slice(0, 2).toUpperCase()}
+              {avatarUrl ? <img className="profile-avatar-image" src={avatarUrl} alt="" /> : profile.displayName.slice(0, 2).toUpperCase()}
             </div>
             <div>
               <span>{t("profileHero")}</span>
@@ -256,7 +265,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
           {/* ── Profile editor form ── */}
           <section className="profile-editor-card">
             <form onSubmit={submit}>
-              <img src={profile.imageUrl} alt="" width={82} height={82} />
+              <label className="avatar-upload"><span className={`profile-avatar frame-${profile.cosmetics.avatarFrame !== "none" ? profile.cosmetics.avatarFrame : "lime"}`} style={{ width: 82, height: 82, fontSize: 24 }}>{avatarUrl ? <img className="profile-avatar-image" src={avatarUrl} alt="" /> : profile.displayName.slice(0, 2).toUpperCase()}</span><input accept="image/*" aria-label="Загрузить аватар" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAvatar(file); }} type="file" /><b>Загрузить аватар</b></label>{avatarError && <p className="form-error">{avatarError}</p>}
               <h1>{t("profileTitle")}</h1>
 
               <label>{t("profileName")}

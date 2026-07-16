@@ -16,6 +16,7 @@ const profileSchema = z.object({
   chatBackground: z.string().max(80).optional(),
   nameColor: z.string().max(80).optional(),
   badge: z.string().max(80).optional(),
+  imageUrl: z.string().max(1_500_000).optional(),
 }).strict();
 
 export async function PATCH(request: Request) {
@@ -33,6 +34,7 @@ export async function PATCH(request: Request) {
       handle: body.handle,
       city: body.city ?? "",
       bio: body.bio ?? "",
+      imageUrl: body.imageUrl,
       compashka: body.compashka ?? "",
       cosmetics: Object.fromEntries(Object.entries({
         cover: body.cover,
