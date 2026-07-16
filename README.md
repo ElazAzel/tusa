@@ -6,7 +6,7 @@ https://tusa.game
 
 ## Что готово
 
-- **32 multiplayer-режима** с архитектурой Stage+Controller (хост = stage, игроки = controllers);
+- **32 игровых режима в каталоге** с архитектурой Stage+Controller (хост = stage, игроки = controllers). Все режимы остаются Beta, пока не пройдут multiplayer-сертификацию;
 - адаптивный лендинг в визуальной системе TUSA.game;
 - официальные логотипы (`public/brand/`);
 - Event Hub: создание, редактирование, дублирование, удаление, RSVP, роли, заметки, QR;
@@ -76,7 +76,7 @@ https://tusa.game
 - **Idempotency** — `client_mutation_id` unique constraint на `game_actions` + `chat_messages` + `game_scores`
 - **Rate limiting** — distributed (Upstash Redis) + in-memory fallback на всех 39 API endpoints
 - **Guest sessions** — HMAC-SHA256 signed cookie-based guest identity без Clerk
-- **Server-authoritative game engine** — 24 из 32 игр с серверным reducer, Zod-валидацией команд и приватным состоянием
+- **Server-authoritative game engine** — общий SDK уже покрывает 7 режимов; legacy server reducer и Zod-команды покрывают часть остальных. Production-готовность режима определяется только certification matrix, а не наличием карточки в каталоге;
 - **Auth guards** — `requirePartyMember()` / `requireOwner()` в 13 уязвимых функциях
 - **SSE reconnect** — все hooks переподключаются через 3s при ошибке
 - **Web Audio API** — синтезированные звуки (без внешних файлов)
@@ -119,10 +119,11 @@ Production: `https://tusa.game`
 
 - Stripe оплата — нужен Stripe account + webhook endpoint;
 - Push notifications — нужны VAPID keys + service worker handler;
-- Ably + Upstash Redis — опциональны, без них realtime и rate limiting падают на in-memory (single-instance);
-- 6 игр используют client-side state (alias, mafia, truth, never, beer, randomPair, bunker);
-- Analytics — не настроены (нет Sentry, нет типизированных событий);
-- E2E — только Chromium, нет мультиплеерных тестов;
-- Database — runtime DDL вместо versioned migrations;
+- Production требует `ABLY_API_KEY` и Upstash Redis: локальный in-memory fallback предназначен только для разработки и не подходит для multi-instance deployment;
+- Все 32 режима пока имеют статус Beta; полный переход legacy/local логики на server-authoritative SDK и certification matrix ещё не завершён;
+- Analytics, мониторинг и типизированные продуктовые события требуют production-конфигурации и отдельной проверки;
+- E2E пока не покрывает полный host + two controllers + reconnect сценарий для каждого режима;
+- Database всё ещё содержит runtime DDL наряду с миграциями; migration-first схема остаётся P0;
+- Clerk production deployment требует live keys и custom auth domain. Test/development keys не являются production-конфигурацией;
 - Content moderation — не реализована;
 - SEO — нет URL-based локализации (`/en/games/...`).

@@ -84,8 +84,11 @@ External action still required:
 ## Next implementation order
 
 1. Stabilize auth runtime and production login.
-2. Update docs/README/AGENTS to remove stale 28-mode references.
+2. Keep product claims aligned with the certification matrix and production environment.
 3. Continue SDK migration for the remaining high-impact games.
 4. Add the first real multiplayer E2E harness for one certified game.
 5. Start migration plan from runtime DDL to versioned schema.
 
+## External audit reconciliation
+
+The July 2026 architecture audit and commercial strategy have been reviewed. Their central conclusion is adopted: product breadth must not outrun the invite-to-first-game path. `docs/PRODUCT_STRATEGY_2026-07-16.md` records the resulting operating model: free guest core, host monetization, B2B first, then partner integrations and only later creator marketplace/API work.
