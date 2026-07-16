@@ -1,22 +1,48 @@
 "use client";
 
-import { createContext, FormEvent, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, FormEvent, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 type ClientUser = { id: string; fullName: string; firstName: string; imageUrl: string; primaryEmailAddress: { emailAddress: string } };
 type AuthState = { isLoaded: boolean; isSignedIn: boolean; user: ClientUser | null; refresh: () => Promise<void> };
 const AuthContext = createContext<AuthState | null>(null);
 
+async function fetchSession(signal?: AbortSignal): Promise<ClientUser | null> {
+  const response = await fetch("/api/auth/session", { cache: "no-store", signal });
+  if (!response.ok) return null;
+  const data = await response.json().catch(() => ({})) as { user?: ClientUser | null };
+  return data.user ?? null;
+}
+
 export function ClerkProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ClientUser | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const refresh = async () => {
-    const response = await fetch("/api/auth/session", { cache: "no-store" });
-    const data = await response.json().catch(() => ({}));
-    setUser(data.user ?? null);
+  const refresh = useCallback(async () => {
+    const nextUser = await fetchSession();
+    setUser(nextUser);
     setIsLoaded(true);
-  };
-  useEffect(() => { void refresh(); }, []);
-  const value = useMemo(() => ({ isLoaded, isSignedIn: !!user, user, refresh }), [isLoaded, user]);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    void fetchSession(controller.signal)
+      .then((nextUser) => {
+        if (!active) return;
+        setUser(nextUser);
+        setIsLoaded(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setUser(null);
+        setIsLoaded(true);
+      });
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, []);
+
+  const value = useMemo(() => ({ isLoaded, isSignedIn: !!user, user, refresh }), [isLoaded, refresh, user]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
