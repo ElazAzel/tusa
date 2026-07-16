@@ -23,6 +23,7 @@ import colorCards from "./definitions/color-cards";
 import guessSong, { createMusicQuizDefinition } from "./definitions/music-quiz";
 import { cupToss, wheel } from "./definitions/party-tools";
 import nightCouncil, { createNightCouncil } from "./definitions/night-council";
+import { createSocialTool } from "./definitions/social-tools";
 
 type Entry = {
   id: string;
@@ -71,6 +72,9 @@ register(wheel);
 register(cupToss);
 register(nightCouncil);
 register(createNightCouncil("mafia"));
+register(createSocialTool("truth"));
+register(createSocialTool("never"));
+register(createSocialTool("pairs"));
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);

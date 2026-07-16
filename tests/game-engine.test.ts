@@ -330,6 +330,18 @@ test("Night Council keeps roles private and resolves votes on the server", () =>
   }
 });
 
+test("Social tools keep rounds and responses in the server snapshot", () => {
+  for (const game of ["truth", "never", "pairs"] as const) {
+    assert.equal(hasDefinition(game), true);
+    const started = initialServerGameState(game, players, { locale: "en" }, 1_000)!;
+    const round = game === "truth" ? applyServerGameCommand(game, started, "choose", { mode: "dare" }, context("host", 2_000))! : { state: started };
+    const response = game === "pairs" ? round : applyServerGameCommand(game, round.state, "respond", { value: true }, context("guest", 2_100))!;
+    if (game !== "pairs") assert.equal((response.state.responses as Record<string, boolean>).guest, true);
+    const next = applyServerGameCommand(game, response.state, "next", {}, context("host", 2_200))!;
+    assert.equal(next.state.round, 1);
+  }
+});
+
 test("Impostor keeps the word private and resolves clues and votes on the server", () => {
   const started = initialServerGameState("impostor", players, { locale: "en" }, 1_001)!;
   assert.equal(started.impostorId, "guest");
