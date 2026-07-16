@@ -1,4 +1,6 @@
-# TUSA.game — Production Readiness Audit
+﻿# TUSA.game — Production Readiness Audit
+
+> Latest checkpoint: docs/IMPLEMENTATION_STATUS_2026-07-16.md. It records the current git baseline, auth runtime incident, verified implementation state and next execution order. This audit remains the detailed readiness matrix.
 
 **Date**: 2026-07-13
 **Branch**: main
@@ -308,3 +310,4 @@ The following keys are defined in `lib/i18n.ts` but never referenced via `t()`:
 | **Sprint 10** | Security + moderation | ❌ 10% | CSP, rate limiting, auth exist. No moderation, no content safety, no host controls |
 | **Sprint 11** | SEO/i18n routes | ❌ 30% | Landing pages exist. No URL-based locale, no individual game pages |
 | **Sprint 12** | Load testing + beta | ❌ 0% | No load testing infrastructure |
+

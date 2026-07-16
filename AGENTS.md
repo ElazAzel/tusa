@@ -46,7 +46,7 @@ app/
     useControllerGame.ts ← Controller hook (sendAction, restores state from DB)
     useLiveStream.ts  ← SSE hook with 3s reconnect
     useGameRole.ts    ← "stage" | "controller" detection
-    games/*.tsx       ← 28 game components
+    games/*.tsx       ← 32 game/mode components
   party/[inviteCode]/PartyRoom.tsx ← Main room (manifest-driven game catalogue)
 app/globals.css       ← ~3980 lines brand CSS, brutal design, mobile-first
 ```
@@ -191,6 +191,7 @@ npm run test:e2e     # Playwright E2E (requires install)
 | Doc | Location | Purpose |
 |---|---|---|
 | 👑 Production Readiness | `docs/PRODUCTION_READINESS_AUDIT.md` | 32-game certification matrix, infrastructure audit, security posture |
+| 🧭 Current Implementation Status | `docs/IMPLEMENTATION_STATUS_2026-07-16.md` | Current git/doc/production checkpoint and next implementation order |
 | 📈 Growth OS | `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` | Full SEO/GEO/AEO strategy, 18 sections |
 | ✅ Platform Audit | `docs/PLATFORM_AUDIT.md` | Platform completion vs style guide + PRD |
 | 🎯 Master Plan (RU) | `docs/PLAN.md` | 807-line general plan for full readiness |
