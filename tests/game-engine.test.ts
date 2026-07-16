@@ -100,6 +100,7 @@ test("Brain Burst uses a ten-second server timer and server scoring", () => {
 });
 
 test("Same Word keeps submissions private and scores matching answers", () => {
+  assert.equal(hasDefinition("blankSlate"), true);
   const started = initialServerGameState("blankSlate", players, { locale: "en" }, 1_000)!;
   const host = applyServerGameCommand("blankSlate", started, "submit", { answer: " cheese " }, context("host", 2_000))!;
   const guest = applyServerGameCommand("blankSlate", host.state, "submit", { answer: "Cheese" }, context("guest", 2_100))!;
