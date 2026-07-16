@@ -24,6 +24,10 @@ import guessSong, { createMusicQuizDefinition } from "./definitions/music-quiz";
 import { cupToss, wheel } from "./definitions/party-tools";
 import nightCouncil, { createNightCouncil } from "./definitions/night-council";
 import { createSocialTool } from "./definitions/social-tools";
+import wordBlast from "./definitions/word-blast";
+import bunker from "./definitions/bunker";
+import pictionary from "./definitions/pictionary";
+import drawChain from "./definitions/draw-chain";
 
 type Entry = {
   id: string;
@@ -75,6 +79,10 @@ register(createNightCouncil("mafia"));
 register(createSocialTool("truth"));
 register(createSocialTool("never"));
 register(createSocialTool("pairs"));
+register(wordBlast);
+register(bunker);
+register(pictionary);
+register(drawChain);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);

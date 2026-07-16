@@ -61,8 +61,7 @@ export function useStageGame<T extends Record<string, unknown>>(
         try {
           const event = JSON.parse(msg.data) as { type: string; id?: string; state?: Partial<T>; version?: number; userId?: string; actionType?: string; payload?: unknown };
           if (event.type === "state:updated" && event.state) {
-            if (event.version) versionRef.current = event.version;
-            _setState((prev) => ({ ...prev, ...event.state }));
+            void syncSnapshot();
           } else if (event.type === "state:updated" && (!event.version || event.version > versionRef.current)) {
             void syncSnapshot();
           }
