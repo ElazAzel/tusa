@@ -91,7 +91,7 @@ test("chat messages are member-scoped, idempotent and recover after reconnect", 
   assert.match(chatApi, /requirePartyMember\(body\.partyId, actor\.id\)/);
   assert.match(chatApi, /clientMutationId: z\.string\(\)\.uuid\(\)/);
   assert.match(chatApi, /duplicate: !created/);
-  assert.match(partiesSource, /UNIQUE \(party_id, clerk_user_id, client_mutation_id\)/);
+  assert.match(partiesSource, /chat_messages_mutation_idx/);
   assert.match(partiesSource, /ON CONFLICT \(party_id, clerk_user_id, client_mutation_id\) DO NOTHING/);
   assert.match(room, /liveChat\.connectionEpoch/);
   assert.match(room, /chatSendFailed/);
@@ -104,4 +104,10 @@ test("runtime health never exposes secrets and strict realtime can fail closed",
   assert.match(runtimeStatus, /TUSA_REQUIRE_DISTRIBUTED_SERVICES/);
   assert.match(liveApi, /isRealtimeTransportAvailable/);
   assert.doesNotMatch(systemApi, /ABLY_API_KEY|UPSTASH_REDIS_REST_TOKEN|DATABASE_URL/);
+});
+
+test("runtime schema upgrades do not drop and recreate idempotency constraints", () => {
+  assert.doesNotMatch(partiesSource, /DROP CONSTRAINT IF EXISTS chat_messages_mutation_unique/);
+  assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS chat_messages_mutation_idx/);
+  assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS game_scores_mutation_idx/);
 });
