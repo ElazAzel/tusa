@@ -15,6 +15,7 @@ import cardsChaos from "./definitions/cards-chaos";
 import charades from "./definitions/charades";
 import mimeRiot from "./definitions/mime-riot";
 import foreheadGuess from "./definitions/forehead-guess";
+import lostLocation from "./definitions/lost-location";
 
 type Entry = {
   id: string;
@@ -50,6 +51,7 @@ register(cardsChaos);
 register(charades);
 register(mimeRiot);
 register(foreheadGuess);
+register(lostLocation);
 
 export function getDefinition(gameId: string): Entry | undefined {
   return DEFINITIONS.get(gameId);
