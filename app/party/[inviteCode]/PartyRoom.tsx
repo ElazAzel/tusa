@@ -60,12 +60,16 @@ import { soundChat, soundTap, soundReward } from "@/lib/audio";
 import { GAME_MANIFEST, formatPlayerRange, isGameId, type GameId } from "@/lib/games/manifest";
 
 const gameCatalogue = GAME_MANIFEST;
+type ChatEntry = ChatMessage & { pending?: boolean; failed?: boolean };
 
 export default function PartyRoom({ party, actorId, actorKind }: { party: Party; actorId: string; actorKind?: string }) {
   const [tab, setTab] = useState<"space" | "games" | "chat" | "shop" | "gallery" | "koins" | "pass" | "quests" | "highlights" | "gratitude" | "theme" | "daily">("space");
   const [moreOpen, setMoreOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatEntry[]>([]);
   const [message, setMessage] = useState("");
+  const [chatError, setChatError] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [editing, setEditing] = useState(false);
   const [rsvp, setRsvp] = useState(party.myRsvp || "going");
   const [error, setError] = useState("");
@@ -87,6 +91,7 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
   const router = useRouter();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatStreamRef = useRef<HTMLDivElement>(null);
+  const chatAtBottomRef = useRef(true);
   const gameRecoveryRef = useRef(false);
   const { locale, t } = useLocale();
   const isOwner = party.role === "owner";
@@ -107,12 +112,13 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
     });
   }, [liveChat.events]);
 
-  const allChatMessages = useMemo(() => {
+  const allChatMessages = useMemo<ChatEntry[]>(() => {
     const existing = new Set(chatMessages.map((msg) => msg.id));
+    const mutations = new Set(chatMessages.map((msg) => msg.clientMutationId).filter(Boolean));
     const liveFiltered = liveChat.events.filter((raw) => {
       if (raw.type === "reaction") return false;
-      return raw.id && !existing.has(raw.id as string);
-    }).map((raw) => raw as unknown as ChatMessage);
+      return raw.id && !existing.has(raw.id as string) && !mutations.has(raw.clientMutationId as string);
+    }).map((raw) => raw as unknown as ChatEntry);
     return [...chatMessages, ...liveFiltered];
   }, [chatMessages, liveChat.events]);
 
@@ -124,7 +130,7 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
           const r = await fetch(`/api/chat?partyId=${party.id}`);
           if (!r.ok) { await new Promise((res) => setTimeout(res, 1000 * (i + 1))); continue; }
           const data = await r.json();
-          if (!cancelled && data.messages) setChatMessages(data.messages as ChatMessage[]);
+          if (!cancelled && data.messages) setChatMessages(data.messages as ChatEntry[]);
           return;
         } catch { if (i < retries - 1) await new Promise((res) => setTimeout(res, 1000 * (i + 1))); }
       }
@@ -134,36 +140,76 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
   }, [party.id]);
 
   useEffect(() => {
-    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (liveChat.connectionEpoch <= 1) return;
+    fetch(`/api/chat?partyId=${party.id}`).then((r) => r.ok ? r.json() : null).then((data) => {
+      if (data?.messages) setChatMessages(data.messages as ChatEntry[]);
+    }).catch(() => undefined);
+  }, [liveChat.connectionEpoch, party.id]);
+
+  useEffect(() => {
+    if (chatAtBottomRef.current) chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    else setUnreadMessages((count) => count + 1);
   }, [allChatMessages.length]);
 
-  function send() {
+  function scrollChatToLatest() {
+    chatAtBottomRef.current = true;
+    setUnreadMessages(0);
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function handleChatScroll() {
+    const stream = chatStreamRef.current;
+    if (!stream) return;
+    chatAtBottomRef.current = stream.scrollHeight - stream.scrollTop - stream.clientHeight < 56;
+    if (chatAtBottomRef.current) setUnreadMessages(0);
+  }
+
+  async function submitChat(payload: { text?: string; type?: "text" | "voice" | "sticker"; voiceUrl?: string; stickerId?: string }, optimisticText?: string) {
+    const clientMutationId = crypto.randomUUID();
+    const optimistic: ChatEntry | null = optimisticText ? {
+      id: `pending-${clientMutationId}`, partyId: party.id, userId: actorId, displayName: "", handle: "", nameColor: "#000000",
+      text: optimisticText, type: "text", voiceUrl: "", stickerId: "", reactions: {}, clientMutationId, createdAt: new Date().toISOString(), pending: true,
+    } : null;
+    if (optimistic) setChatMessages((current) => [...current, optimistic]);
+    setChatSending(true);
+    setChatError("");
+    try {
+      const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partyId: party.id, clientMutationId, ...payload }) });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.message) throw new Error(data?.error || "Chat request failed");
+      setChatMessages((current) => current.map((item) => item.clientMutationId === clientMutationId ? data.message as ChatEntry : item));
+      chatAtBottomRef.current = true;
+      return true;
+    } catch {
+      if (optimistic) setChatMessages((current) => current.map((item) => item.clientMutationId === clientMutationId ? { ...item, pending: false, failed: true } : item));
+      setChatError(t("chatSendFailed"));
+      return false;
+    } finally {
+      setChatSending(false);
+    }
+  }
+
+  async function send() {
     const text = message.trim();
-    if (!text) return;
+    if (!text || chatSending) return;
     soundChat();
-    fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partyId: party.id, text }) })
-      .then(() => setMessage("")).catch(() => undefined);
+    const sent = await submitChat({ text }, text);
+    if (sent) setMessage("");
   }
 
   function sendVoice(blob: Blob) {
     const reader = new FileReader();
-    reader.onload = () => {
-      fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ partyId: party.id, text: "", type: "voice", voiceUrl: reader.result as string }),
-      }).catch(() => undefined);
+    reader.onload = async () => {
+      await submitChat({ type: "voice", voiceUrl: reader.result as string });
     };
+    reader.onerror = () => setChatError(t("chatSendFailed"));
     reader.readAsDataURL(blob);
     setShowVoice(false);
   }
 
-  function sendSticker(stickerId: string) {
-    fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ partyId: party.id, text: "", type: "sticker", stickerId }),
-    }).catch(() => undefined);
+  async function sendSticker(stickerId: string) {
+    await submitChat({ type: "sticker", stickerId });
+    setShowStickers(false);
   }
 
   function react(messageId: string, emoji: string) {
@@ -495,12 +541,12 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
     {tab === "theme" && <RoomTheme inviteCode={party.inviteCode} currentTheme={themeId} ownedThemes={party.ownedThemes} onThemeChange={(th) => setThemeId(th)} />}
     {tab === "chat" && <section className="party-room-panel party-chat">
       <h2>{t("roomChatTitle")}</h2>
-      <div className="party-chat-stream" ref={chatStreamRef}>
+      <div className="party-chat-stream" ref={chatStreamRef} onScroll={handleChatScroll} aria-live="polite" aria-label={t("roomChatTitle")}>
         {allChatMessages.length ? allChatMessages.map((item, index) => {
           const isMe = item.userId === actorId;
           const sticker = item.type === "sticker" ? tusaStickers.find((s) => s.id === item.stickerId) : null;
           const reactionEntries = item.reactions ? Object.entries(item.reactions) : [];
-          return <div className={`party-chat-bubble ${isMe ? "is-me" : "is-other"} ${item.type === "voice" ? "is-voice" : ""} ${item.type === "sticker" ? "is-sticker" : ""}`} key={item.id || index} onDoubleClick={() => setReactionTarget(reactionTarget === item.id ? null : item.id)}>
+          return <article className={`party-chat-bubble ${isMe ? "is-me" : "is-other"} ${item.type === "voice" ? "is-voice" : ""} ${item.type === "sticker" ? "is-sticker" : ""} ${item.pending ? "is-pending" : ""} ${item.failed ? "is-failed" : ""}`} key={item.id || index}>
             {!isMe && <span className="chat-name" style={item.nameColor && item.nameColor !== "#000000" ? { color: item.nameColor } : undefined}>{item.displayName}</span>}
             {item.type === "sticker" && sticker ? (
               <span className="chat-sticker" dangerouslySetInnerHTML={{ __html: sticker.svg }} />
@@ -514,6 +560,8 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
             )}
             <span className="chat-meta">
               {new Date(item.createdAt).toLocaleTimeString(locale === "ru" ? "ru-RU" : "en-US", { hour: "2-digit", minute: "2-digit" })}
+              {item.pending && <span className="chat-delivery"> · {t("chatSending")}</span>}
+              {item.failed && <span className="chat-delivery chat-delivery--failed"> · {t("chatSendFailed")}</span>}
               {item.type === "voice" && <span className="chat-voice-badge">🎤</span>}
             </span>
             {reactionEntries.length > 0 && <div className="chat-reactions">
@@ -523,24 +571,27 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
                 </button>
               ))}
             </div>}
+            {!item.pending && <button className="chat-reaction-trigger" onClick={() => setReactionTarget(reactionTarget === item.id ? null : item.id)} type="button" aria-label={t("chatReact")}>+</button>}
             {reactionTarget === item.id && <EmojiPicker onSelect={(emoji) => { react(item.id, emoji); setReactionTarget(null); }} onClose={() => setReactionTarget(null)} />}
-          </div>;
+          </article>;
         }) : <p className="party-chat-system">{t("roomChatEmpty")}</p>}
         <div ref={chatEndRef} />
       </div>
+      {unreadMessages > 0 && <button className="chat-jump-latest" onClick={scrollChatToLatest} type="button">{t("chatNewMessages").replace("{count}", String(unreadMessages))}</button>}
       {showStickers && <StickerPicker onSelect={sendSticker} onClose={() => setShowStickers(false)} />}
       <div className="chat-input-bar">
         {showVoice && <VoiceRecorder onSend={sendVoice} onCancel={() => setShowVoice(false)} />}
         <div className="chat-input-wrap">
-          <button className="chat-emoji-btn" onClick={() => { setShowStickers(!showStickers); setShowVoice(false); }} type="button" title={t("chatStickers")} tabIndex={-1}>
+          <button className="chat-emoji-btn" onClick={() => { setShowStickers(!showStickers); setShowVoice(false); }} type="button" title={t("chatStickers")} aria-label={t("chatStickers")}>
             <span className="material-symbols-rounded">emoji_emotions</span>
           </button>
-          <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t("chatType")} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
+          <textarea value={message} onChange={(e) => setMessage(e.target.value.slice(0, 1000))} placeholder={t("chatType")} aria-label={t("chatType")} rows={1} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} />
         </div>
-        <button className={message.trim() ? "has-text" : ""} onClick={message.trim() ? send : () => { setShowVoice(!showVoice); setShowStickers(false); }} type="button" title={message.trim() ? t("chatSend") : t("chatVoice")}>
-          <span className="material-symbols-rounded">{message.trim() ? "send" : "mic"}</span>
+        <button className={message.trim() ? "has-text" : ""} onClick={message.trim() ? () => void send() : () => { setShowVoice(!showVoice); setShowStickers(false); }} type="button" title={message.trim() ? t("chatSend") : t("chatVoice")} aria-label={message.trim() ? t("chatSend") : t("chatVoice")} disabled={chatSending}>
+          <span className="material-symbols-rounded">{chatSending ? "progress_activity" : message.trim() ? "send" : "mic"}</span>
         </button>
       </div>
+      {chatError && <p className="chat-error" role="status">{chatError}</p>}
     </section>}
     {editing && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(false); }}><section aria-modal="true" className="demo-modal" role="dialog"><span className="demo-kicker">{t("eventHubSettingsTitle")}</span><h2>{party.title}</h2><form onSubmit={saveEdit}><label>{t("createName")}<input name="title" defaultValue={party.title} required /></label><div className="form-split"><label>{t("createDate")}<input name="date" className="event-date-input" defaultValue={eventDateInputValue(party.date)} placeholder="DD.MM.YYYY" inputMode="numeric" pattern="\d{2}\.\d{2}\.\d{4}" title="DD.MM.YYYY" required /></label><label>{t("createTime")}<input name="time" className="event-time-input" defaultValue={party.time} placeholder="21:00" inputMode="numeric" pattern="\d{2}:\d{2}" title="HH:MM" required /></label></div><label>{t("createVenue")}<input name="venue" defaultValue={party.venue} required /></label>        <label>{t("createFormat")}<span className="brand-select"><select name="category" defaultValue={party.category}><option>House Party</option><option>After-work</option><option>Trip</option><option>Birthday</option><option>Game night</option></select></span></label><label>{t("createDetails")}<textarea name="description" defaultValue={party.description} /></label><button type="submit">{t("profileSave")}</button></form></section></div>}
   </main>;

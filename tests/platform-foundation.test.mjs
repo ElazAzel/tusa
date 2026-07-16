@@ -17,6 +17,7 @@ const partiesSource = readFileSync(new URL("../lib/parties.ts", import.meta.url)
 const commandClient = readFileSync(new URL("../app/components/sendGameCommand.ts", import.meta.url), "utf8");
 const commandMigration = readFileSync(new URL("../drizzle/0001_game_command_idempotency.sql", import.meta.url), "utf8");
 const commandRegistry = readFileSync(new URL("../lib/games/commands.ts", import.meta.url), "utf8");
+const chatApi = readFileSync(new URL("../app/api/chat/route.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -82,4 +83,14 @@ test("every accepted multiplayer command is game-scoped and payload-validated", 
   assert.match(commandRegistry, /stroke: z\.object/);
   assert.match(commandRegistry, /nightAction: z\.object/);
   assert.doesNotMatch(commandRegistry, /z\.unknown/);
+});
+
+test("chat messages are member-scoped, idempotent and recover after reconnect", () => {
+  assert.match(chatApi, /requirePartyMember\(body\.partyId, actor\.id\)/);
+  assert.match(chatApi, /clientMutationId: z\.string\(\)\.uuid\(\)/);
+  assert.match(chatApi, /duplicate: !created/);
+  assert.match(partiesSource, /UNIQUE \(party_id, clerk_user_id, client_mutation_id\)/);
+  assert.match(partiesSource, /ON CONFLICT \(party_id, clerk_user_id, client_mutation_id\) DO NOTHING/);
+  assert.match(room, /liveChat\.connectionEpoch/);
+  assert.match(room, /chatSendFailed/);
 });
