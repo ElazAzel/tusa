@@ -135,33 +135,31 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: "smooth" });
   }, [allChatMessages.length]);
 
+  async function sendChat(payload: Record<string, unknown>) {
+    const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partyId: party.id, ...payload }) });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(String(data.error || "Could not send message."));
+    if (data.message) setChatMessages((prev) => prev.some((item) => item.id === data.message.id) ? prev : [...prev, data.message as ChatMessage]);
+  }
+
   function send() {
     const text = message.trim();
     if (!text) return;
     soundChat();
-    fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partyId: party.id, text }) })
-      .then(() => setMessage("")).catch(() => undefined);
+    void sendChat({ text }).then(() => setMessage("")).catch(() => undefined);
   }
 
   function sendVoice(blob: Blob) {
     const reader = new FileReader();
     reader.onload = () => {
-      fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ partyId: party.id, text: "", type: "voice", voiceUrl: reader.result as string }),
-      }).catch(() => undefined);
+      void sendChat({ text: "", type: "voice", voiceUrl: reader.result as string }).catch(() => undefined);
     };
     reader.readAsDataURL(blob);
     setShowVoice(false);
   }
 
   function sendSticker(stickerId: string) {
-    fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ partyId: party.id, text: "", type: "sticker", stickerId }),
-    }).catch(() => undefined);
+    void sendChat({ text: "", type: "sticker", stickerId }).catch(() => undefined);
   }
 
   function react(messageId: string, emoji: string) {
@@ -220,15 +218,18 @@ export default function PartyRoom({ party, actorId, actorKind }: { party: Party;
     }).catch(() => undefined);
   }, [party.id]);
 
-  function launchGame(game: GameId) {
-    setSelectedGame(game);
-    fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", partyId: party.id, game, config: { locale } }) })
-      .then((r) => r.json()).then((data) => {
-        if (data.session) {
-          setGameSession(data.session.id);
-          setActiveSessions((prev) => [data.session, ...prev.filter((s) => s.id !== data.session.id)]);
-        }
-      }).catch(() => undefined);
+  async function launchGame(game: GameId) {
+    setError("");
+    try {
+      const response = await fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", partyId: party.id, game, config: { locale } }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.session) throw new Error(String(data.error || (locale === "ru" ? "Не удалось создать игровую сессию" : "Could not create game session")));
+      setSelectedGame(game);
+      setGameSession(data.session.id);
+      setActiveSessions((prev) => [data.session, ...prev.filter((s) => s.id !== data.session.id)]);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : (locale === "ru" ? "Не удалось запустить игру" : "Could not start the game"));
+    }
   }
 
   function joinSession(sessionId: string, game: string) {
