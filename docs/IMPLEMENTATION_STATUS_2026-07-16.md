@@ -12,7 +12,7 @@ This document is the current operational checkpoint for continuing the master pl
 ## Verified current state
 
 - Game manifest is the source of truth for the public catalogue and contains 32 canonical modes.
-- SDK definitions exist for 8 games in `lib/games/definitions/`.
+- SDK definitions exist for 9 games in `lib/games/definitions/`.
 - Zod command schemas exist for 25 game IDs in `lib/games/commands.ts`.
 - Tests currently cover server reducers and platform invariants through `npm test`.
 - CI exists and recent PRs have been merged through GitHub/Vercel.
