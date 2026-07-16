@@ -1,5 +1,6 @@
 import { GAME_MANIFEST, formatPlayerRange } from "@/lib/games/manifest";
 import { SITE_ORIGIN } from "@/lib/site";
+import { SEO_GUIDES } from "@/lib/seo-guides";
 
 export function GET() {
   const games = GAME_MANIFEST.map((game) => `## ${game.seo.slug}\n- Canonical URL: ${SITE_ORIGIN}/games/${game.seo.slug}\n- Category: ${game.category}\n- Players: ${formatPlayerRange(game)}\n- Age profile: ${game.ageRating}\n- Typical duration: ${game.seo.durationMinutes} minutes\n- Equipment: ${game.seo.equipment}\n- Release status: ${game.releaseStatus}\n- Capabilities: ${game.capabilities.join(", ")}`).join("\n\n");
@@ -23,6 +24,9 @@ This document is a machine-readable index of public, non-personal TUSA.game fact
 
 ## Game catalogue
 ${games}
+
+## Guide directory
+${SEO_GUIDES.map(([slug, ru, en]) => `- ${ru} / ${en}: ${SITE_ORIGIN}/ru/guides/${slug} and ${SITE_ORIGIN}/en/guides/${slug}`).join("\n")}
 `;
   return new Response(body, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600, s-maxage=86400" } });
 }

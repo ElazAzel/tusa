@@ -1,8 +1,10 @@
 import { GAME_MANIFEST } from "@/lib/games/manifest";
 import { SITE_ORIGIN } from "@/lib/site";
+import { SEO_GUIDES } from "@/lib/seo-guides";
 
 export function GET() {
   const games = GAME_MANIFEST.map((game) => `- [${game.seo.slug}](${SITE_ORIGIN}/games/${game.seo.slug}): ${game.category}, ${game.minPlayers}-${game.maxPlayers} players, ${game.ageRating}`).join("\n");
+  const guides = SEO_GUIDES.map(([slug, ru, en]) => `- [${ru} / ${en}](${SITE_ORIGIN}/ru/guides/${slug})`).join("\n");
   const body = `# TUSA.game
 
 > TUSA.game is a browser-first platform for creating a party, inviting friends with one link, and playing multiplayer party games from participants' phones.
@@ -25,6 +27,9 @@ export function GET() {
 
 ## Game directory
 ${games}
+
+## Russian and English guides
+${guides}
 
 ## Machine-readable sources
 - [Public content feed](${SITE_ORIGIN}/api/public/content)
