@@ -55,7 +55,7 @@ Legend:
 - **Server-authoritative (S)**: 24 games
 - **Local-only (L)**: 6 games (alias, mafia, truth, never, beer, randomPair, bunker)
 - **Client-authoritative scoring (C)**: 6 games
-- **Missing LIVE badge**: 9 games
+- **Missing LIVE badge**: 0 games
 - **Missing controller state sanitization**: 8 games
 - **Certified**: 0 games
 - **Beta**: 32 games
@@ -69,7 +69,7 @@ Legend:
 | **Next.js 16** | ✅ Live | ✅ Yes | — | Turbopack, App Router |
 | **React 19** | ✅ Live | ✅ Yes | — | Strict mode enabled |
 | **TypeScript** | ✅ Live | ✅ Yes | — | strict mode |
-| **Clerk Auth** | ✅ Live | ✅ Yes | Guest sessions | Clerk SDK v7, all CSP domains configured |
+| **Local Auth** | ✅ Live | ✅ Yes | Guest sessions | Email/password accounts with HttpOnly signed sessions |
 | **Guest Sessions** | ✅ Live | ⚠️ Partial | — | HMAC-signed, cookie-based, single-party scope, 30-day expiry |
 | **Neon Postgres** | ✅ Live | ⚠️ Partial | — | Serverless driver, connection pooling needed for scale |
 | **Drizzle ORM** | ✅ Live | ⚠️ Partial | Raw SQL | Only manages RAG tables (3). Core schema is raw SQL DDL |
@@ -81,10 +81,11 @@ Legend:
 | **Version Locking** | ✅ Live | ✅ Yes | — | `version` column + 409 Conflict |
 | **Idempotency** | ✅ Live | ✅ Yes | — | `clientMutationId` + unique constraint |
 | **PWA / SW** | ✅ Live | ⚠️ Partial | — | Skip-waiting added, offline fallback exists |
-| **CSP** | ✅ Live | ⚠️ Partial | — | `unsafe-inline` + `unsafe-eval` needed by Clerk |
+| **CSP** | ✅ Live | ⚠️ Partial | — | `unsafe-inline` + `unsafe-eval` remain enabled for the current frontend toolchain |
 | **CI Pipeline** | ✅ Live | ✅ Yes | — | GitHub Actions: typecheck, lint, test, build, e2e |
 | **Unit Tests** | ✅ Live | ⚠️ Partial | — | 31 tests (node:test), covers 19 game engines |
-| **E2E Tests** | ✅ Live | ❌ No | — | 68 tests, but NO multiplayer game E2E |
+| **E2E Tests** | ✅ Live | ❌ No | — | 52 tests, but NO multiplayer game E2E |
+| **Health Check** | ✅ Live | ✅ Yes | — | `GET /api/health` verifies Neon connectivity without exposing configuration |
 | **Playwright** | ✅ Integrated | ⚠️ Partial | — | Chromium only, single worker, no mobile Safari / Android |
 | **Error Monitoring** | ❌ Not configured | ❌ No | — | No Sentry / logging service |
 | **Analytics** | ❌ Not configured | ❌ No | — | No typed analytics events |
@@ -181,23 +182,17 @@ The following keys are defined in `lib/i18n.ts` but never referenced via `t()`:
 
 4. **[games] 6 games are client-authoritative**: `alias`, `mafia`, `truth`, `never`, `beer`, `randomPair`, `bunker` score and state are fully client-side. Players can cheat trivially via DevTools.
 
-5. **[games] Stale state in action processing**: 7 games (UnoTracker, GarticPhone, Pictionary, Codenames, Bunker, Werewolf, GuessSong) read outer `state.xxx` inside the action processing loop instead of inside `setState(prev)` callback.
-
-6. **[database] Runtime DDL**: `ensurePartySchema()` and `ensurePartyV2()` execute `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE ADD COLUMN IF NOT EXISTS` at cold start. While optimized with `information_schema` check, this is not a production migration strategy.
+5. **[database] Runtime DDL**: `ensurePartySchema()` and `ensurePartyV2()` execute `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE ADD COLUMN IF NOT EXISTS` at cold start. While optimized with `information_schema` check, this is not a production migration strategy.
 
 ### P1 — High Priority
 
-1. **[UX] 9 game components missing LIVE badge**: BombParty, BrainBurst, Charades, Crocodil, GuessSong, HeadsUp, Impostor, Spyfall, Wheel — controllers don't see a visual indicator that the session is active.
+1. **[i18n] Game-local translations bypass global system**: 17 games define `RU`/`EN` objects directly in the component instead of using `t()` from `useLocale`. Codenames, GuessSong, Wheel, Werewolf, Bunker have custom `t()` functions.
 
-2. **[i18n] Game-local translations bypass global system**: 17 games define `RU`/`EN` objects directly in the component instead of using `t()` from `useLocale`. Codenames, GuessSong, Wheel, Werewolf, Bunker have custom `t()` functions.
+2. **[i18n] Prompt asymmetry**: TruthOrDare (EN: 215 prompts, RU: ~46), NeverHaveIEver (EN: 126, RU: 26), Pictionary (EN: 8, RU: 8).
 
-3. **[i18n] Prompt asymmetry**: TruthOrDare (EN: 215 prompts, RU: ~46), NeverHaveIEver (EN: 126, RU: 26), Pictionary (EN: 8, RU: 8).
+3. **[tests] No multiplayer game E2E tests**: Playwright tests only cover public UX and responsive layout. No multi-context (Stage + 3 controllers) game flow is tested.
 
-4. **[tests] No multiplayer game E2E tests**: Playwright tests only cover public UX and responsive layout. No multi-context (Stage + 3 controllers) game flow is tested.
-
-5. **[tests] No error handling tests**: 0 out of 32 game components have `try/catch`. All error handling is delegated to hooks which silently catch errors.
-
-6. **[state] UnoTracker no completion guard**: Fires `stage.complete(); onSave(1)` in a `useEffect` without a `completed.current` ref guard — could fire twice in strict mode.
+4. **[tests] No error handling tests**: 0 out of 32 game components have `try/catch`. All error handling is delegated to hooks which silently catch errors.
 
 ### P2 — Medium Priority
 
@@ -256,10 +251,10 @@ The following keys are defined in `lib/i18n.ts` but never referenced via `t()`:
 | Category | Status | Notes |
 |----------|--------|-------|
 | **BOLA/IDOR** | ✅ Protected | `requirePartyMember()` + `requireOwner()` in all vulnerable routes |
-| **XSS** | ⚠️ Partial | CSP blocks inline scripts except Clerk's domains |
-| **CSRF** | ✅ Protected | Clerk provides CSRF tokens |
+| **XSS** | ⚠️ Partial | CSP blocks inline scripts, but `unsafe-inline` remains enabled |
+| **CSRF** | ⚠️ Partial | SameSite cookies are enabled; local auth does not issue framework CSRF tokens |
 | **SQL Injection** | ✅ Protected | Parameterized queries via `@neondatabase/serverless` tagged templates |
-| **Auth** | ✅ Protected | Clerk middleware + guest HMAC-signed tokens |
+| **Auth** | ✅ Protected | Local signed sessions + guest HMAC-signed tokens |
 | **Rate Limiting** | ✅ Protected | All API routes rate-limited (distributed + local fallback) |
 | **Command Validation** | ✅ Protected | Zod schemas for all 27 server-authoritative games |
 | **Idempotency** | ✅ Protected | `clientMutationId` unique constraints |

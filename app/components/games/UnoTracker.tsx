@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { useStageGame } from "@/app/components/useStageGame";
@@ -25,8 +25,9 @@ export default function UnoTracker({ sessionId, onSave, role }: { partyId: strin
   const controller = useControllerGame<UnoState>(!isHost ? sessionId ?? null : null, initial());
   const state = isHost ? stage.state : controller.state; const sendAction = isHost ? stage.sendAction : controller.sendAction; const setState = isHost ? stage.setState : undefined;
   const actions = isHost ? stage.playerActions : []; const clearActions = isHost ? stage.clearActions : undefined; const [colorChoice, setColorChoice] = useState<Color>("red");
+  const completed = useRef(false);
 
-  const start = useCallback(() => { if (!isHost || state.players.length < 2) return; const pile = deck(); const hands: Record<string, Card[]> = {}; state.players.forEach((id) => { hands[id] = []; for (let i = 0; i < 7; i++) hands[id].push(pile.pop()!); }); let first = pile.pop()!; while (first.kind !== "number") { pile.unshift(first); first = pile.pop()!; } setState?.((prev) => ({ ...prev, phase: "playing", hands, drawPile: pile, discard: [first], activeColor: first.color!, currentIndex: 0, direction: 1, winner: "", uno: [] })); }, [isHost, state.players, setState]);
+  const start = useCallback(() => { if (!isHost || state.players.length < 2) return; completed.current = false; const pile = deck(); const hands: Record<string, Card[]> = {}; state.players.forEach((id) => { hands[id] = []; for (let i = 0; i < 7; i++) hands[id].push(pile.pop()!); }); let first = pile.pop()!; while (first.kind !== "number") { pile.unshift(first); first = pile.pop()!; } setState?.((prev) => ({ ...prev, phase: "playing", hands, drawPile: pile, discard: [first], activeColor: first.color!, currentIndex: 0, direction: 1, winner: "", uno: [] })); }, [isHost, state.players, setState]);
 
   useEffect(() => { if (!isHost || !actions.length) return; for (const action of actions) {
     if (action.actionType === "join") setState?.((prev) => prev.phase === "lobby" ? { ...prev, players: prev.players.includes(action.userId) ? prev.players : [...prev.players, action.userId] } : prev);
@@ -34,7 +35,7 @@ export default function UnoTracker({ sessionId, onSave, role }: { partyId: strin
     if (action.actionType === "draw") setState?.((prev) => { if (prev.phase !== "playing" || prev.players[prev.currentIndex] !== action.userId || !prev.drawPile.length) return prev; const drawPile = [...prev.drawPile]; const card = drawPile.pop()!; return { ...prev, drawPile, hands: { ...prev.hands, [action.userId]: [...(prev.hands[action.userId] ?? []), card] }, currentIndex: nextIndex(prev.currentIndex, prev.direction, prev.players.length) }; });
   } clearActions?.(); }, [actions, clearActions, isHost, setState]);
 
-  useEffect(() => { if (isHost && state.phase === "finished" && state.winner) { stage.complete(); onSave(1); } }, [isHost, onSave, stage, state.phase, state.winner]);
+  useEffect(() => { if (!isHost || state.phase !== "finished" || !state.winner || completed.current) return; completed.current = true; stage.complete(); onSave(1); }, [isHost, onSave, stage, state.phase, state.winner]);
   const hand = state.hands[me] ?? []; const top = state.discard.at(-1); const myTurn = state.phase === "playing" && state.players[state.currentIndex] === me;
   const play = (card: Card) => sendAction("play", { cardId: card.id, color: colorChoice });
 
