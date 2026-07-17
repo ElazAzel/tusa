@@ -112,6 +112,7 @@ The July 2026 architecture audit and commercial strategy have been reviewed. The
 - Unit and integration coverage reports 47 passing tests. The public mobile E2E matrix reports 52 passing checks from 320 px through 1024 px.
 - The Playwright setup now uses a dedicated output directory and does not retain traces during the overflow matrix, preventing the Windows artifact failure that previously stopped the server mid-run.
 - Marketing copy uses the canonical manifest count of 32 modes rather than stale 8/28 claims.
+- `tests/multiplayer-certification.test.ts` adds a manifest-wide gate: all 32 modes must create isolated server-owned snapshots and reject unknown or malformed game commands. The local suite now contains 49 passing tests.
 
 ## SEO/GEO/AEO expansion — 2026-07-16
 
