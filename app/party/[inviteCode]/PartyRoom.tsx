@@ -628,8 +628,10 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
                 </button>
               ))}
             </div>}
-            {!item.pending && <button className="chat-reaction-trigger" onClick={() => setReactionTarget(reactionTarget === item.id ? null : item.id)} type="button" aria-label={t("chatReact")}>+</button>}
-            {!isMe && !item.pending && <ReportContentButton partyId={party.id} targetId={item.id} targetType="chat_message" targetUserId={item.userId} onBlocked={(userId) => setChatMessages((current) => current.filter((entry) => entry.userId !== userId))} />}
+            {!item.pending && <div className="chat-message-tools">
+              <button className="chat-reaction-trigger" onClick={() => setReactionTarget(reactionTarget === item.id ? null : item.id)} type="button" aria-label={t("chatReact")}>+</button>
+              {!isMe && <ReportContentButton partyId={party.id} targetId={item.id} targetType="chat_message" targetUserId={item.userId} onBlocked={(userId) => setChatMessages((current) => current.filter((entry) => entry.userId !== userId))} />}
+            </div>}
             {reactionTarget === item.id && <EmojiPicker onSelect={(emoji) => { react(item.id, emoji); setReactionTarget(null); }} onClose={() => setReactionTarget(null)} />}
           </article>;
         }) : <p className="party-chat-system">{t("roomChatEmpty")}</p>}

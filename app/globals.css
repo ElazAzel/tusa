@@ -3688,9 +3688,13 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
   .chat-input-bar { position: sticky; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); grid-template-columns: 1fr 44px; gap: 6px; padding-block: 8px; background: var(--white); z-index: 2; }
   .chat-input-bar > button { min-width: 44px; width: 44px; }
   .chat-input-wrap input { padding-inline: 36px; font-size: 15px; }
-  .shopping-list--detailed > article { width: 100%; grid-template-columns: 44px minmax(0,1fr) 44px; }
-  .shopping-list--detailed > article > label { min-width: 0; grid-column: 2 / -1; }
-  .shopping-list--detailed input[type="number"] { min-width: 0; max-width: 100%; }
+  .shopping-list--detailed > article { width: 100%; grid-template-columns: 44px minmax(0,1fr) 44px; grid-template-areas: "check main remove" "buyer buyer buyer" "price price price"; align-items: start; gap: 14px 12px; }
+  .shopping-list--detailed > article > .shopping-check { grid-area: check; }
+  .shopping-list--detailed > article > .shopping-item-main { grid-area: main; min-width: 0; padding-top: 3px; }
+  .shopping-list--detailed > article > .shopping-buyer { grid-area: buyer; min-width: 0; }
+  .shopping-list--detailed > article > label { grid-area: price; min-width: 0; }
+  .shopping-list--detailed > article > .shopping-remove { grid-area: remove; }
+  .shopping-list--detailed input[type="number"], .shopping-buyer select { width: 100%; min-width: 0; max-width: 100%; }
   .brand-choice { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media (min-width: 601px) and (max-width: 900px) {
@@ -4113,8 +4117,12 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .party-chat-bubble.is-me .chat-meta { color: rgba(0,0,0,.62); }
 .chat-delivery { font-weight: 800; }
 .chat-delivery--failed { color: #b00045; }
-.chat-reaction-trigger { position: absolute; top: -11px; right: -11px; display: grid; width: 30px; min-width: 30px; min-height: 30px; place-items: center; padding: 0; border: 2px solid var(--black); border-radius: 50%; background: var(--white); box-shadow: 2px 2px 0 var(--black); color: var(--black); font: 900 17px/1 var(--font-mono), monospace; opacity: 0; transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
-.party-chat-bubble:hover .chat-reaction-trigger, .party-chat-bubble:focus-within .chat-reaction-trigger { opacity: 1; }
+.chat-message-tools { position: absolute; top: -11px; right: -11px; display: flex; align-items: center; gap: 6px; opacity: 0; transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
+.party-chat .chat-message-tools .chat-reaction-trigger,
+.party-chat .chat-message-tools .report-trigger { display: grid; width: 30px; min-width: 30px; min-height: 30px; height: 30px; place-items: center; padding: 0; border: 2px solid var(--black); border-radius: 50%; background: var(--white); box-shadow: 2px 2px 0 var(--black); color: var(--black); font: 900 17px/1 var(--font-mono), monospace; }
+.party-chat .chat-message-tools .report-trigger { font-size: 0; }
+.party-chat .chat-message-tools .report-trigger .material-symbols-rounded { font-size: 17px; }
+.party-chat-bubble:hover .chat-message-tools, .party-chat-bubble:focus-within .chat-message-tools { opacity: 1; }
 .chat-jump-latest { align-self: center; min-height: 44px; margin: -8px auto 10px; padding: 0 14px; border: var(--line); border-radius: 999px; background: var(--pink); box-shadow: var(--shadow); color: var(--white); font: 800 11px var(--font-mono), monospace; letter-spacing: .03em; }
 .chat-input-wrap { min-width: 0; }
 .chat-input-wrap textarea { width: 100%; min-height: 48px; max-height: 120px; resize: vertical; padding: 12px 46px 12px 14px; border: var(--line); border-radius: 12px; background: var(--white); color: var(--black); font: 500 16px/1.35 var(--font-inter), sans-serif; }
@@ -4128,7 +4136,9 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
   .party-chat-stream { padding: 12px; border-radius: 14px; }
   .party-chat-bubble { max-width: calc(100% - 16px); padding: 10px 12px; font-size: 15px; }
   .party-chat-bubble .chat-name { font-size: 11px; }
-  .chat-reaction-trigger { width: 38px; min-width: 38px; min-height: 38px; opacity: 1; }
+  .chat-message-tools { position: static; width: 100%; justify-content: flex-end; margin-top: 8px; opacity: 1; }
+  .party-chat .chat-message-tools .chat-reaction-trigger,
+  .party-chat .chat-message-tools .report-trigger { width: 36px; min-width: 36px; min-height: 36px; height: 36px; }
   .chat-input-bar { bottom: env(safe-area-inset-bottom, 0px); grid-template-columns: minmax(0,1fr) 48px; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); }
   .chat-input-bar > button { width: 48px; min-width: 48px; min-height: 48px; }
   .chat-input-wrap textarea { min-height: 48px; padding-right: 46px; }

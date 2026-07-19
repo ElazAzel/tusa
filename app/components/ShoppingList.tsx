@@ -75,7 +75,7 @@ export default function ShoppingList({ partyId, members = [], canManage = false 
   return <section className="party-room-panel">
     <div className="demo-panel-title"><div><span>{t("shoppingTitle")}</span><h2>{t("shoppingSub")}</h2></div><span className="demo-chip">{completed}/{items.length}</span></div>
     <form className="shopping-add-form" onSubmit={addItem}>
-      <label><span>{t("shoppingAdd")}</span><input name="text" placeholder={t("shoppingAddPlace")} required /></label>
+      <label><span>{t("shoppingAdd")}</span><input name="text" autoComplete="off" placeholder={t("shoppingAddPlace")} required /></label>
       <label><span>{t("shoppingQuantity")}</span><input defaultValue="1" min="1" name="quantity" type="number" /></label>
       <label className="brand-select"><span>{t("shoppingUnit")}</span><select name="unit"><option>шт.</option><option>пак.</option><option>бут.</option><option>кг</option><option>л</option></select></label>
       <button type="submit"><span className="material-symbols-rounded">add</span> {t("shoppingAddBtn")}</button>
@@ -84,7 +84,7 @@ export default function ShoppingList({ partyId, members = [], canManage = false 
     <div className="shopping-list shopping-list--detailed">
       {items.map((item) => (
         <article className={item.purchased ? "done" : ""} key={item.id}>
-          <button className="shopping-check" onClick={() => toggle(item.id, item.purchased)} type="button">
+          <button aria-label={item.purchased ? `${t("shoppingDone")}${item.text}${t("shoppingDoneEnd")}` : `${t("shoppingMark")}${item.text}${t("shoppingMarkEnd")}`} className="shopping-check" onClick={() => toggle(item.id, item.purchased)} type="button">
             <span className="material-symbols-rounded">check</span>
           </button>
           <div className="shopping-item-main"><strong>{item.text}</strong><span>{item.quantity} {item.unit}</span></div>
@@ -92,9 +92,9 @@ export default function ShoppingList({ partyId, members = [], canManage = false 
             {canManage ? <select aria-label={t("shoppingBuyer")} value={item.buyerId} onChange={(event) => assignBuyer(item.id, event.target.value)}>{members.map((member) => <option key={member.clerkUserId} value={member.clerkUserId}>{member.displayName}</option>)}</select> : <strong>{item.buyerName}</strong>}
           </div>
           <label><span>{t("shoppingSum")}</span>
-            <input aria-label={t("shoppingCost")} min="0" step="100" type="number" defaultValue={item.price || ""} onBlur={(e) => setPrice(item.id, Number(e.target.value))} />
+            <input aria-label={`${t("shoppingCost")}${item.text}`} min="0" step="100" type="number" inputMode="numeric" defaultValue={item.price || ""} onBlur={(e) => setPrice(item.id, Number(e.target.value))} />
           </label>
-          <button className="shopping-remove" onClick={() => remove(item.id)} type="button"><span className="material-symbols-rounded">delete</span></button>
+          <button aria-label={`${t("shoppingDelete")}${item.text}`} className="shopping-remove" onClick={() => remove(item.id)} type="button"><span aria-hidden="true" className="material-symbols-rounded">delete</span></button>
         </article>
       ))}
       {!items.length && <div className="empty-state"><span className="material-symbols-rounded">shopping_bag</span><strong>{t("shoppingEmpty")}</strong><span>{t("shoppingEmptySub")}</span></div>}
