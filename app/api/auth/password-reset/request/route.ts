@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requestPasswordReset } from "@/lib/local-auth/server";
 import { distributedRateLimit } from "@/lib/rate-limit";
+import { deliverAuthEmail } from "@/lib/auth-email";
 
 const schema = z.object({ email: z.string().email().max(320) }).strict();
 
@@ -14,16 +15,8 @@ export async function POST(request: Request) {
   const reset = await requestPasswordReset(parsed.data.email);
   if (reset) {
     const resetUrl = new URL(`/reset-password?token=${encodeURIComponent(reset.token)}`, request.url).toString();
-    if (process.env.AUTH_EMAIL_WEBHOOK_URL) {
-      await fetch(process.env.AUTH_EMAIL_WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(process.env.AUTH_EMAIL_WEBHOOK_SECRET ? { Authorization: `Bearer ${process.env.AUTH_EMAIL_WEBHOOK_SECRET}` } : {}),
-        },
-        body: JSON.stringify({ template: "password-reset", to: reset.email, name: reset.name, resetUrl, expiresInMinutes: 30 }),
-      });
-    } else if (process.env.NODE_ENV !== "production") {
+    const delivered = await deliverAuthEmail({ template: "password-reset", to: reset.email, name: reset.name, resetUrl, expiresInMinutes: 30 });
+    if (!delivered && process.env.NODE_ENV !== "production") {
       return NextResponse.json({ accepted: true, resetUrl }, { status: 202 });
     }
   }

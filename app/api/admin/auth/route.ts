@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
-import { adminCookie, isValidAdminPassword, sessionValue } from "@/lib/admin-auth";
+import { adminCookie, isValidAdminPassword, isValidAdminTotp, sessionValue } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,8 @@ export async function POST(request: Request) {
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = isFormSubmit ? await request.formData() : await request.json().catch(() => ({}));
   const password = body instanceof FormData ? body.get("password") : body.password;
-  if (!isValidAdminPassword(typeof password === "string" ? password : "")) {
+  const totp = body instanceof FormData ? body.get("totp") : body.totp;
+  if (!isValidAdminPassword(typeof password === "string" ? password : "") || !isValidAdminTotp(typeof totp === "string" ? totp : "")) {
     if (isFormSubmit) return NextResponse.redirect(new URL("/admin/login?error=invalid", request.url), { status: 303 });
     return NextResponse.json({ error: "Неверный пароль." }, { status: 401 });
   }

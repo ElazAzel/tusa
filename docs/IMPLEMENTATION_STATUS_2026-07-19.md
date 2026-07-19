@@ -3,9 +3,9 @@
 **Repository:** `ElazAzel/tusa`<br>
 **Branch:** `main`<br>
 **Commit:** `0356f6d`<br>
-**Product status:** public beta / supported pilot at 8.2/10; autonomous paid production remains 7.0/10
+**Product status:** public beta / supported pilot at 8.6/10; autonomous paid production remains 7.6/10
 
-**Remediation update:** controlled Blob media with retention, moderation/report/appeal, password recovery and global session revocation, atomic KOINS bets, eight applied migrations with schema version 7, and Neon distributed realtime/rate-limit fallbacks are verified. Browser certification, production email delivery/MFA, external error monitoring/load evidence, DNS and legal/venue gates remain open. See `docs/FULL_PLATFORM_AUDIT_2026-07-19.md`.
+**Remediation update:** controlled Blob media, moderation/report/appeal, atomic KOINS bets, first-party error monitoring, a production health gate, email verification lifecycle, optional root-admin TOTP, ten applied migrations with schema version 9, and a 120-request production baseline are verified. Browser certification, actual email delivery/TOTP enrollment, DNS and legal/venue gates remain open. See `docs/FULL_PLATFORM_AUDIT_2026-07-19.md` and `docs/PRODUCTION_PREFLIGHT_2026-07-19.md`.
 
 Этот checkpoint синхронизирует документацию с актуальным пакетом в `tmp/pdfs/` и фактическим состоянием репозитория. Термины `shipped`, `gap`, `target` и `pre-implementation` определены в `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md`.
 
@@ -22,15 +22,15 @@
 ## Verified gaps
 
 1. Все 32 режима остаются Beta; certified = 0. Contract-tested не равно browser-certified.
-2. Core eight предложена в актуальном game-platform документе, но не закреплена в manifest через `isCore`/priority field.
-3. Production build использует local email/password compatibility layer, хотя часть старых документов описывает Clerk. Нужна одна auth-модель с recovery, verification, revocation и admin MFA.
-4. Core business schema всё ещё создаётся runtime DDL; Drizzle в основном покрывает knowledge/RAG tables.
-5. KOINS reward double credit закрыт атомарным idempotent CTE и тестом; join/settle/cancel bets всё ещё не образуют одну атомарную транзакцию.
-6. UGC moderation/reporting отсутствует и блокирует certification Punchline/Fake Fact.
-7. Voice/photo storage, retention и moderation не готовы для массового сбора media.
-8. Production Ably/Upstash credentials, strict mode, load profile, Sentry и product SLO dashboards требуют проверки.
-9. SEO auto-redirects и видимые third-party game names требуют удаления/переименования и legal review.
-10. Полный host + two controllers + reconnect E2E отсутствует для каждого режима.
+2. Core eight закреплены в manifest, но полный Stage + two Controllers + reconnect/rematch/privacy browser evidence ещё не снят.
+3. Recovery, verification tokens, session revocation и TOTP enforcement реализованы; production email webhook и enrollment `ADMIN_TOTP_SECRET` не настроены.
+4. Versioned migrations и strict schema gate работают; текущий production schema version равен 9.
+5. KOINS join/settle/cancel и reward idempotency выполняются атомарными SQL CTE.
+6. UGC report/block/appeal, moderator queue и controlled Blob lifecycle реализованы для Beta.
+7. First-party server/client error journal и `/api/health` работают; внешний paging/webhook для SLO alert ещё не настроен.
+8. Read-only production baseline пройден, но event-night profile с SSE, game commands, media и 20-30 участниками ещё нужен.
+9. SEO aliases и видимые third-party game names требуют legal review.
+10. Canonical `tusa.game` пока не подтверждён независимым DNS/browser smoke.
 
 ## Commercial status
 
@@ -40,14 +40,11 @@ Venue Night, Event Pass, TUSA Plus, subscriptions, payments, white-label, brand 
 
 ## Current execution order
 
-1. Auth decision and account lifecycle.
-2. Migration-first business schema.
-3. Завершить atomic join/settle/cancel betting и reconciliation ledger.
-4. Core-eight manifest decision and certification harness.
-5. Moderation, media storage and privacy controls.
-6. SEO redirects and naming/IP cleanup.
-7. Production realtime/rate-limit/load/observability preflight.
-8. One supported paid Venue pilot, debrief and repeat-sale test.
+1. Core-eight multi-browser certification harness and evidence.
+2. Production auth email delivery and root-admin TOTP enrollment.
+3. Venue load profile and incident drill.
+4. DNS, naming/IP and legal/privacy review.
+5. One supported Venue pilot, debrief and repeat-sale test.
 
 ## Document impact
 

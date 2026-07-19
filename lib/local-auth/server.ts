@@ -8,8 +8,8 @@ const scrypt = promisify(scryptCallback);
 const COOKIE_NAME = "tusa_auth";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
-type AccountRow = { id: string; email: string; display_name: string; password_hash: string; image_url: string | null; session_version: number };
-export type LocalUser = { id: string; fullName: string; firstName: string; imageUrl: string; primaryEmailAddress: { emailAddress: string } };
+type AccountRow = { id: string; email: string; display_name: string; password_hash: string; image_url: string | null; session_version: number; email_verified_at: string | Date | null };
+export type LocalUser = { id: string; fullName: string; firstName: string; imageUrl: string; emailVerified: boolean; primaryEmailAddress: { emailAddress: string } };
 
 let sqlClient: ReturnType<typeof neon> | null = null;
 let schemaPromise: Promise<void> | null = null;
@@ -73,6 +73,7 @@ async function ensureSchema() {
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`.then(async () => {
     await db()`ALTER TABLE local_accounts ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 1`;
+    await db()`ALTER TABLE local_accounts ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`;
     await db()`CREATE TABLE IF NOT EXISTS password_reset_tokens (
       id UUID PRIMARY KEY,
       account_id TEXT NOT NULL REFERENCES local_accounts(id) ON DELETE CASCADE,
@@ -82,6 +83,15 @@ async function ensureSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`;
     await db()`CREATE INDEX IF NOT EXISTS password_reset_account_idx ON password_reset_tokens (account_id, created_at DESC)`;
+    await db()`CREATE TABLE IF NOT EXISTS email_verification_tokens (
+      id UUID PRIMARY KEY,
+      account_id TEXT NOT NULL REFERENCES local_accounts(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`;
+    await db()`CREATE INDEX IF NOT EXISTS email_verification_account_idx ON email_verification_tokens (account_id, created_at DESC)`;
   }).catch((error) => { schemaPromise = null; throw error; });
   return schemaPromise;
 }
@@ -101,7 +111,7 @@ async function passwordMatches(password: string, stored: string) {
 
 function userFromRow(row: Omit<AccountRow, "password_hash">): LocalUser {
   const firstName = row.display_name.trim().split(/\s+/)[0] || "TUSA friend";
-  return { id: row.id, fullName: row.display_name, firstName, imageUrl: row.image_url ?? "", primaryEmailAddress: { emailAddress: row.email } };
+  return { id: row.id, fullName: row.display_name, firstName, imageUrl: row.image_url ?? "", emailVerified: Boolean(row.email_verified_at), primaryEmailAddress: { emailAddress: row.email } };
 }
 
 export async function register(input: { email: string; password: string; name: string }) {
@@ -114,7 +124,7 @@ export async function register(input: { email: string; password: string; name: s
   const id = `local_${randomUUID()}`;
   const passwordHash = await hashPassword(input.password);
   try {
-    const [row] = await db()`INSERT INTO local_accounts (id, email, display_name, password_hash) VALUES (${id}, ${email}, ${name}, ${passwordHash}) RETURNING id, email, display_name, image_url, session_version` as unknown as Omit<AccountRow, "password_hash">[];
+    const [row] = await db()`INSERT INTO local_accounts (id, email, display_name, password_hash) VALUES (${id}, ${email}, ${name}, ${passwordHash}) RETURNING id, email, display_name, image_url, session_version, email_verified_at` as unknown as Omit<AccountRow, "password_hash">[];
     return userFromRow(row);
   } catch (error) {
     if (error instanceof Error && /unique|duplicate/i.test(error.message)) throw new Error("Этот email уже зарегистрирован.");
@@ -124,7 +134,7 @@ export async function register(input: { email: string; password: string; name: s
 
 export async function signIn(input: { email: string; password: string }) {
   await ensureSchema();
-  const [row] = await db()`SELECT id, email, display_name, password_hash, image_url, session_version FROM local_accounts WHERE email = ${input.email.trim().toLowerCase()} LIMIT 1` as unknown as AccountRow[];
+  const [row] = await db()`SELECT id, email, display_name, password_hash, image_url, session_version, email_verified_at FROM local_accounts WHERE email = ${input.email.trim().toLowerCase()} LIMIT 1` as unknown as AccountRow[];
   if (!row || !(await passwordMatches(input.password, row.password_hash))) throw new Error("Неверный email или пароль.");
   return userFromRow(row);
 }
@@ -153,7 +163,7 @@ export async function currentUser(): Promise<LocalUser | null> {
   const { userId } = await auth();
   if (!userId) return null;
   await ensureSchema();
-  const [row] = await db()`SELECT id, email, display_name, image_url, session_version FROM local_accounts WHERE id = ${userId} LIMIT 1` as unknown as Omit<AccountRow, "password_hash">[];
+  const [row] = await db()`SELECT id, email, display_name, image_url, session_version, email_verified_at FROM local_accounts WHERE id = ${userId} LIMIT 1` as unknown as Omit<AccountRow, "password_hash">[];
   return row ? userFromRow(row) : null;
 }
 
@@ -164,6 +174,30 @@ export async function revokeAllSessions(userId: string) {
 
 function resetTokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
+}
+
+export async function requestEmailVerification(userId: string) {
+  await ensureSchema();
+  const [account] = await db()`SELECT id, email, display_name, email_verified_at FROM local_accounts WHERE id = ${userId} LIMIT 1` as unknown as { id: string; email: string; display_name: string; email_verified_at: string | Date | null }[];
+  if (!account || account.email_verified_at) return null;
+  const token = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  await db()`DELETE FROM email_verification_tokens WHERE account_id = ${account.id} AND used_at IS NULL`;
+  await db()`INSERT INTO email_verification_tokens (id, account_id, token_hash, expires_at) VALUES (${randomUUID()}, ${account.id}, ${resetTokenHash(token)}, ${expiresAt})`;
+  return { token, email: account.email, name: account.display_name };
+}
+
+export async function verifyEmail(token: string) {
+  await ensureSchema();
+  const [result] = await db()`WITH valid AS (
+      UPDATE email_verification_tokens SET used_at = NOW()
+      WHERE token_hash = ${resetTokenHash(token)} AND used_at IS NULL AND expires_at > NOW()
+      RETURNING account_id
+    ), verified AS (
+      UPDATE local_accounts account SET email_verified_at = COALESCE(email_verified_at, NOW())
+      FROM valid WHERE account.id = valid.account_id RETURNING account.id
+    ) SELECT id FROM verified` as unknown as { id: string }[];
+  return Boolean(result);
 }
 
 export async function requestPasswordReset(emailInput: string) {

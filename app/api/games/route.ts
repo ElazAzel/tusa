@@ -15,6 +15,7 @@ import { deriveVerifiedScore } from "@/lib/games/scoring";
 import { parseGameCommand } from "@/lib/games/commands";
 import { applyServerGameCommand, initialServerGameState, isServerGameState } from "@/lib/games/engine";
 import { sanitizeSdkState } from "@/lib/games/sdk";
+import { recordPlatformError } from "@/lib/observability";
 
 const gameRequestSchema = z.object({
   action: z.enum(["create", "join", "start", "leave", "update", "complete", "score", "playerAction"]),
@@ -181,6 +182,7 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : "Game request failed.";
     console.error("[api/games] request failed", { action: body.action, sessionId: body.sessionId, partyId: body.partyId, userId, error: message });
     if (/member|creator|player/i.test(message)) return apiError(message, 403);
+    void recordPlatformError({ source: "server", route: "/api/games", method: "POST", error, context: { action: body.action, sessionId: body.sessionId ?? "", partyId: body.partyId ?? "" } }).catch(() => undefined);
     return apiError("Game request failed.", 500);
   }
 
@@ -220,6 +222,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Game request failed.";
     if (/member/i.test(message)) return apiError("Not a party member.", 403);
+    void recordPlatformError({ source: "server", route: "/api/games", method: "GET", error, context: { sessionId: sessionId ?? "", partyId: partyId ?? "" } }).catch(() => undefined);
     return apiError("Game request failed.", 500);
   }
 

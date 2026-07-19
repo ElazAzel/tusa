@@ -356,7 +356,7 @@ export function ensurePartySchema() {
   const sql = db();
   if (process.env.TUSA_STRICT_SCHEMA === "true") {
     const [version] = await sql`SELECT version FROM platform_schema_version WHERE singleton = TRUE LIMIT 1` as unknown as { version: number }[];
-    if (!version || Number(version.version) < 7) throw new Error("Database schema is outdated. Run npm run db:migrate before serving traffic.");
+    if (!version || Number(version.version) < 9) throw new Error("Database schema is outdated. Run npm run db:migrate before serving traffic.");
     return;
   }
   const check = await sql`SELECT 1 FROM information_schema.tables WHERE table_name = 'user_profiles' LIMIT 1` as unknown as Record<string, unknown>[];

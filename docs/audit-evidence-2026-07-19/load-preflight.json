@@ -1,0 +1,38 @@
+{
+  "kind": "safe-read-only-preflight",
+  "baseUrl": "https://tusagame.vercel.app",
+  "startedAt": "2026-07-19T08:23:04.152Z",
+  "finishedAt": "2026-07-19T08:23:12.614Z",
+  "requestCount": 120,
+  "concurrency": 6,
+  "successRate": 100,
+  "latencyMs": {
+    "p50": 288,
+    "p95": 1641,
+    "p99": 2007,
+    "max": 2011
+  },
+  "byPath": {
+    "/": {
+      "requests": 30,
+      "failures": 0,
+      "maxLatencyMs": 2007
+    },
+    "/api/public/content": {
+      "requests": 30,
+      "failures": 0,
+      "maxLatencyMs": 1820
+    },
+    "/api/auth/session": {
+      "requests": 30,
+      "failures": 0,
+      "maxLatencyMs": 2011
+    },
+    "/api/health": {
+      "requests": 30,
+      "failures": 0,
+      "maxLatencyMs": 1801
+    }
+  },
+  "failures": []
+}

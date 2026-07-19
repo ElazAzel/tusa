@@ -239,3 +239,38 @@ TUSA.game можно считать готовой к автономному п�
 3. Подключить error monitoring, SLO alerts и выполнить документированный load/incident drill.
 4. Завершить DNS для `tusa.game` и повторить smoke на canonical domain.
 5. Провести legal/privacy review и один сопровождаемый Venue Night.
+
+## 11. Operations and auth checkpoint - 19.07.2026
+
+После следующего remediation-прохода подтверждённая оценка **public beta / supported pilot** повышена до **8.6/10**. Оценка автономного paid production повышена до **7.6/10**. Она остаётся ниже 8 до реального multi-browser game certification, доставленного auth email, включённого admin MFA, DNS и venue/legal evidence.
+
+### Реализовано
+
+- First-party `platform_error_events` с fingerprint, очисткой PII/secrets, release/environment и агрегатами за 1/24 часа.
+- Next.js `onRequestError`, client global error reporting и явная запись обработанных chat/game 500.
+- `/api/health` с проверкой database schema gate и latency; `/admin/system` показывает database latency и top error fingerprints.
+- Email verification: одноразовый 24-часовой токен, повторная отправка, confirmation endpoint и статус в кабинете.
+- Root-admin TOTP enforcement с окном ±30 секунд; включается только после задания `ADMIN_TOTP_SECRET`.
+- Auth email webhook получил timeout, проверку HTTP status и запись delivery failure в error journal.
+- Safe read-only production preflight и incident runbook.
+
+### Production evidence
+
+- Deployment: `dpl_BUTwHn2UUBQPTDLLAzS6TJaFRPK6`.
+- Neon: 10 applied migrations, `platform_schema_version.version = 9`.
+- `/api/health`: HTTP 200, `status=ready`, database latency 72 ms на smoke-запросе.
+- Runtime ready: database, local auth, Clerk compatibility, realtime, rate limit, media, observability.
+- Runtime missing: production email webhook и admin TOTP secret; это видно в health/admin, а не скрыто.
+- Preflight: 120/120 successful, concurrency 6, p50 288 ms, p95 1641 ms, p99 2007 ms, max 2011 ms.
+- Browser smoke: homepage и sign-up semantic flow открываются; screenshot `docs/audit-evidence-2026-07-19/12-sign-up-observability-release.png`.
+- Verification: lint and typecheck pass; 58/58 tests pass; production build generates 136 route outputs.
+
+### Скорректированные оценки
+
+| Область | Предыдущая | Сейчас | Причина |
+|---|---:|---:|---|
+| Auth lifecycle | 7.0 | 7.8 | Verification и TOTP enforcement готовы; delivery/enrollment требуют env и реального письма |
+| Data/schema | 8.5 | 9.0 | 10 migrations, schema v9, health gate |
+| Operations | 7.0 | 8.4 | First-party errors, health, admin metrics, production baseline и runbook |
+| Supported pilot | 8.2 | 8.6 | Основные Beta-контуры наблюдаемы и воспроизводимо проверены |
+| Autonomous paid production | 7.0 | 7.6 | Multi-browser, email/MFA enrollment, DNS, legal и venue load ещё не подтверждены |

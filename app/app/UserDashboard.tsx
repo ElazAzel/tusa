@@ -15,8 +15,9 @@ function Icon({ name }: { name: string }) {
 
 function haptic(ms = 10) { try { navigator.vibrate?.(ms); } catch {} soundTap(); }
 
-export default function UserDashboard({ profile, parties }: { profile: UserProfile; parties: Party[] }) {
+export default function UserDashboard({ profile, parties, emailVerified }: { profile: UserProfile; parties: Party[]; emailVerified: boolean }) {
   const [copied, setCopied] = useState("");
+  const [verificationNotice, setVerificationNotice] = useState("");
   const { locale, t } = useLocale();
   const cardsRef = useRef<HTMLDivElement>(null);
 
@@ -66,6 +67,7 @@ export default function UserDashboard({ profile, parties }: { profile: UserProfi
         </div>
       </div>
     </section>
+    {!emailVerified && <section className="email-verification-banner" role="status"><span className="material-symbols-rounded" aria-hidden="true">mark_email_unread</span><div><strong>{locale === "ru" ? "Подтвердите email" : "Verify your email"}</strong><small>{locale === "ru" ? "Ссылка действует 24 часа." : "The link is valid for 24 hours."}</small></div><button type="button" onClick={async () => { const response = await fetch("/api/auth/email-verification/request", { method: "POST" }); setVerificationNotice(response.ok ? (locale === "ru" ? "Письмо отправлено" : "Email sent") : (locale === "ru" ? "Не удалось отправить" : "Could not send")); }}>{verificationNotice || (locale === "ru" ? "Отправить снова" : "Resend")}</button></section>}
     <section className="user-app-actions">
       <Link href="/app/new" className="user-app-create" onClick={() => haptic()}>
         <Icon name="add_circle" />

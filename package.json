@@ -18,7 +18,8 @@
     "db:migrate:verbose": "node scripts/migrate-database.mjs",
     "db:check": "drizzle-kit check",
     "rag:build": "tsx scripts/rag-build.ts",
-    "rag:search": "tsx scripts/rag-search.ts"
+    "rag:search": "tsx scripts/rag-search.ts",
+    "load:preflight": "node scripts/load-preflight.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.17",

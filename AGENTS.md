@@ -1,6 +1,6 @@
 # TUSA.game — AI Context & Orchestration Hub
 
-> Updated 19.07.2026 · Public beta 8.2/10 · Next.js 16 · React 19 · TypeScript · local account compatibility layer + HMAC guests · Neon Postgres · SSE/Ably/Neon fallback · 50+ route handlers · 32 Beta modes · certified = 0
+> Updated 19.07.2026 · Supported pilot 8.6/10 · Next.js 16 · React 19 · TypeScript · verified local accounts + HMAC guests · Neon Postgres · first-party observability · SSE/Ably/Neon fallback · 50+ route handlers · 32 Beta modes · certified = 0
 
 > Current source of truth: `docs/IMPLEMENTATION_STATUS_2026-07-19.md`. Documentation precedence and shipped/gap/target/pre-implementation semantics: `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md`.
 
@@ -12,7 +12,7 @@
 npm install          # dependencies
 npm run dev          # dev server (localhost:3000)
 npm run build        # production build
-npm test             # 56 unit/contract/platform tests (must pass before commit)
+npm test             # 58 unit/contract/platform tests (must pass before commit)
 npm run lint         # 0 errors required
 npm run rag:build    # rebuild RAG index after changes
 ```
@@ -128,7 +128,7 @@ export default function Game({ partyId, sessionId, onSave, role }:
 ### Testing
 
 ```bash
-npm test             # 49 tests: game engine, contracts, routes and security
+npm test             # 58 tests: game engine, contracts, routes and security
 npm run test:e2e     # Playwright E2E (requires install)
 ```
 
@@ -217,7 +217,7 @@ Load a skill with `opencode use-skill <name>` (or equivalent in your AI tool).
 
 ## Environment
 
-- **DB**: Neon Postgres via `@neondatabase/serverless` (28 tables, raw SQL + Drizzle)
+- **DB**: Neon Postgres via `@neondatabase/serverless` (versioned schema v9, raw SQL + Drizzle)
 - **Auth**: local email/password compatibility layer for accounts + HMAC guest sessions; final provider decision is P0
 - **Realtime**: Ably (production) / SSE in-memory fallback
 - **Rate limiting**: Upstash Redis (production) / in-memory fallback

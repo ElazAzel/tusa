@@ -27,6 +27,7 @@ export async function requireAppUser(redirectUrl: string) {
     userId,
     displayName: user?.fullName ?? user?.firstName ?? `TUSA ${userId.slice(-6)}`,
     imageUrl: user?.imageUrl,
+    emailVerified: user?.emailVerified ?? false,
   };
 }
 

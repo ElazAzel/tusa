@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { headers } from "next/headers";
-import { isAdmin } from "@/lib/admin-auth";
+import { isAdmin, isAdminMfaConfigured } from "@/lib/admin-auth";
 import { detectLocale, normalizeLocale, copy } from "@/lib/i18n";
 import AdminLoginForm from "../AdminLoginForm";
 
@@ -15,5 +15,5 @@ export default async function AdminLoginPage({ searchParams }: { searchParams: P
   const cookieLocale = store.get("tusa_locale")?.value;
   const browserLocale = detectLocale(requestHeaders.get("accept-language"));
   const locale = normalizeLocale(cookieLocale ?? browserLocale);
-  return <AdminLoginForm initialError={params.error === "invalid" ? copy(locale, "adminLoginInvalid") : ""} />;
+  return <AdminLoginForm initialError={params.error === "invalid" ? copy(locale, "adminLoginInvalid") : ""} mfaRequired={isAdminMfaConfigured()} />;
 }

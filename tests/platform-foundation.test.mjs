@@ -31,6 +31,10 @@ const moderationApi = readFileSync(new URL("../app/api/admin/moderation/route.ts
 const localAuth = readFileSync(new URL("../lib/local-auth/server.ts", import.meta.url), "utf8");
 const liveSource = readFileSync(new URL("../lib/live.ts", import.meta.url), "utf8");
 const rateLimitSource = readFileSync(new URL("../lib/rate-limit.ts", import.meta.url), "utf8");
+const observabilitySource = readFileSync(new URL("../lib/observability.ts", import.meta.url), "utf8");
+const observabilityMigration = readFileSync(new URL("../drizzle/0008_platform_observability.sql", import.meta.url), "utf8");
+const verificationMigration = readFileSync(new URL("../drizzle/0009_auth_verification.sql", import.meta.url), "utf8");
+const adminAuth = readFileSync(new URL("../lib/admin-auth.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -190,4 +194,21 @@ test("production realtime and rate limits have distributed database fallbacks", 
   assert.match(rateLimitSource, /INSERT INTO rate_limit_windows/);
   assert.match(rateLimitSource, /ON CONFLICT \(key, window_start\) DO UPDATE/);
   assert.doesNotMatch(rateLimitSource, /if \(!limiter\) return \{ \.\.\.rateLimit/);
+});
+
+test("first-party observability records sanitized errors and exposes a health gate", () => {
+  assert.match(observabilityMigration, /CREATE TABLE IF NOT EXISTS platform_error_events/);
+  assert.match(observabilitySource, /safeContext/);
+  assert.match(observabilitySource, /platform_error_events/);
+  assert.match(systemApi, /getPlatformErrorSummary/);
+  assert.match(observabilitySource, /token\|secret\|password\|cookie\|authorization\|email/);
+});
+
+test("local auth supports email verification and optional root-admin TOTP", () => {
+  assert.match(verificationMigration, /CREATE TABLE IF NOT EXISTS email_verification_tokens/);
+  assert.match(localAuth, /requestEmailVerification/);
+  assert.match(localAuth, /verifyEmail/);
+  assert.match(localAuth, /email_verified_at/);
+  assert.match(adminAuth, /isValidAdminTotp/);
+  assert.match(adminAuth, /createHmac\("sha1"/);
 });

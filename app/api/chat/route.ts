@@ -5,6 +5,7 @@ import { getMessages, sendMessage, toggleReaction, grantEngagementReward, requir
 import { publish } from "@/lib/live";
 import { resolveActor } from "@/lib/guest-session";
 import { isManagedMediaUrl } from "@/lib/media";
+import { recordPlatformError } from "@/lib/observability";
 
 const messageSchema = z.object({
   action: z.literal("react").optional(),
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ messages });
   } catch (error) {
     const forbidden = error instanceof Error && /member/i.test(error.message);
+    if (!forbidden) void recordPlatformError({ source: "server", route: "/api/chat", method: "GET", error, context: { partyId } }).catch(() => undefined);
     return NextResponse.json({ error: forbidden ? "Not a party member." : "Could not load messages." }, { status: forbidden ? 403 : 500 });
   }
 }
@@ -72,6 +74,7 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : "Could not send message.";
     const forbidden = /member/i.test(message);
     console.error("[api/chat] send failed", { requestId, partyId: body.partyId, actorId: actor.id, error: message });
+    if (!forbidden) void recordPlatformError({ source: "server", route: "/api/chat", method: "POST", error, context: { requestId, partyId: body.partyId, type: body.type } }).catch(() => undefined);
     return NextResponse.json({ error: forbidden ? "Not a party member." : "Could not send message. Please try again.", requestId }, { status: forbidden ? 403 : 500 });
   }
 }
