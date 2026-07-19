@@ -19,6 +19,8 @@ export const ADMIN_PERMISSIONS = [
   "ads_read",
   "ads_write",
   "system_read",
+  "moderation_read",
+  "moderation_write",
   "team_read",
   "team_manage",
 ] as const;
@@ -34,6 +36,8 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     "users_read",
     "parties_read",
     "promos_read",
+    "moderation_read",
+    "moderation_write",
   ],
   analyst: [
     "dashboard_read",

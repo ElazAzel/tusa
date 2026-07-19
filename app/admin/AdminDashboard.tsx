@@ -97,6 +97,7 @@ export default function AdminDashboard({ access, initialApplications, initialSta
         {can("users_read") && <button className="admin-text-button" onClick={() => setTab("users")}>{t("adminTabUsers")}</button>}
         {can("parties_read") && <button className="admin-text-button" onClick={() => setTab("parties")}>{t("adminTabParties")}</button>}
         {can("system_read") && <Link href="/admin/system" className="admin-text-button">{locale === "ru" ? "Система" : "System"}</Link>}
+        {can("moderation_read") && <Link href="/admin/moderation" className="admin-text-button">{locale === "ru" ? "Модерация" : "Moderation"}</Link>}
         {can("team_read") && <Link href="/admin/team" className="admin-text-button">{locale === "ru" ? "Команда" : "Team"}</Link>}
         <span className="admin-role-chip">{access.displayName} · {access.role}</span>
         <button className="admin-text-button" onClick={logout}>{t("adminLogout")}</button>

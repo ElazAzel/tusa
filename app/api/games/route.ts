@@ -6,7 +6,7 @@ import {
   addGameAction, addGameScore, createGameSession, getActiveGameSessions, getGameScores, getGameActionByMutationId,
   getGameSessionById, getPendingGameActions, joinGameSession,
   leaveGameSession, requirePartyMember, updateGameSession, trackAnalytics, grantEngagementReward,
-  addPassXp, trackQuestProgress,
+  addPassXp, trackQuestProgress, saveHighlight,
 } from "@/lib/parties";
 import { isGameId } from "@/lib/games/manifest";
 import { publish } from "@/lib/live";
@@ -122,11 +122,15 @@ export async function POST(request: Request) {
       const score = await addGameScore(body.sessionId, userId, verifiedScore, metadata);
       const scores = await getGameScores(body.sessionId);
       publish(`game:${body.sessionId}`, { type: "score:added", sessionId: body.sessionId, score, scores });
-      void trackAnalytics(userId, "game_played", { sessionId: body.sessionId, game: current.game, score: score.score });
-      void grantEngagementReward(userId, "game_play", current.partyId).catch(() => undefined);
-      if (score.score > 0) void grantEngagementReward(userId, "game_win", current.partyId).catch(() => undefined);
-      void addPassXp(userId, Math.min(score.score, 50)).catch(() => undefined);
-      void trackQuestProgress("playgames", current.partyId, userId).catch(() => undefined);
+      if (score.created) {
+        void trackAnalytics(userId, "game_played", { sessionId: body.sessionId, game: current.game, score: score.score });
+        void grantEngagementReward(userId, "game_play", current.partyId).catch(() => undefined);
+        if (score.score > 0) void grantEngagementReward(userId, "game_win", current.partyId).catch(() => undefined);
+        void addPassXp(userId, Math.min(score.score, 50)).catch(() => undefined);
+        void trackQuestProgress("playgames", current.partyId, userId).catch(() => undefined);
+        if (score.score > 0) void trackQuestProgress("winrounds", current.partyId, userId).catch(() => undefined);
+        void saveHighlight({ partyId: current.partyId, sessionId: body.sessionId, userId, type: "score", data: { game: current.game, score: score.score } }).catch(() => undefined);
+      }
       return NextResponse.json({ score, scores });
     }
 
@@ -175,6 +179,7 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Game request failed.";
+    console.error("[api/games] request failed", { action: body.action, sessionId: body.sessionId, partyId: body.partyId, userId, error: message });
     if (/member|creator|player/i.test(message)) return apiError(message, 403);
     return apiError("Game request failed.", 500);
   }

@@ -26,24 +26,25 @@ export default function RoomTheme({ currentTheme, onThemeChange, inviteCode, own
     try {
       const res = await fetch(`/api/parties/${inviteCode}/theme`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: { bg: theme?.bg, accent: theme?.accent, id }, themeId: id }) });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Error"); return; }
+      if (!res.ok) throw new Error(data.error || "Error");
       if (data.ownedThemes) setOwned(new Set(data.ownedThemes));
       setSelected(id);
       onThemeChange?.(id);
-    } catch { setError("Network error"); }
-    setApplying(false);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Network error"); }
+    finally { setApplying(false); }
   }, [inviteCode, onThemeChange]);
 
-  return <div className="party-game-board game-board-enter">
+  return <div className="party-feature-surface game-board-enter">
     <span className="game-step">{t("themeTitle")}</span>
     {error && <p style={{ color: "var(--red)", marginTop: 8 }}>{error}</p>}
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginTop: 8 }}>
+    <div className="theme-grid">
       {THEMES.map((th) => {
         const isOwned = owned.has(th.id);
         const isSelected = selected === th.id;
-        return <button key={th.id} onClick={() => isOwned ? apply(th.id) : null} disabled={applying} type="button" style={{ background: th.bg, color: th.accent, borderRadius: 8, padding: 16, border: isSelected ? "3px solid var(--lime)" : "3px solid transparent", cursor: isOwned ? "pointer" : "default", opacity: isOwned ? 1 : 0.5 }}>
+        return <button className={`${isSelected ? "is-selected" : ""} ${isOwned ? "is-owned" : "is-locked"}`} key={th.id} onClick={() => void apply(th.id)} disabled={applying || isSelected} type="button" style={{ background: th.bg, color: th.accent }}>
+          <span className="theme-swatches"><i style={{ background: th.bg }} /><i style={{ background: th.accent }} /></span>
           <p style={{ fontWeight: 700 }}>{th.name}</p>
-          <p style={{ fontSize: 12 }}>{isOwned ? t("themeOwned") : `${t("themeUnlock")} ${th.cost} KOINS`}</p>
+          <p style={{ fontSize: 12 }}>{isSelected ? "✓" : isOwned ? t("themeOwned") : `${t("themeUnlock")} ${th.cost} KOINS`}</p>
         </button>;
       })}
     </div>

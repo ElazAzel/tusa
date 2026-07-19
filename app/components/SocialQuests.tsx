@@ -12,12 +12,16 @@ export default function SocialQuests({ partyId }: { partyId: string }) {
   const { locale, t } = useLocale();
   const [quests, setQuests] = useState<Array<{ id: string; titleKey: string; descKey: string; icon: string; progress: number; target: number; rewardKoins: number; rewardXp: number; claimed: boolean; completedAt: string | null }>>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const labels = QUEST_LABELS[locale] || QUEST_LABELS.en;
 
   const load = useCallback(() => {
-    fetch(`/api/quests?partyId=${partyId}`).then((r) => r.json()).then((data) => {
+    fetch(`/api/quests?partyId=${partyId}`).then(async (r) => {
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "Could not load quests.");
       setQuests(Array.isArray(data.progress) ? data.progress : []);
-    }).catch(() => {}).finally(() => setLoading(false));
+      setError("");
+    }).catch((cause) => setError(cause instanceof Error ? cause.message : "Could not load quests.")).finally(() => setLoading(false));
   }, [partyId]);
 
   useEffect(() => { load(); }, [load]);
@@ -29,10 +33,11 @@ export default function SocialQuests({ partyId }: { partyId: string }) {
 
   if (loading) return <div className="party-game-board"><p style={{ color: "var(--gray)" }}>Loading...</p></div>;
 
-  return <div className="party-game-board game-board-enter">
+  return <div className="party-feature-surface game-board-enter">
     <span className="game-step">{t("questsTitle")}</span>
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
-      {quests.length === 0 && <p style={{ color: "var(--gray)" }}>No quests yet</p>}
+    {error && <p className="feature-error" role="alert">{error}</p>}
+    <div className="party-feature-list">
+      {!error && quests.length === 0 && <div className="party-feature-empty"><span className="material-symbols-rounded">task_alt</span><strong>{locale === "ru" ? "Задания появятся после следующего действия в тусе" : "Quests will appear after your next party action"}</strong></div>}
       {quests.map((q) => {
         const done = q.progress >= q.target;
         return <div key={q.id} style={{ background: "var(--dark)", borderRadius: 8, padding: 12 }}>

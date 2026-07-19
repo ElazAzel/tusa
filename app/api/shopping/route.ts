@@ -1,45 +1,45 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { rateLimit } from "@/lib/rate-limit";
-import { addShoppingItem, getShoppingItems, updateShoppingItem, deleteShoppingItem } from "@/lib/parties";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
+import { addShoppingItem, deleteShoppingItem, getShoppingItems, requirePartyMember, updateShoppingItem } from "@/lib/parties";
+import { resolveActor } from "@/lib/guest-session";
 
-export const dynamic = "force-dynamic";
+const shoppingSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("add"), partyId: z.string().uuid(), text: z.string().trim().min(1).max(200), quantity: z.number().int().min(1).max(999), unit: z.string().trim().min(1).max(10) }).strict(),
+  z.object({ action: z.literal("update"), itemId: z.string().uuid(), updates: z.object({ text: z.string().trim().min(1).max(200).optional(), quantity: z.number().int().min(1).max(999).optional(), unit: z.string().trim().min(1).max(10).optional(), price: z.number().int().min(0).max(100_000_000).optional(), purchased: z.boolean().optional(), buyerId: z.string().min(1).max(128).optional() }).strict() }).strict(),
+  z.object({ action: z.literal("delete"), itemId: z.string().uuid() }).strict(),
+]);
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const actor = await resolveActor();
+  if (!actor) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const limit = await distributedRateLimit(`shopping:read:${actor.id}:${getClientIp(request.headers)}`, 60, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  const partyId = request.nextUrl.searchParams.get("partyId") ?? "";
+  if (!z.string().uuid().safeParse(partyId).success) return NextResponse.json({ error: "A valid partyId is required." }, { status: 400 });
   try {
-    const { userId } = await auth();
-    if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = rateLimit(`api:${ip}:shopping`, 60, 60000);
-    if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
-    const { searchParams } = new URL(request.url);
-    const partyId = searchParams.get("partyId");
-    if (!partyId) return Response.json({ error: "partyId required" }, { status: 400 });
-    const items = await getShoppingItems(partyId);
-    return Response.json({ items });
-  } catch { return Response.json({ error: "Shopping list error" }, { status: 500 }); }
+    await requirePartyMember(partyId, actor.id);
+    return NextResponse.json({ items: await getShoppingItems(partyId) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Shopping list error.";
+    return NextResponse.json({ error: /member/i.test(message) ? "Not a party member." : "Shopping list error." }, { status: /member/i.test(message) ? 403 : 500 });
+  }
 }
 
 export async function POST(request: Request) {
+  const actor = await resolveActor();
+  if (!actor) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const limit = await distributedRateLimit(`shopping:write:${actor.id}:${getClientIp(request.headers)}`, 30, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  const parsed = shoppingSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Invalid shopping request.", details: parsed.error.flatten() }, { status: 400 });
   try {
-    const { userId } = await auth();
-    const user = await currentUser();
-    if (!userId || !user) return Response.json({ error: "Unauthorized" }, { status: 401 });
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = rateLimit(`api:${ip}:shopping`, 20, 60000);
-    if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
-    const body = await request.json().catch(() => ({}));
-    if (body.action === "add") {
-      const item = await addShoppingItem(userId, body.partyId, { text: body.text, quantity: body.quantity, unit: body.unit });
-      return Response.json({ item });
-    }
-    if (body.action === "update") {
-      const item = await updateShoppingItem(body.itemId, userId, body.updates);
-      return Response.json({ item });
-    }
-    if (body.action === "delete") {
-      await deleteShoppingItem(body.itemId, userId);
-      return Response.json({ ok: true });
-    }
-    return Response.json({ error: "Unknown action" }, { status: 400 });
-  } catch { return Response.json({ error: "Shopping list error" }, { status: 500 }); }
+    if (parsed.data.action === "add") return NextResponse.json({ item: await addShoppingItem(actor.id, parsed.data.partyId, parsed.data) }, { status: 201 });
+    if (parsed.data.action === "update") return NextResponse.json({ item: await updateShoppingItem(parsed.data.itemId, actor.id, parsed.data.updates) });
+    await deleteShoppingItem(parsed.data.itemId, actor.id);
+    return NextResponse.json({ deleted: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Shopping list error.";
+    return NextResponse.json({ error: message }, { status: /member|owner/i.test(message) ? 403 : 500 });
+  }
 }

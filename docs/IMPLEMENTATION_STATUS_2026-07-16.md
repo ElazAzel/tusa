@@ -1,6 +1,8 @@
 # TUSA.game implementation status — 2026-07-16
 
-This document is the current operational checkpoint for continuing the master plan. It reconciles the plan, docs and git history against the current repository state.
+> **Исторический checkpoint.** Не использовать как текущий baseline. Актуальное состояние на 19.07.2026: `docs/IMPLEMENTATION_STATUS_2026-07-19.md`; правила приоритета документов: `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md`.
+
+This document was the operational checkpoint on 16.07.2026 and is retained only for history. It must not override the 19.07.2026 checkpoint.
 
 ## Current git baseline
 

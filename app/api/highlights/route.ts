@@ -1,63 +1,63 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
-import { getHighlights, saveHighlight, deleteHighlight, requirePartyMember } from "@/lib/parties";
+import { z } from "zod";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
+import { deleteHighlight, getHighlights, requirePartyMember, saveHighlight } from "@/lib/parties";
 import { publish } from "@/lib/live";
+import { resolveActor } from "@/lib/guest-session";
 
-const ALLOWED_ORIGINS = ["http://localhost:3000", "https://tusagame.vercel.app", "https://tusa.game", "https://www.tusa.game"];
-
-function cors(res: NextResponse, origin: string | null) { const allowed = ALLOWED_ORIGINS.includes(origin ?? ""); if (allowed) res.headers.set("Access-Control-Allow-Origin", origin!); res.headers.set("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS"); res.headers.set("Access-Control-Allow-Headers", "*"); return res; }
-
-export async function OPTIONS(request: NextRequest) { const origin = request.headers.get("origin"); return cors(NextResponse.json({}), origin); }
+const highlightSchema = z.object({
+  partyId: z.string().uuid(),
+  sessionId: z.string().uuid().optional(),
+  displayName: z.string().max(80).optional(),
+  type: z.enum(["score", "achievement", "funny", "quote", "photo"]),
+  data: z.record(z.string(), z.unknown()).optional(),
+  thumbnail: z.string().max(1_500_000).optional(),
+}).strict();
 
 export async function GET(request: NextRequest) {
-  const { userId } = await auth();
-  const origin = request.headers.get("origin");
-  if (!userId) return cors(NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 }), origin);
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:highlights`, 30, 60000);
-  if (!rl.allowed) return cors(NextResponse.json({ error: "Слишком много запросов." }, { status: 429 }), origin);
-  const partyId = request.nextUrl.searchParams.get("partyId");
-  if (!partyId) return cors(NextResponse.json({ error: "Укажите partyId." }, { status: 400 }), origin);
+  const actor = await resolveActor();
+  if (!actor) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const limit = await distributedRateLimit(`highlights:read:${actor.id}:${getClientIp(request.headers)}`, 30, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  const partyId = request.nextUrl.searchParams.get("partyId") ?? "";
+  if (!z.string().uuid().safeParse(partyId).success) return NextResponse.json({ error: "A valid partyId is required." }, { status: 400 });
   try {
-    const limit = Number(request.nextUrl.searchParams.get("limit")) || 20;
-    const highlights = await getHighlights(partyId, limit);
-    return cors(NextResponse.json({ highlights }), origin);
-  } catch { return cors(NextResponse.json({ error: "Ошибка загрузки." }, { status: 500 }), origin); }
+    await requirePartyMember(partyId, actor.id);
+    const requested = Number(request.nextUrl.searchParams.get("limit") ?? 20);
+    const highlights = await getHighlights(partyId, Math.min(Math.max(Number.isFinite(requested) ? requested : 20, 1), 50));
+    return NextResponse.json({ highlights });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not load highlights.";
+    return NextResponse.json({ error: /member/i.test(message) ? "Not a party member." : "Could not load highlights." }, { status: /member/i.test(message) ? 403 : 500 });
+  }
 }
 
 export async function POST(request: Request) {
-  const { userId } = await auth();
-  const origin = request.headers.get("origin");
-  if (!userId) return cors(NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 }), origin);
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:highlights`, 10, 60000);
-  if (!rl.allowed) return cors(NextResponse.json({ error: "Слишком много запросов." }, { status: 429 }), origin);
-  const body = await request.json().catch(() => ({}));
-  if (!body.partyId || !body.type) return cors(NextResponse.json({ error: "Укажите partyId и type." }, { status: 400 }), origin);
+  const actor = await resolveActor();
+  if (!actor) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const limit = await distributedRateLimit(`highlights:write:${actor.id}:${getClientIp(request.headers)}`, 10, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  const parsed = highlightSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Invalid highlight.", details: parsed.error.flatten() }, { status: 400 });
   try {
-    await requirePartyMember(body.partyId, userId);
-    const highlight = await saveHighlight({ partyId: body.partyId, sessionId: body.sessionId, userId, displayName: body.displayName, type: body.type, data: body.data, thumbnail: body.thumbnail });
-    if (!highlight) return cors(NextResponse.json({ error: "Не удалось сохранить." }, { status: 500 }), origin);
-    publish(`party:${body.partyId}`, { type: "highlight:created", highlight });
-    return cors(NextResponse.json({ highlight }, { status: 201 }), origin);
-  } catch (e) { return cors(NextResponse.json({ error: e instanceof Error ? e.message : "Ошибка." }, { status: 403 }), origin); }
+    await requirePartyMember(parsed.data.partyId, actor.id);
+    const highlight = await saveHighlight({ ...parsed.data, userId: actor.id });
+    publish(`party:${parsed.data.partyId}`, { type: "highlight:created", highlight });
+    return NextResponse.json({ highlight }, { status: 201 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not save highlight.";
+    return NextResponse.json({ error: message }, { status: /member/i.test(message) ? 403 : 500 });
+  }
 }
 
-export async function DELETE(request: Request) {
-  const { userId } = await auth();
-  const origin = request.headers.get("origin");
-  if (!userId) return cors(NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 }), origin);
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:highlights`, 10, 60000);
-  if (!rl.allowed) return cors(NextResponse.json({ error: "Слишком много запросов." }, { status: 429 }), origin);
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  if (!id) return cors(NextResponse.json({ error: "Укажите id." }, { status: 400 }), origin);
-  try {
-    const ok = await deleteHighlight(id, userId);
-    if (!ok) return cors(NextResponse.json({ error: "Не найдено." }, { status: 404 }), origin);
-    publish(`party:highlight:${id}`, { type: "highlight:deleted", id });
-    return cors(NextResponse.json({ deleted: true }), origin);
-  } catch { return cors(NextResponse.json({ error: "Ошибка удаления." }, { status: 500 }), origin); }
+export async function DELETE(request: NextRequest) {
+  const actor = await resolveActor();
+  if (!actor) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const limit = await distributedRateLimit(`highlights:delete:${actor.id}:${getClientIp(request.headers)}`, 10, 60_000);
+  if (!limit.allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  const id = request.nextUrl.searchParams.get("id") ?? "";
+  if (!z.string().uuid().safeParse(id).success) return NextResponse.json({ error: "A valid id is required." }, { status: 400 });
+  const deleted = await deleteHighlight(id, actor.id);
+  if (!deleted) return NextResponse.json({ error: "Highlight not found." }, { status: 404 });
+  return NextResponse.json({ deleted: true });
 }

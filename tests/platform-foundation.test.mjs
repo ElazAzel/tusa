@@ -23,6 +23,14 @@ const runtimeStatus = readFileSync(new URL("../lib/runtime-status.ts", import.me
 const cosmeticsApi = readFileSync(new URL("../app/api/cosmetics/route.ts", import.meta.url), "utf8");
 const cosmeticsAdminApi = readFileSync(new URL("../app/api/admin/cosmetics/route.ts", import.meta.url), "utf8");
 const profileApi = readFileSync(new URL("../app/api/profile/route.ts", import.meta.url), "utf8");
+const runtimeRepairMigration = readFileSync(new URL("../drizzle/0002_runtime_schema_repair.sql", import.meta.url), "utf8");
+const safetyMigration = readFileSync(new URL("../drizzle/0003_safety_and_media.sql", import.meta.url), "utf8");
+const authMigration = readFileSync(new URL("../drizzle/0004_local_auth_lifecycle.sql", import.meta.url), "utf8");
+const mediaApi = readFileSync(new URL("../app/api/media/route.ts", import.meta.url), "utf8");
+const moderationApi = readFileSync(new URL("../app/api/admin/moderation/route.ts", import.meta.url), "utf8");
+const localAuth = readFileSync(new URL("../lib/local-auth/server.ts", import.meta.url), "utf8");
+const liveSource = readFileSync(new URL("../lib/live.ts", import.meta.url), "utf8");
+const rateLimitSource = readFileSync(new URL("../lib/rate-limit.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -83,6 +91,20 @@ test("multiplayer commands are idempotent across retries and reconnects", () => 
   assert.match(commandMigration, /CREATE UNIQUE INDEX IF NOT EXISTS game_actions_command_unique/);
 });
 
+test("runtime schema repairs support chat and versioned game sessions", () => {
+  assert.match(partiesSource, /ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1/);
+  assert.match(runtimeRepairMigration, /ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1/);
+  assert.match(partiesSource, /ON CONFLICT \(party_id, clerk_user_id, client_mutation_id\) WHERE client_mutation_id IS NOT NULL DO NOTHING/);
+});
+
+test("engagement and game retries cannot duplicate rewards", () => {
+  const rewardFunction = partiesSource.slice(partiesSource.indexOf("export async function grantEngagementReward"), partiesSource.indexOf("export async function getEngagementStats"));
+  assert.match(rewardFunction, /WITH allowance AS/);
+  assert.match(rewardFunction, /ledger AS/);
+  assert.doesNotMatch(rewardFunction, /addKoinsTransaction/);
+  assert.match(gamesApi, /if \(score\.created\)/);
+});
+
 test("every accepted multiplayer command is game-scoped and payload-validated", () => {
   assert.match(gamesApi, /parseGameCommand\(current\.game/);
   assert.match(commandRegistry, /stroke: z\.object/);
@@ -95,7 +117,7 @@ test("chat messages are member-scoped, idempotent and recover after reconnect", 
   assert.match(chatApi, /clientMutationId: z\.string\(\)\.uuid\(\)/);
   assert.match(chatApi, /duplicate: !created/);
   assert.match(partiesSource, /chat_messages_mutation_idx/);
-  assert.match(partiesSource, /ON CONFLICT \(party_id, clerk_user_id, client_mutation_id\) DO NOTHING/);
+  assert.match(partiesSource, /ON CONFLICT \(party_id, clerk_user_id, client_mutation_id\) WHERE client_mutation_id IS NOT NULL DO NOTHING/);
   assert.match(room, /liveChat\.connectionEpoch/);
   assert.match(room, /chatSendFailed/);
 });
@@ -124,4 +146,48 @@ test("cosmetics are catalogue-backed, entitlement-gated and safe to render in ch
   assert.match(partiesSource, /chat_effect TEXT NOT NULL DEFAULT 'none'/);
   assert.match(partiesSource, /Unknown cosmetic item/);
   assert.match(partiesSource, /This cosmetic item is not unlocked/);
+});
+
+test("KOINS bets debit, settle and refund with single-statement state guards", () => {
+  const join = partiesSource.slice(partiesSource.indexOf("export async function joinBet"), partiesSource.indexOf("export async function settleBet"));
+  const settle = partiesSource.slice(partiesSource.indexOf("export async function settleBet"), partiesSource.indexOf("export async function cancelBet"));
+  const cancel = partiesSource.slice(partiesSource.indexOf("export async function cancelBet"), partiesSource.indexOf("function rowToBet"));
+  assert.match(join, /WITH candidate AS/);
+  assert.match(join, /refund_race AS/);
+  assert.match(join, /koins_balance >=/);
+  assert.doesNotMatch(join, /addKoinsTransaction/);
+  assert.match(settle, /UPDATE party_bets bet SET status = 'settled'/);
+  assert.match(settle, /UPDATE user_profiles profile/);
+  assert.doesNotMatch(settle, /for \(const entry/);
+  assert.match(cancel, /UPDATE party_bets bet SET status = 'cancelled'/);
+  assert.match(cancel, /FROM refunds refund/);
+  assert.doesNotMatch(cancel, /for \(const entry/);
+});
+
+test("UGC has controlled media, retention and a moderation audit trail", () => {
+  assert.match(mediaApi, /storeMedia/);
+  assert.match(mediaApi, /requirePartyMember/);
+  assert.match(mediaApi, /consent/);
+  assert.match(safetyMigration, /CREATE TABLE IF NOT EXISTS safety_reports/);
+  assert.match(safetyMigration, /CREATE TABLE IF NOT EXISTS moderation_actions/);
+  assert.match(safetyMigration, /CREATE TABLE IF NOT EXISTS safety_blocks/);
+  assert.match(moderationApi, /moderation_write/);
+  assert.match(partiesSource, /retention_until <= NOW\(\)/);
+  assert.match(partiesSource, /moderation_status = 'removed'/);
+});
+
+test("local auth supports reset tokens and global session revocation", () => {
+  assert.match(localAuth, /session_version/);
+  assert.match(localAuth, /revokeAllSessions/);
+  assert.match(localAuth, /password_reset_tokens/);
+  assert.match(localAuth, /used_at = NOW\(\)/);
+  assert.match(authMigration, /CREATE TABLE IF NOT EXISTS password_reset_tokens/);
+});
+
+test("production realtime and rate limits have distributed database fallbacks", () => {
+  assert.match(liveSource, /INSERT INTO live_events/);
+  assert.match(liveSource, /SELECT id, payload, created_at FROM live_events/);
+  assert.match(rateLimitSource, /INSERT INTO rate_limit_windows/);
+  assert.match(rateLimitSource, /ON CONFLICT \(key, window_start\) DO UPDATE/);
+  assert.doesNotMatch(rateLimitSource, /if \(!limiter\) return \{ \.\.\.rateLimit/);
 });

@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const user = await register({ email: String(body.email ?? ""), password: String(body.password ?? ""), name: String(body.name ?? "") });
     const response = NextResponse.json({ user }, { status: 201 });
-    const cookie = sessionCookie(user.id);
+    const cookie = await sessionCookie(user.id);
     response.cookies.set(cookie.name, cookie.value, cookie.options);
     return response;
   } catch (error) {

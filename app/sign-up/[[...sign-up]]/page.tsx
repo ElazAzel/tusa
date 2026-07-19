@@ -18,7 +18,7 @@ export default function SignUpPage() {
             <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" fallbackRedirectUrl="/app" appearance={{ variables: { colorPrimary: "#2D00F7", colorForeground: "#000000", borderRadius: "12px", fontFamily: "var(--font-inter), sans-serif" }, elements: { cardBox: "clerk-card-box", card: "clerk-card", headerTitle: "clerk-title", formButtonPrimary: "clerk-primary", socialButtonsBlockButton: "clerk-social", footerActionLink: "clerk-link" } }} />
           </ClerkLoaded>
         </div>
-        <footer><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/">← На TUSA.game</Link></footer>
+        <footer><Link href="/privacy">Конфиденциальность</Link><Link href="/terms">Условия</Link><Link href="/">← На TUSA.game</Link></footer>
       </section>
     </main>
   );

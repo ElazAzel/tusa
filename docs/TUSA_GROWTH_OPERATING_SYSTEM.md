@@ -1,9 +1,13 @@
 # TUSA Growth Operating System
 
-> **Version:** 1.0
+> **Version:** 1.1
+> **Updated:** 19.07.2026
+> **Status:** Target operating system. Shipped/gap/pre-implementation claims are governed by `docs/IMPLEMENTATION_STATUS_2026-07-19.md`.
 > **Scope:** Full-stack product, growth, SEO/GEO/AEO, engineering, and operational reference for TUSA.game
 > **Audience:** Engineering, Product, Design, Marketing, Content, Executive
 > **License:** Internal — TUSA Inc.
+
+> **Release note:** 32 modes and 32 SDK definitions exist, but all remain Beta and certified = 0. Venue Night, payments, subscriptions, partner inventory, white-label and marketplace are pre-implementation. Traffic/revenue forecasts and competitor metrics are planning hypotheses unless linked to measured first-party data. SEO plans must not use timed auto-redirects or doorway pages.
 
 ---
 
@@ -2498,7 +2502,7 @@ tusa/
 ├── app/
 │   ├── api/                       # API routes
 │   ├── components/
-│   │   ├── games/                 # 28 game components
+│   │   ├── games/                 # 32 canonical modes plus shared/wrapper components
 │   │   └── ...                    # Shared components
 │   ├── party/[inviteCode]/        # Party room
 │   ├── join/[inviteCode]/         # Pre-join

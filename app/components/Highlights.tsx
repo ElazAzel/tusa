@@ -9,15 +9,22 @@ export default function Highlights({ partyId }: { partyId: string }) {
   const { t } = useLocale();
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const load = useCallback(() => {
-    fetch(`/api/highlights?partyId=${partyId}`).then((r) => r.json()).then((data) => setHighlights(Array.isArray(data) ? data : [])).catch(() => {}).finally(() => setLoading(false));
+    fetch(`/api/highlights?partyId=${partyId}`).then(async (r) => {
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "Could not load highlights.");
+      setHighlights(Array.isArray(data.highlights) ? data.highlights : []);
+      setError("");
+    }).catch((cause) => setError(cause instanceof Error ? cause.message : "Could not load highlights.")).finally(() => setLoading(false));
   }, [partyId]);
 
   useEffect(() => { load(); }, [load]);
 
   const remove = useCallback(async (id: string) => {
-    await fetch(`/api/highlights?id=${id}`, { method: "DELETE" });
+    const response = await fetch(`/api/highlights?id=${id}`, { method: "DELETE" });
+    if (!response.ok) return;
     setHighlights((prev) => prev.filter((h) => h.id !== id));
   }, []);
 
@@ -26,11 +33,12 @@ export default function Highlights({ partyId }: { partyId: string }) {
 
   if (loading) return <div className="party-game-board"><p style={{ color: "var(--gray)" }}>Loading...</p></div>;
 
-  return <div className="party-game-board game-board-enter">
+  return <div className="party-feature-surface game-board-enter">
     <span className="game-step">{t("highlightTitle")}</span>
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
-      {highlights.length === 0 && <p style={{ color: "var(--gray)", textAlign: "center", padding: 20 }}>{t("highlightEmpty")}</p>}
-      {highlights.map((h) => <div key={h.id} style={{ background: "var(--dark)", borderRadius: 8, padding: 10, display: "flex", alignItems: "center", gap: 10 }}>
+    {error && <p className="feature-error" role="alert">{error}</p>}
+    <div className="party-feature-list">
+      {!error && highlights.length === 0 && <div className="party-feature-empty"><span className="material-symbols-rounded">photo_library</span><strong>{t("highlightEmpty")}</strong></div>}
+      {highlights.map((h) => <div className="party-feature-item" key={h.id}>
         <span className="material-symbols-rounded" style={{ color: "var(--lime)", fontSize: 28 }}>{typeIcon[h.type] || "emoji_events"}</span>
         <div style={{ flex: 1 }}>
           <p style={{ fontWeight: 700 }}>{h.displayName || h.userId.slice(0, 8)}</p>

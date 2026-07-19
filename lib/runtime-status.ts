@@ -37,8 +37,12 @@ export function hasUpstashConfiguration() {
   return configured(process.env.UPSTASH_REDIS_REST_URL) && configured(process.env.UPSTASH_REDIS_REST_TOKEN);
 }
 
+export function hasDatabaseTransport() {
+  return configured(process.env.DATABASE_URL);
+}
+
 export function realtimeTransportAvailable() {
-  return hasAblyConfiguration() || !requiresDistributedServices();
+  return hasAblyConfiguration() || hasDatabaseTransport() || !requiresDistributedServices();
 }
 
 export function getRuntimeStatus(): RuntimeStatus {
@@ -49,8 +53,8 @@ export function getRuntimeStatus(): RuntimeStatus {
     : "missing";
   const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
   const clerk = clerkKey?.startsWith("pk_live_") ? "live" : clerkKey ? "development" : "unconfigured";
-  const realtime = hasAblyConfiguration() ? "ready" : strictDistributedServices ? "missing" : "fallback";
-  const rateLimit = hasUpstashConfiguration() ? "ready" : strictDistributedServices ? "missing" : "fallback";
+  const realtime = hasAblyConfiguration() || hasDatabaseTransport() ? "ready" : strictDistributedServices ? "missing" : "fallback";
+  const rateLimit = hasUpstashConfiguration() || hasDatabaseTransport() ? "ready" : strictDistributedServices ? "missing" : "fallback";
   const media = configured(process.env.BLOB_READ_WRITE_TOKEN) ? "ready" : "fallback";
   const observability = configured(process.env.SENTRY_DSN) || configured(process.env.NEXT_PUBLIC_SENTRY_DSN) ? "ready" : "fallback";
   const blocked = database === "missing" || localAuth === "missing" || realtime === "missing" || rateLimit === "missing";

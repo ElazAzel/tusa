@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 
 function normalize(value: string) {
@@ -13,10 +13,20 @@ export default function ShoppingList({ partyId, members = [], canManage = false 
   const { t } = useLocale();
   const [items, setItems] = useState<Array<{ id: string; text: string; quantity: number; unit: string; buyerId: string; buyerName: string; price: number; purchased: boolean }>>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadItems = useCallback(() => {
+    fetch(`/api/shopping?partyId=${partyId}`).then(async (response) => {
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Shopping list error.");
+      setItems(Array.isArray(data.items) ? data.items : []);
+      setError("");
+    }).catch((cause) => setError(cause instanceof Error ? cause.message : "Shopping list error.")).finally(() => setLoading(false));
+  }, [partyId]);
 
   useEffect(() => {
-    fetch(`/api/shopping?partyId=${partyId}`).then((r) => r.json()).then((data) => { if (data.items) setItems(data.items); setLoading(false); }).catch(() => setLoading(false));
-  }, [partyId]);
+    loadItems();
+  }, [loadItems]);
 
   function addItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,10 +47,6 @@ export default function ShoppingList({ partyId, members = [], canManage = false 
     }
     fetch("/api/shopping", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add", partyId, text, quantity, unit }) })
       .then(() => { loadItems(); formElement.reset(); });
-  }
-
-  function loadItems() {
-    fetch(`/api/shopping?partyId=${partyId}`).then((r) => r.json()).then((data) => { if (data.items) setItems(data.items); });
   }
 
   function toggle(itemId: string, purchased: boolean) {
@@ -74,6 +80,7 @@ export default function ShoppingList({ partyId, members = [], canManage = false 
       <label className="brand-select"><span>{t("shoppingUnit")}</span><select name="unit"><option>шт.</option><option>пак.</option><option>бут.</option><option>кг</option><option>л</option></select></label>
       <button type="submit"><span className="material-symbols-rounded">add</span> {t("shoppingAddBtn")}</button>
     </form>
+    {error && <p className="feature-error" role="alert">{error}</p>}
     <div className="shopping-list shopping-list--detailed">
       {items.map((item) => (
         <article className={item.purchased ? "done" : ""} key={item.id}>
@@ -81,11 +88,11 @@ export default function ShoppingList({ partyId, members = [], canManage = false 
             <span className="material-symbols-rounded">check</span>
           </button>
           <div className="shopping-item-main"><strong>{item.text}</strong><span>{item.quantity} {item.unit}</span></div>
-          <div className="shopping-buyer"><span className="shopping-buyer-label">{item.buyerName}</span>
-            {canManage && <details><summary aria-label={t("shoppingBuyer")}><span className="material-symbols-rounded">person_edit</span></summary><div className="shopping-assignees">{members.map((member) => <button className={item.buyerId === member.clerkUserId ? "is-active" : ""} key={member.clerkUserId} onClick={() => assignBuyer(item.id, member.clerkUserId)} type="button">{member.displayName}</button>)}</div></details>}
+          <div className="shopping-buyer"><span className="shopping-buyer-label">{t("shoppingBuyer")}</span>
+            {canManage ? <select aria-label={t("shoppingBuyer")} value={item.buyerId} onChange={(event) => assignBuyer(item.id, event.target.value)}>{members.map((member) => <option key={member.clerkUserId} value={member.clerkUserId}>{member.displayName}</option>)}</select> : <strong>{item.buyerName}</strong>}
           </div>
           <label><span>{t("shoppingSum")}</span>
-            <input aria-label={t("shoppingCost")} min="0" step="100" type="number" value={item.price || ""} onChange={(e) => setPrice(item.id, Number(e.target.value))} />
+            <input aria-label={t("shoppingCost")} min="0" step="100" type="number" defaultValue={item.price || ""} onBlur={(e) => setPrice(item.id, Number(e.target.value))} />
           </label>
           <button className="shopping-remove" onClick={() => remove(item.id)} type="button"><span className="material-symbols-rounded">delete</span></button>
         </article>

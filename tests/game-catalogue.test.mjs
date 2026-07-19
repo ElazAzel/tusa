@@ -16,3 +16,8 @@ test("manifest distinguishes full games from quick tools", () => {
   assert.match(manifest, /category: "quick_tool"/);
   assert.match(manifest, /releaseStatus: "beta"/);
 });
+
+test("core eight are pinned in certification priority order", () => {
+  assert.match(manifest, /CORE_GAME_IDS = \["impostor", "alias", "trivia", "bombParty", "quiplash", "fibbage", "wouldRather", "twoTruths"\]/);
+  assert.match(manifest, /certificationOwner: "games"/);
+});

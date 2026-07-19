@@ -1,9 +1,11 @@
 CREATE EXTENSION IF NOT EXISTS vector;
+--> statement-breakpoint
 
 DO $$ BEGIN
   CREATE TYPE knowledge_visibility AS ENUM ('public', 'admin', 'engineering');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS knowledge_documents (
   id UUID PRIMARY KEY, locale TEXT NOT NULL, visibility knowledge_visibility NOT NULL,
@@ -11,6 +13,7 @@ CREATE TABLE IF NOT EXISTS knowledge_documents (
   version TEXT NOT NULL, checksum TEXT NOT NULL, metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS knowledge_chunks (
   id UUID PRIMARY KEY, document_id UUID NOT NULL REFERENCES knowledge_documents(id) ON DELETE CASCADE,
@@ -18,22 +21,28 @@ CREATE TABLE IF NOT EXISTS knowledge_chunks (
   search_text TEXT NOT NULL, embedding vector(1536), metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   UNIQUE(document_id, position)
 );
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS rag_jobs (
   id UUID PRIMARY KEY, status TEXT NOT NULL, visibility knowledge_visibility NOT NULL,
   stats JSONB NOT NULL DEFAULT '{}'::jsonb, error TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), completed_at TIMESTAMPTZ
 );
+--> statement-breakpoint
 
 CREATE INDEX IF NOT EXISTS knowledge_documents_visibility_locale_idx ON knowledge_documents(visibility, locale);
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS knowledge_chunks_document_idx ON knowledge_chunks(document_id);
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS knowledge_chunks_search_idx ON knowledge_chunks USING GIN (to_tsvector('simple', search_text));
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS knowledge_chunks_embedding_idx ON knowledge_chunks USING hnsw (embedding vector_cosine_ops);
+--> statement-breakpoint
 
 DO $$ BEGIN
   IF to_regclass('public.party_members') IS NOT NULL THEN
     CREATE INDEX IF NOT EXISTS party_members_party_user_idx ON party_members(party_id, clerk_user_id);
-    CREATE INDEX IF NOT EXISTS party_members_user_created_idx ON party_members(clerk_user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS party_members_user_joined_idx ON party_members(clerk_user_id, joined_at DESC);
   END IF;
   IF to_regclass('public.game_sessions') IS NOT NULL THEN
     CREATE INDEX IF NOT EXISTS game_sessions_party_status_created_idx ON game_sessions(party_id, status, created_at DESC);

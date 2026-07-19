@@ -1,5 +1,7 @@
 # Production environment and distributed runtime
 
+> **Актуализировано: 19.07.2026 · Baseline: `main@0356f6d`.** Этот runbook задаёт production gate, а не подтверждает наличие credentials. Активный production build использует local auth compatibility layer; Clerk остаётся возможным целевым решением, пока не выбран единый provider.
+
 This runbook records the production configuration that cannot be safely invented in source code. Values are added as **sensitive** Vercel environment variables; the application reports their state through `/admin/system` but never returns values.
 
 ## Required before strict production mode

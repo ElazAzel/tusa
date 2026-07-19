@@ -1,6 +1,8 @@
 # TUSA.game — AI Context & Orchestration Hub
 
-> Multiplayer party platform · Next.js 16 · React 19 · TypeScript · Clerk · Neon Postgres · SSE realtime · 53 routes · 32 games · 32 modes
+> Updated 19.07.2026 · Public beta 8.2/10 · Next.js 16 · React 19 · TypeScript · local account compatibility layer + HMAC guests · Neon Postgres · SSE/Ably/Neon fallback · 50+ route handlers · 32 Beta modes · certified = 0
+
+> Current source of truth: `docs/IMPLEMENTATION_STATUS_2026-07-19.md`. Documentation precedence and shipped/gap/target/pre-implementation semantics: `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md`.
 
 ---
 
@@ -10,7 +12,7 @@
 npm install          # dependencies
 npm run dev          # dev server (localhost:3000)
 npm run build        # production build
-npm test             # 29 tests (must pass before commit)
+npm test             # 56 unit/contract/platform tests (must pass before commit)
 npm run lint         # 0 errors required
 npm run rag:build    # rebuild RAG index after changes
 ```
@@ -20,26 +22,26 @@ npm run rag:build    # rebuild RAG index after changes
 ## Architecture (TL;DR)
 
 ```
-proxy.ts             ← Clerk auth + i18n routing (middleware)
+proxy.ts             ← local account compatibility + guest auth + i18n routing
 next.config.ts        ← CSP + security headers
 lib/
-  live.ts             ← SSE event bus (Ably prod / in-memory dev)
-  parties.ts          ← All DB functions (raw SQL via @neondatabase/serverless)
+  live.ts             ← SSE event bus (Ably / Neon distributed fallback / in-memory dev)
+  parties.ts          ← All DB functions (raw SQL + strict schema version gate)
   games/engine.ts     ← Monolithic server game reducer (legacy, 560 lines)
   games/sdk.ts        ← Game SDK registry (definitions dispatch)
   games/definition.ts ← GameDefinition<TState> type system
-  games/definitions/  ← Individual game definitions (12 migrated; remaining migration tracked in readiness audit)
+  games/definitions/  ← 32 registered SDK definitions (all catalogue modes)
   games/commands.ts   ← Zod validation schemas + SDK dispatch
   games/scoring.ts    ← Server-only score derivation
   i18n.ts             ← 32 modes × RU/EN UI strings
   audio.ts            ← Web Audio API sound effects
   confetti.ts         ← Canvas confetti
-  rag/                ← RAG indexing + TF-IDF search (911 chunks)
-  rate-limit.ts       ← Throttle (Upstash Redis prod / in-memory dev)
+  rag/                ← RAG indexing + TF-IDF search
+  rate-limit.ts       ← Throttle (Upstash / Neon distributed fallback / in-memory dev)
   guest-session.ts    ← HMAC guest auth (import "server-only")
 app/
   api/games/route.ts  ← Game sessions + player actions + SSE publish + version locking
-  api/chat/route.ts   ← Chat with retry + idempotency
+  api/chat/route.ts   ← Chat with retry + idempotency + moderation filtering
   api/live/route.ts   ← SSE streaming endpoint
   components/
     useStageGame.ts   ← Stage hook (processes playerActions, restores state from DB)
@@ -85,7 +87,7 @@ app/globals.css       ← ~3980 lines brand CSS, brutal design, mobile-first
 
 ### RAG index structure
 
-- **911 chunks** across 9 types: `docs`, `component`, `utility`, `game`, `route`, `css`, `hook`, `config`, `type`
+- **849 chunks** across 9 types: `docs`, `component`, `utility`, `route`, `css`, `game`, `hook`, `config`, `type` (built 19.07.2026)
 - Index stored at `.rag/index.json` (~6 MB, auto-generated, gitignored)
 - **Always rebuild after changes**: `npm run rag:build`
 
@@ -126,7 +128,7 @@ export default function Game({ partyId, sessionId, onSave, role }:
 ### Testing
 
 ```bash
-npm test             # 29 tests (game engine, routes, security)
+npm test             # 49 tests: game engine, contracts, routes and security
 npm run test:e2e     # Playwright E2E (requires install)
 ```
 
@@ -190,13 +192,14 @@ npm run test:e2e     # Playwright E2E (requires install)
 
 | Doc | Location | Purpose |
 |---|---|---|
-| 👑 Production Readiness | `docs/PRODUCTION_READINESS_AUDIT.md` | 32-game certification matrix, infrastructure audit, security posture |
-| 🧭 Current Implementation Status | `docs/IMPLEMENTATION_STATUS_2026-07-16.md` | Current git/doc/production checkpoint and next implementation order |
-| 📈 Growth OS | `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` | Full SEO/GEO/AEO strategy, 18 sections |
-| ✅ Platform Audit | `docs/PLATFORM_AUDIT.md` | Platform completion vs style guide + PRD |
-| 🎯 Master Plan (RU) | `docs/PLAN.md` | 807-line general plan for full readiness |
-| 💰 Monetization | `docs/TUSA_io_Партнёрства_реклама_монетизация.md` | Partnerships, ads, monetization strategy |
-| 🌍 Global Platform | `docs/GLOBAL_SOCIAL_GAMING_PLATFORM_2.0.md` | Strategic proposal |
+| Documentation Governance | `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md` | Source precedence and status semantics |
+| Current Implementation Status | `docs/IMPLEMENTATION_STATUS_2026-07-19.md` | Current git/doc/production checkpoint and execution order |
+| Production Readiness | `docs/PRODUCTION_READINESS_AUDIT.md` | Certification gates, infrastructure audit, security posture |
+| Growth OS | `docs/TUSA_GROWTH_OPERATING_SYSTEM.md` | Target SEO/GEO/AEO strategy, 18 sections |
+| Platform Audit | `docs/PLATFORM_AUDIT.md` | Current platform completion and release blockers |
+| Master Plan (RU) | `docs/PLAN.md` | Target plan for full readiness |
+| Monetization | `docs/TUSA_io_Партнёрства_реклама_монетизация.md` | Pre-implementation partnerships, ads and monetization model |
+| Global Platform | `docs/GLOBAL_SOCIAL_GAMING_PLATFORM_2.0.md` | Target strategic proposal |
 
 ---
 
@@ -215,8 +218,8 @@ Load a skill with `opencode use-skill <name>` (or equivalent in your AI tool).
 ## Environment
 
 - **DB**: Neon Postgres via `@neondatabase/serverless` (28 tables, raw SQL + Drizzle)
-- **Auth**: Clerk (user accounts) + HMAC guest sessions
+- **Auth**: local email/password compatibility layer for accounts + HMAC guest sessions; final provider decision is P0
 - **Realtime**: Ably (production) / SSE in-memory fallback
 - **Rate limiting**: Upstash Redis (production) / in-memory fallback
-- **Deployment**: Vercel (53 routes, 0 build errors)
+- **Deployment**: Vercel; 46 route handler files at the 19.07.2026 baseline
 - **CI**: GitHub Actions (typecheck → lint → test → build → audit → e2e)

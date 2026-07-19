@@ -50,6 +50,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
   const { t, locale } = useLocale();
   const unlocked = profile.cosmetics.unlocked;
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [frameSaving, setFrameSaving] = useState("");
 
   useEffect(() => {
     fetch("/api/user/stats").then((r) => r.json()).then((d) => { if (d.stats) setGameStats(d.stats); }).catch(() => undefined);
@@ -125,6 +126,14 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
     }
   }
 
+  async function selectFrame(frame: string) {
+    if (frameSaving || frame === profile.cosmetics.avatarFrame) return;
+    haptic();
+    setFrameSaving(frame);
+    try { await handleCosmeticsSave({ avatarFrame: frame }); }
+    catch { setFrameSaving(""); }
+  }
+
   return (
     <main className="profile-editor-page">
       <ProductHeader backHref="/app" backLabel={t("backToParties")} />
@@ -133,7 +142,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
         <div>
           {/* ── Hero ── */}
           <div className={`profile-hero profile-cover-${profile.cosmetics.cover}`}>
-            <div className={`profile-avatar frame-${profile.cosmetics.avatarFrame !== "none" ? profile.cosmetics.avatarFrame : "lime"}`}>
+            <div className={`profile-avatar frame-${profile.cosmetics.avatarFrame}`}>
               {avatarUrl ? <img className="profile-avatar-image" src={avatarUrl} alt="" /> : profile.displayName.slice(0, 2).toUpperCase()}
             </div>
             <div>
@@ -188,14 +197,15 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
                 {(["none", "lime", "pink", "blue", "neon"] as const).map((frame) => {
                   const fs = frameStyles[frame];
                   const active = profile.cosmetics.avatarFrame === frame;
-                  const locked = frame !== "none" && frame !== "lime" && frame !== "pink" && frame !== "blue" && !unlocked.includes("avatar_frame");
+                  const locked = frame !== "none" && !unlocked.includes("avatar_frame");
                   return (
                     <button
                       key={frame}
                       type="button"
                       aria-label={t(frame === "none" ? "profileNoFrame" : `profileFrame${frame.charAt(0).toUpperCase() + frame.slice(1)}` as never)}
                       className={`frame-option ${active ? "active" : ""} ${locked ? "locked" : ""}`}
-                      onClick={() => haptic()}
+                      onClick={() => { if (!locked) void selectFrame(frame); }}
+                      disabled={locked || Boolean(frameSaving)}
                       style={{
                         borderColor: active ? fs.border : "transparent",
                         boxShadow: active ? fs.shadow : "none",
@@ -204,6 +214,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
                       <span className="frame-ring" style={{ borderColor: fs.border }} />
                       <span className="frame-label">{fs.label}</span>
                       {locked && <Icon name="lock" />}
+                      {frameSaving === frame && <Icon name="progress_activity" />}
                     </button>
                   );
                 })}
@@ -266,7 +277,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
           {/* ── Profile editor form ── */}
           <section className="profile-editor-card">
             <form onSubmit={submit}>
-              <label className="avatar-upload"><span className={`profile-avatar frame-${profile.cosmetics.avatarFrame !== "none" ? profile.cosmetics.avatarFrame : "lime"}`} style={{ width: 82, height: 82, fontSize: 24 }}>{avatarUrl ? <img className="profile-avatar-image" src={avatarUrl} alt="" /> : profile.displayName.slice(0, 2).toUpperCase()}</span><input accept="image/*" aria-label="Загрузить аватар" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAvatar(file); }} type="file" /><b>Загрузить аватар</b></label>{avatarError && <p className="form-error">{avatarError}</p>}
+              <label className="avatar-upload"><span className={`profile-avatar frame-${profile.cosmetics.avatarFrame}`} style={{ width: 82, height: 82, fontSize: 24 }}>{avatarUrl ? <img className="profile-avatar-image" src={avatarUrl} alt="" /> : profile.displayName.slice(0, 2).toUpperCase()}</span><input accept="image/*" aria-label="Загрузить аватар" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAvatar(file); }} type="file" /><b>Загрузить аватар</b></label>{avatarError && <p className="form-error">{avatarError}</p>}
               <h1>{t("profileTitle")}</h1>
 
               <label>{t("profileName")}

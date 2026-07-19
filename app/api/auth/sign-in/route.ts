@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const user = await signIn({ email: String(body.email ?? ""), password: String(body.password ?? "") });
     const response = NextResponse.json({ user });
-    const cookie = sessionCookie(user.id);
+    const cookie = await sessionCookie(user.id);
     response.cookies.set(cookie.name, cookie.value, cookie.options);
     return response;
   } catch (error) {

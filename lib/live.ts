@@ -1,12 +1,19 @@
 import { randomUUID } from "node:crypto";
 import * as Ably from "ably";
-import { hasAblyConfiguration, realtimeTransportAvailable } from "@/lib/runtime-status";
+import { neon } from "@neondatabase/serverless";
+import { hasAblyConfiguration, hasDatabaseTransport, realtimeTransportAvailable } from "@/lib/runtime-status";
 
 type Listener = (data: unknown) => void;
 const localChannels = new Map<string, Set<Listener>>();
 let restClient: Ably.Rest | null = null;
+let eventDatabase: ReturnType<typeof neon> | null = null;
 
 function getAblyKey() { return hasAblyConfiguration() ? process.env.ABLY_API_KEY!.trim() : null; }
+function getEventDatabase() {
+  if (!hasDatabaseTransport()) return null;
+  if (!eventDatabase) eventDatabase = neon(process.env.DATABASE_URL!);
+  return eventDatabase;
+}
 
 export function isRealtimeTransportAvailable() {
   return realtimeTransportAvailable();
@@ -60,6 +67,13 @@ export function publish(channel: string, data: unknown) {
     });
     return;
   }
+  const sql = getEventDatabase();
+  if (sql) {
+    void sql`INSERT INTO live_events (id, channel, payload) VALUES (${String(event.eventId)}::uuid, ${channel}, ${JSON.stringify(event)}::jsonb)`.catch((error) => {
+      console.error("[realtime] database publish failed", { channel, error: error instanceof Error ? error.message : String(error) });
+    });
+    return;
+  }
   const listeners = localChannels.get(channel);
   if (listeners) for (const listener of listeners) listener(event);
 }
@@ -82,6 +96,7 @@ export async function* generateEvents(channelName: string, lastEventId?: string)
   const key = getAblyKey();
   let unsubscribe: () => void = () => {};
   let realtime: Ably.Realtime | null = null;
+  const eventSql = getEventDatabase();
 
   if (key) {
     realtime = new Ably.Realtime({ key, clientId: `tusa-sse-${randomUUID()}`, echoMessages: false });
@@ -89,8 +104,31 @@ export async function* generateEvents(channelName: string, lastEventId?: string)
     const messageListener = (message: Ably.InboundMessage) => listener(message.data);
     await channel.subscribe("tusa:event", messageListener);
     unsubscribe = () => channel.unsubscribe("tusa:event", messageListener);
-  } else {
+  } else if (!eventSql) {
     unsubscribe = subscribeLocal(channelName, listener);
+  }
+
+  if (!key && eventSql) {
+    let cursor = new Date(Date.now() - 2_000).toISOString();
+    const seen = new Set<string>(lastEventId ? [lastEventId] : []);
+    let idleTicks = 0;
+    while (true) {
+      const rows = await eventSql`SELECT id, payload, created_at FROM live_events
+        WHERE channel = ${channelName} AND created_at >= ${cursor}::timestamptz
+        ORDER BY created_at ASC, id ASC LIMIT 200` as unknown as Array<{ id: string; payload: unknown; created_at: string | Date }>;
+      let emitted = false;
+      for (const row of rows) {
+        cursor = new Date(row.created_at).toISOString();
+        if (seen.has(row.id)) continue;
+        seen.add(row.id);
+        emitted = true;
+        yield `id: ${row.id}\ndata: ${JSON.stringify(row.payload)}\n\n`;
+      }
+      if (seen.size > 500) seen.clear();
+      idleTicks = emitted ? 0 : idleTicks + 1;
+      if (idleTicks >= 15) { idleTicks = 0; yield `: ping\n\n`; }
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
   }
 
   void lastEventId;

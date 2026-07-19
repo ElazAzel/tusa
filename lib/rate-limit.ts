@@ -1,9 +1,17 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { neon } from "@neondatabase/serverless";
 
 const hits = new Map<string, { count: number; resetAt: number }>();
 
 const distributedLimiters = new Map<string, Ratelimit>();
+let databaseClient: ReturnType<typeof neon> | null = null;
+
+function getDatabaseClient() {
+  if (!process.env.DATABASE_URL) return null;
+  if (!databaseClient) databaseClient = neon(process.env.DATABASE_URL);
+  return databaseClient;
+}
 
 function getDistributedLimiter(max: number, windowMs: number) {
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null;
@@ -32,9 +40,22 @@ export function rateLimit(key: string, max: number = 60, windowMs: number = 6000
 
 export async function distributedRateLimit(key: string, max: number = 60, windowMs: number = 60000) {
   const limiter = getDistributedLimiter(max, windowMs);
-  if (!limiter) return { ...rateLimit(key, max, windowMs), backend: "local" as const };
-  const result = await limiter.limit(key);
-  return { allowed: result.success, remaining: result.remaining, resetAt: result.reset, backend: "upstash" as const };
+  if (limiter) {
+    const result = await limiter.limit(key);
+    return { allowed: result.success, remaining: result.remaining, resetAt: result.reset, backend: "upstash" as const };
+  }
+  const sql = getDatabaseClient();
+  if (sql) {
+    const windowStart = new Date(Math.floor(Date.now() / windowMs) * windowMs).toISOString();
+    const expiresAt = new Date(Math.floor(Date.now() / windowMs) * windowMs + windowMs * 2).toISOString();
+    const [row] = await sql`INSERT INTO rate_limit_windows (key, window_start, count, expires_at)
+      VALUES (${key.slice(0, 300)}, ${windowStart}, 1, ${expiresAt})
+      ON CONFLICT (key, window_start) DO UPDATE SET count = rate_limit_windows.count + 1
+      RETURNING count` as unknown as { count: number }[];
+    const count = Number(row?.count ?? max + 1);
+    return { allowed: count <= max, remaining: Math.max(0, max - count), resetAt: new Date(windowStart).getTime() + windowMs, backend: "database" as const };
+  }
+  return { ...rateLimit(key, max, windowMs), backend: "local" as const };
 }
 
 export function getClientIp(headers: Headers) {

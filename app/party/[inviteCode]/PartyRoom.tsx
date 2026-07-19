@@ -8,6 +8,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Party, PartyRole, RsvpStatus, GameSession, ChatMessage, GameScore } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleToggle from "@/app/components/LocaleToggle";
+import BrandLogo from "@/app/components/BrandLogo";
 import { useLiveStream } from "@/app/components/useLiveStream";
 import { useGameRole } from "@/app/components/useGameRole";
 const AliasGame = dynamic(() => import("@/app/components/games/AliasGame"));
@@ -58,6 +59,7 @@ import { tusaStickers } from "@/app/components/chat/stickers";
 import { eventDateInputValue, formatEventDate } from "@/lib/event-format";
 import EventDateTimeFields from "@/app/components/EventDateTimeFields";
 import { soundChat } from "@/lib/audio";
+import ReportContentButton from "@/app/components/ReportContentButton";
 
 import { GAME_MANIFEST, formatPlayerRange, isGameId, type GameId } from "@/lib/games/manifest";
 
@@ -75,6 +77,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   const [editing, setEditing] = useState(false);
   const [rsvp, setRsvp] = useState(party.myRsvp || "going");
   const [error, setError] = useState("");
+  const [shellNotice, setShellNotice] = useState("");
   const [qrUrl, setQrUrl] = useState("");
   const [gameSession, setGameSession] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<GameId | null>(null);
@@ -199,14 +202,25 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
     if (sent) setMessage("");
   }
 
-  function sendVoice(blob: Blob) {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      await submitChat({ type: "voice", voiceUrl: reader.result as string });
-    };
-    reader.onerror = () => setChatError(t("chatSendFailed"));
-    reader.readAsDataURL(blob);
-    setShowVoice(false);
+  async function sendVoice(blob: Blob) {
+    setChatSending(true);
+    setChatError("");
+    try {
+      const form = new FormData();
+      form.set("partyId", party.id);
+      form.set("kind", "voice");
+      form.set("consent", "true");
+      form.set("file", new File([blob], `voice-${Date.now()}.webm`, { type: blob.type || "audio/webm" }));
+      const response = await fetch("/api/media", { method: "POST", body: form });
+      const upload = await response.json().catch(() => ({}));
+      if (!response.ok || !upload.media?.url) throw new Error(upload.error || "Upload failed");
+      await submitChat({ type: "voice", voiceUrl: upload.media.url });
+      setShowVoice(false);
+    } catch {
+      setChatError(t("chatSendFailed"));
+    } finally {
+      setChatSending(false);
+    }
   }
 
   async function sendSticker(stickerId: string) {
@@ -398,44 +412,84 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
     return <section className={`party-room-panel ${gameRole === "spectator" ? "is-spectating" : ""}`}><div className="active-game-head"><button onClick={backToCatalogue} type="button"><span className="material-symbols-rounded">arrow_back</span> {t("gamesBack")}</button><div><span>{t("gamesMode")}</span><h2>{game ? t(game.titleKey) : ""}</h2></div><span className="demo-chip">{game ? formatPlayerRange(game) : ""}{t("gamesPlayers")}</span></div>{gameRole === "spectator" && <div className="spectator-banner"><span className="material-symbols-rounded">visibility</span><strong>{t("spectating")}</strong></div>}<div className="spectator-board">{board}</div></section>;
   }
 
-  return <main className={`party-room ${party.adultOnly ? "party-room--adult" : "party-room--family"}`}>
+  const shellNav: Array<{ id: "space" | "games" | "shop" | "gallery" | "chat" | "koins" | "more"; icon: string; label: string }> = [
+    { id: "space", icon: "home", label: t("demoNavHome") },
+    { id: "games", icon: "sports_esports", label: t("demoNavGames") },
+    { id: "shop", icon: "checklist", label: t("demoNavShopping") },
+    { id: "gallery", icon: "photo_camera", label: t("demoNavGallery") },
+    { id: "chat", icon: "chat_bubble", label: t("demoNavChat") },
+    { id: "koins", icon: "toll", label: t("demoNavKoins") },
+    { id: "more", icon: "more_horiz", label: t("moreTab") },
+  ];
+
+  function openShellSection(id: (typeof shellNav)[number]["id"]) {
+    if (id === "more") { setMoreOpen(true); return; }
+    setMoreOpen(false);
+    setTab(id);
+  }
+
+  function notifyShell(messageText: string) {
+    setShellNotice(messageText);
+    window.setTimeout(() => setShellNotice(""), 1800);
+  }
+
+  async function copyPartyInvite() {
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      notifyShell(locale === "ru" ? "Ссылка скопирована" : "Link copied");
+    } catch {
+      window.prompt(locale === "ru" ? "Скопируй ссылку" : "Copy this link", inviteUrl);
+    }
+  }
+
+  async function sharePartyInvite() {
+    if (navigator.share) {
+      await navigator.share({ title: party.title, text: party.description || party.title, url: inviteUrl }).catch(() => undefined);
+      return;
+    }
+    await copyPartyInvite();
+  }
+
+  return <main className={`demo-shell live-party-shell party-room ${party.adultOnly ? "party-room--adult" : "party-room--family"}`}>
     {((liveChat.hasConnectedOnce && !liveChat.connected) || (liveParty.hasConnectedOnce && !liveParty.connected)) && <div className="connection-banner connection-banner--offline">
       <span className="material-symbols-rounded">cloud_off</span>
       {locale === "ru" ? "Нет соединения. Переподключение…" : "Connection lost. Reconnecting…"}
     </div>}
 
-    <header className="party-room-header">
-      <Link href="/app">{t("backToParties")}</Link>
-      <strong>{party.title}</strong>
-      <div><LocaleToggle /><span>{party.memberCount} {t("roomInside")}</span></div>
-    </header>
+    <aside className="demo-rail live-party-rail">
+      <Link className="demo-logo" href="/app" aria-label={t("backToParties")}><BrandLogo priority /><BrandLogo compact className="demo-logo-icon" /></Link>
+      <nav className="demo-nav" aria-label={t("roomSpace")}>
+        {shellNav.map((item) => <button aria-label={item.label} aria-current={(item.id === tab || (item.id === "more" && moreOpen)) ? "page" : undefined} className={(item.id === tab || (item.id === "more" && moreOpen)) ? "active" : ""} key={item.id} onClick={() => openShellSection(item.id)} type="button"><span className="material-symbols-rounded" aria-hidden="true">{item.icon}</span><span>{item.label}</span>{item.id === "chat" && unreadMessages > 0 && <i>{unreadMessages}</i>}</button>)}
+      </nav>
+      <Link className="live-party-back" href="/app"><span className="material-symbols-rounded">arrow_back</span>{t("backToParties")}</Link>
+    </aside>
 
-    <section className="party-room-hero">
-      <span>{party.adultOnly ? t("roomAdult") : t("roomFamily")}</span>
-      <h1>{party.title}</h1>
-      <p>{formatEventDate(party.date, locale)} · {party.time} · {party.venue}</p>
-      <div className="party-room-rsvp">
-        <b>{t("eventHubGoing")}: {rsvpCounts.going}</b>
-        <b>{t("eventHubThinkingCount")}: {rsvpCounts.maybe}</b>
-      </div>
-      <div className="party-room-rsvp-toggle">
-        {["going", "maybe", "pass"].map((status) => (
-          <button className={rsvp === status ? "active" : ""} key={status} onClick={() => updateRsvp(status as RsvpStatus)} type="button">
-            {status === "going" ? "Точно иду" : status === "maybe" ? "Думаю" : "Не иду"}
-          </button>
-        ))}
-      </div>
-      <div className="party-bottom-nav">
-        <button onClick={() => setTab("space")} className={tab === "space" ? "active" : ""} type="button"><span className="material-symbols-rounded">home</span>{t("roomSpace")}</button>
-        <button onClick={() => setTab("games")} className={tab === "games" ? "active" : ""} type="button"><span className="material-symbols-rounded">sports_esports</span>{t("roomGames")}</button>
-        <button onClick={() => setTab("chat")} className={tab === "chat" ? "active" : ""} type="button"><span className="material-symbols-rounded">chat</span>{t("roomChat")}</button>
-        <button onClick={() => setTab("shop")} className={tab === "shop" ? "active" : ""} type="button"><span className="material-symbols-rounded">shopping_cart</span>{t("shoppingSub")}</button>
-        <button onClick={() => setMoreOpen(true)} className={moreOpen ? "active" : ""} type="button"><span className="material-symbols-rounded">more_horiz</span>{t("moreTab")}</button>
-      </div>
-    </section>
+    <section className="demo-workspace live-party-workspace">
+      <header className="demo-topbar live-party-topbar">
+        <div className="topbar-event-copy"><p>{locale === "ru" ? "ТУСА ОТКРЫТА · LIVE" : "PARTY OPEN · LIVE"}</p><h1>{party.title}</h1></div>
+        <div className="demo-top-actions">
+          <LocaleToggle />
+          <button className="demo-icon-button" onClick={() => void copyPartyInvite()} type="button" aria-label={locale === "ru" ? "Скопировать ссылку" : "Copy link"}><span className="material-symbols-rounded">content_copy</span></button>
+          <button className="demo-action demo-action--lime" onClick={() => void sharePartyInvite()} type="button"><span className="material-symbols-rounded">ios_share</span>{t("roomInvite")}</button>
+        </div>
+      </header>
+
+      <div className="demo-content live-party-content" key={tab}>
+        {tab === "space" && <section className="demo-hero-card live-party-hero">
+          <div>
+            <span className="demo-kicker">{party.adultOnly ? t("roomAdult") : t("roomFamily")}</span>
+            <h2>{party.title}</h2>
+            <p><span className="material-symbols-rounded">calendar_month</span>{formatEventDate(party.date, locale)} · {party.time}</p>
+            <p><span className="material-symbols-rounded">location_on</span>{party.venue}</p>
+            <div className="party-room-rsvp-toggle">
+              {["going", "maybe", "pass"].map((status) => <button className={rsvp === status ? "active" : ""} key={status} onClick={() => updateRsvp(status as RsvpStatus)} type="button">{status === "going" ? (locale === "ru" ? "Иду" : "Going") : status === "maybe" ? (locale === "ru" ? "Думаю" : "Maybe") : (locale === "ru" ? "Не иду" : "Pass")}</button>)}
+            </div>
+          </div>
+          <div className="demo-hero-stamp"><strong>{rsvpCounts.going}</strong><span>{t("eventHubGoing")}</span></div>
+        </section>}
     {moreOpen && <div className="more-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setMoreOpen(false); }}>
-      <section className="more-modal">
-        <div className="more-modal-header"><span className="game-step">{t("moreTab")}</span><button onClick={() => setMoreOpen(false)} type="button" className="more-modal-close"><span className="material-symbols-rounded">close</span></button></div>
+      <section aria-label={t("moreTab")} aria-modal="true" className="more-modal" role="dialog">
+        <div className="more-modal-header"><span className="game-step">{t("moreTab")}</span><button aria-label={locale === "ru" ? "Закрыть" : "Close"} onClick={() => setMoreOpen(false)} type="button" className="more-modal-close"><span aria-hidden="true" className="material-symbols-rounded">close</span></button></div>
         <div className="more-modal-grid">
           <button onClick={() => { setTab("gallery"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">photo_library</span>{t("gallerySub")}</button>
           <button onClick={() => { setTab("koins"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">paid</span>{t("demoNavKoins")}</button>
@@ -445,14 +499,15 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
           <button onClick={() => { setTab("gratitude"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">favorite</span>{t("gratitudeTab")}</button>
           <button onClick={() => { setTab("daily"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">today</span>{t("dailyTitle")}</button>
           <button onClick={() => { setTab("theme"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">palette</span>{t("themeTab")}</button>
+          <button onClick={() => router.push("/app/profile")} type="button"><span className="material-symbols-rounded">person</span>{t("demoNavProfile")}</button>
         </div>
       </section>
     </div>}
 
-    {tab === "space" && <section className="party-room-panel">
+    {tab === "space" && <section className="party-room-panel live-party-overview">
+      <div className="demo-panel-title"><div><span>{t("roomSpace")}</span><h2>{t("roomHero")}</h2></div><span className="demo-chip">{members.length || party.memberCount}</span></div>
+      <p className="live-party-description">{party.description || t("roomDetail")}</p>
       <div className="party-room-actions">
-        <h2>{t("roomHero")}</h2>
-        <p>{party.description || t("roomDetail")}</p>
         <Link href={`/join/${party.inviteCode}`} className="party-action-btn"><span className="material-symbols-rounded">share</span> {t("roomInvite")}</Link>
         <button className="party-action-btn" onClick={() => setTab("games")} type="button"><span className="material-symbols-rounded">grid_view</span> {t("roomTools")}</button>
         {isOwner && <>
@@ -533,12 +588,12 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
     </section>)}
     {gameResults && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) closeGameResults(); }}><section aria-modal="true" className="demo-modal game-results-modal" role="dialog"><span className="demo-kicker">{t("gamesResults")}</span><h2>{gameResults.gameTitle}</h2><div className="game-results-list">{gameResults.scores.map((s, i) => <div className={`game-result-row ${s.userId === actorId ? "is-me" : ""}`} key={s.userId}><span className="game-result-rank">#{i + 1}</span><strong>{s.displayName || s.userId.slice(0, 8)}</strong><span className="game-result-score">{s.score}</span></div>)}</div><button className="demo-action demo-action--lime" onClick={closeGameResults} type="button">{t("gamesBack")}</button>{actorKind === "guest" && <p className="guest-signup-prompt"><Link href={`/sign-up?redirect_url=/party/${party.inviteCode}`}>{t("guestSignupPrompt")}</Link></p>}</section></div>}
     {tab === "shop" && <ShoppingList partyId={party.id} members={members} canManage={isOwner || party.role === "co_host"} />}
-    {tab === "gallery" && <Gallery partyId={party.id} />}
+    {tab === "gallery" && <Gallery partyId={party.id} actorId={actorId} />}
     {tab === "koins" && <Koins partyId={party.id} />}
     {tab === "pass" && <PartyPass />}
     {tab === "quests" && <SocialQuests partyId={party.id} />}
     {tab === "highlights" && <Highlights partyId={party.id} />}
-    {tab === "gratitude" && <Gratitude partyId={party.id} members={members.map((m) => ({ id: m.clerkUserId, displayName: m.displayName }))} />}
+    {tab === "gratitude" && <Gratitude partyId={party.id} actorId={actorId} members={members.map((m) => ({ id: m.clerkUserId, displayName: m.displayName }))} />}
     {tab === "daily" && <DailyChallenge />}
     {tab === "theme" && <RoomTheme inviteCode={party.inviteCode} currentTheme={themeId} ownedThemes={party.ownedThemes} onThemeChange={(th) => setThemeId(th)} />}
     {tab === "chat" && <section className={`party-room-panel party-chat party-chat-background-${chatBackground}`}>
@@ -574,6 +629,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
               ))}
             </div>}
             {!item.pending && <button className="chat-reaction-trigger" onClick={() => setReactionTarget(reactionTarget === item.id ? null : item.id)} type="button" aria-label={t("chatReact")}>+</button>}
+            {!isMe && !item.pending && <ReportContentButton partyId={party.id} targetId={item.id} targetType="chat_message" targetUserId={item.userId} onBlocked={(userId) => setChatMessages((current) => current.filter((entry) => entry.userId !== userId))} />}
             {reactionTarget === item.id && <EmojiPicker onSelect={(emoji) => { react(item.id, emoji); setReactionTarget(null); }} onClose={() => setReactionTarget(null)} />}
           </article>;
         }) : <p className="party-chat-system">{t("roomChatEmpty")}</p>}
@@ -595,6 +651,15 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       </div>
       {chatError && <p className="chat-error" role="status">{chatError}</p>}
     </section>}
+      </div>
+    </section>
+
+    <nav className="demo-mobile-nav live-party-mobile-nav" aria-label={t("roomSpace")}>
+      <div className="demo-mobile-nav-track">
+        {shellNav.map((item) => <button aria-label={item.label} aria-current={(item.id === tab || (item.id === "more" && moreOpen)) ? "page" : undefined} className={(item.id === tab || (item.id === "more" && moreOpen)) ? "active" : ""} key={item.id} onClick={() => openShellSection(item.id)} type="button"><span className="material-symbols-rounded" aria-hidden="true">{item.icon}</span><span>{item.label}</span></button>)}
+      </div>
+    </nav>
+    {shellNotice && <div className="demo-toast" role="status"><span className="material-symbols-rounded">check_circle</span>{shellNotice}</div>}
     {editing && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(false); }}><section aria-modal="true" className="demo-modal" role="dialog"><span className="demo-kicker">{t("eventHubSettingsTitle")}</span><h2>{party.title}</h2><form onSubmit={saveEdit}><label>{t("createName")}<input name="title" defaultValue={party.title} required /></label><EventDateTimeFields dateLabel={t("createDate")} timeLabel={t("createTime")} dateDefault={eventDateInputValue(party.date)} timeDefault={party.time} /><label>{t("createVenue")}<input name="venue" defaultValue={party.venue} required /></label><label>{t("createFormat")}<span className="brand-select"><select name="category" defaultValue={party.category}><option>House Party</option><option>After-work</option><option>Trip</option><option>Birthday</option><option>Game night</option></select></span></label><label>{t("createDetails")}<textarea name="description" defaultValue={party.description} /></label><button type="submit">{t("profileSave")}</button></form></section></div>}
   </main>;
 }

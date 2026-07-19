@@ -3,6 +3,12 @@
   "dialect": "postgresql",
   "entries": [
     { "idx": 0, "version": "7", "when": 1783814400000, "tag": "0000_production_foundation", "breakpoints": true },
-    { "idx": 1, "version": "7", "when": 1783852200000, "tag": "0001_game_command_idempotency", "breakpoints": true }
+    { "idx": 1, "version": "7", "when": 1783852200000, "tag": "0001_game_command_idempotency", "breakpoints": true },
+    { "idx": 2, "version": "7", "when": 1784448000000, "tag": "0002_runtime_schema_repair", "breakpoints": true },
+    { "idx": 3, "version": "7", "when": 1784476800000, "tag": "0003_safety_and_media", "breakpoints": true },
+    { "idx": 4, "version": "7", "when": 1784478600000, "tag": "0004_local_auth_lifecycle", "breakpoints": true },
+    { "idx": 5, "version": "7", "when": 1784480400000, "tag": "0005_full_party_schema", "breakpoints": true },
+    { "idx": 6, "version": "7", "when": 1784482200000, "tag": "0006_schema_version_gate", "breakpoints": true },
+    { "idx": 7, "version": "7", "when": 1784484000000, "tag": "0007_distributed_fallbacks", "breakpoints": true }
   ]
 }

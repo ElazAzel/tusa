@@ -66,6 +66,7 @@ export default function CosmeticsCustomizer({
   const [activeTab, setActiveTab] = useState<(typeof CATEGORY_TABS)[number]>("cover");
   const [preview, setPreview] = useState<ProfileCosmetics>(profileCosmetics);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetch("/api/cosmetics")
@@ -98,6 +99,7 @@ export default function CosmeticsCustomizer({
   const handleSave = useCallback(async () => {
     soundTap();
     setSaving(true);
+    setError("");
     const changed: Record<string, string> = {};
     for (const key of CATEGORY_TABS) {
       const unlock = TYPE_TO_UNLOCK[key];
@@ -106,9 +108,14 @@ export default function CosmeticsCustomizer({
         changed[key] = preview[key] as string;
       }
     }
-    await onSave(changed);
-    soundSuccess();
-    setSaving(false);
+    try {
+      await onSave(changed);
+      soundSuccess();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Failed to save cosmetics.");
+    } finally {
+      setSaving(false);
+    }
   }, [preview, profileCosmetics.unlocked, onSave]);
 
   const hasSaveableChanges = CATEGORY_TABS.some((key) => {
@@ -193,6 +200,7 @@ export default function CosmeticsCustomizer({
         </div>
 
         <div className="cosmetics-customizer-footer">
+          {error && <p className="feature-error" role="alert">{error}</p>}
           <p className="cosmetics-hint">
             <span className="material-symbols-rounded" style={{ fontSize: 14, verticalAlign: "middle" }}>lock</span>
             {" "}{t("cosmeticsLockedHint")}

@@ -9,7 +9,7 @@ type RewardStats = Record<string, { count: number; total: number; daily: number;
 const REWARD_KEYS = ["photo", "chat", "game_play", "game_win", "streak", "friend_add"] as const;
 
 export default function Koins({ partyId }: { partyId: string }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [bets, setBets] = useState<PartyBet[]>([]);
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<KoinsTransaction[]>([]);
@@ -39,6 +39,23 @@ export default function Koins({ partyId }: { partyId: string }) {
   useEffect(() => { loadBets(); loadBalance(); loadRewards(); }, [partyId, loadBets]);
 
   const activeStake = useMemo(() => bets.filter((b) => b.status === "open").flatMap((b) => b.entries).filter((e) => e.userId === "me").reduce((sum, e) => sum + e.stake, 0), [bets]);
+
+  function transactionLabel(label: string) {
+    if (label.startsWith("Reward: ")) {
+      const activity = label.slice(8);
+      const rewards: Record<string, string> = {
+        photo: t("rewardsPhoto"), chat: t("rewardsChat"), game_play: t("rewardsGamePlay"),
+        game_win: t("rewardsGameWin"), streak: t("rewardsStreak"), friend_add: t("rewardsFriendAdd"),
+      };
+      return rewards[activity] ?? activity;
+    }
+    const prefixes: Array<[string, string]> = [
+      ["Bet: ", t("koinsTxBet")], ["Win: ", t("koinsTxWin")], ["Refund: ", t("koinsTxRefund")],
+      ["Quest reward: ", t("koinsTxQuest")], ["Theme unlock: ", t("koinsTxTheme")],
+    ];
+    const match = prefixes.find(([prefix]) => label.startsWith(prefix));
+    return match ? `${match[1]} · ${label.slice(match[0].length)}` : label;
+  }
 
   async function createBetAction(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -82,6 +99,6 @@ export default function Koins({ partyId }: { partyId: string }) {
     <form className="bet-create-form" onSubmit={createBetAction}><label><span>{t("koinsQuestion")}</span><input name="text" placeholder={t("koinsQuestionPlace")} required /></label><label><span>{t("koinsOutcomeA")}</span><input defaultValue={t("koinsOutcomeA") === "Исход A" ? "Да" : "Yes"} name="first" required /></label><label><span>{t("koinsOutcomeB")}</span><input defaultValue={t("koinsOutcomeB") === "Исход B" ? "Нет" : "No"} name="second" required /></label><button className="demo-action demo-action--lime" type="submit"><span className="material-symbols-rounded">add</span> {t("koinsOpenBet")}</button></form>
     <div className="bets-list bets-list--full">{bets.map((bet) => { const total = bet.entries.reduce((sum, e) => sum + e.stake, 0); return <article className={bet.status} key={bet.id}><div className="bet-copy"><span>{bet.status === "open" ? t("koinsOpenStatus") : bet.status === "settled" ? `${t("koinsSettled")}${bet.winner}` : t("koinsCancelled")}</span><h3>{bet.text}</h3><p>{t("koinsPool")}{total}{t("koinsPoolEnd")}{bet.entries.length}{t("koinsBets")}</p></div>{bet.status === "open" && <div className="bet-interaction"><label>{t("koinsStakeFor")}<input aria-label={`${t("koinsStakeFor")}${bet.text}`} min="1" max={balance} type="number" value={stakes[bet.id] ?? 25} onChange={(e) => setStakes((s) => ({ ...s, [bet.id]: Math.max(1, Number(e.target.value)) }))} /></label><div className="bet-buttons">{bet.options.map((option) => <button className="demo-action demo-action--lime" key={option} onClick={() => joinBetAction(bet.id, option)} type="button">{option}</button>)}</div></div>}</article>; })}</div>
     {transactions.length > 0 && <div className="demo-panel-title" style={{ marginTop: 24 }}><div><span>{t("koinsLedger")}</span><h2>{t("koinsLedgerSub")}</h2></div></div>}
-    <div className="bets-list bets-list--full">{transactions.map((tx) => <article className={tx.amount > 0 ? "open" : "settled"} key={tx.id}><div className="bet-copy"><span>{tx.amount > 0 ? "+" : ""}{tx.amount} KOINS</span><h3>{tx.label}</h3></div></article>)}</div>
+    <div className="koins-ledger-list">{transactions.map((tx) => <article className={`koins-ledger-item ${tx.amount > 0 ? "open" : "settled"}`} key={tx.id}><div className="bet-copy"><span>{tx.amount > 0 ? "+" : ""}{tx.amount} KOINS</span><h3>{transactionLabel(tx.label)}</h3></div><time dateTime={tx.createdAt}>{new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(tx.createdAt))}</time></article>)}</div>
   </section>;
 }

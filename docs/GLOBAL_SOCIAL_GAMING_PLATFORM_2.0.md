@@ -2,7 +2,10 @@
 
 > Author: User strategic review
 > Date: July 2026
-> Status: Proposal for discussion
+> Updated: 19.07.2026
+> Status: Target proposal for discussion; not a description of shipped functionality
+
+Current shipped/gap baseline: `docs/IMPLEMENTATION_STATUS_2026-07-19.md`. Commercial mechanics, creator economy, Battle Pass, white-label, sponsorship and AI bots in this proposal are pre-implementation unless the checkpoint explicitly marks them shipped.
 
 ## Core Insight
 

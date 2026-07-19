@@ -1,5 +1,7 @@
 # TUSA.game — Product and Commercial Strategy
 
+> **Актуализировано: 19.07.2026 · Статус: target strategy.** Технические факты сверяются с `docs/IMPLEMENTATION_STATUS_2026-07-19.md`. Venue Night, Event Pass, TUSA Plus, payments, white-label и marketplace являются pre-implementation до появления полного flow и подтверждённой выручки.
+
 This document turns the July 2026 external product and monetization audits into decisions that do not compromise the core party experience.
 
 ## Product thesis
@@ -60,4 +62,4 @@ The intended long-term model is a hybrid, sequenced rather than launched all at 
 5. Enable real billing only after merchant onboarding, webhooks, tax/refund policy and legal review.
 6. Start creator marketplace and public API only after the core retention and safety gates are consistently met.
 
-See `docs/IMPLEMENTATION_STATUS_2026-07-16.md` for the factual implementation checkpoint, and `docs/TUSA_io_Партнёрства_реклама_монетизация.md` for the detailed partner and advertising design.
+See `docs/IMPLEMENTATION_STATUS_2026-07-19.md` for the factual implementation checkpoint, and `docs/TUSA_io_Партнёрства_реклама_монетизация.md` for the detailed target partner and advertising design.

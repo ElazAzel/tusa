@@ -4,6 +4,7 @@ import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getMessages, sendMessage, toggleReaction, grantEngagementReward, requirePartyMember } from "@/lib/parties";
 import { publish } from "@/lib/live";
 import { resolveActor } from "@/lib/guest-session";
+import { isManagedMediaUrl } from "@/lib/media";
 
 const messageSchema = z.object({
   action: z.literal("react").optional(),
@@ -12,7 +13,7 @@ const messageSchema = z.object({
   emoji: z.string().min(1).max(16).optional(),
   text: z.string().max(1000).optional(),
   type: z.enum(["text", "voice", "sticker"]).default("text"),
-  voiceUrl: z.string().max(1_500_000).optional(),
+  voiceUrl: z.string().url().max(2048).optional(),
   stickerId: z.string().max(80).optional(),
   clientMutationId: z.string().uuid().optional(),
 }).strict();
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     await requirePartyMember(partyId, actor.id);
     const after = request.nextUrl.searchParams.get("after") || undefined;
     const requestedLimit = Number(request.nextUrl.searchParams.get("limit") ?? "50");
-    const messages = await getMessages(partyId, Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 50, 1), 100), after);
+    const messages = await getMessages(partyId, Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 50, 1), 100), after, actor.id);
     return NextResponse.json({ messages });
   } catch (error) {
     const forbidden = error instanceof Error && /member/i.test(error.message);
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ reactions });
     }
 
+    if (body.type === "voice" && (!body.voiceUrl || !isManagedMediaUrl(body.voiceUrl))) return NextResponse.json({ error: "Voice message must use managed storage." }, { status: 400 });
     const hasPayload = Boolean(body.text?.trim()) || (body.type === "voice" && body.voiceUrl) || (body.type === "sticker" && body.stickerId);
     if (!hasPayload) return NextResponse.json({ error: "Message content is required." }, { status: 400 });
     const mutationId = body.clientMutationId || crypto.randomUUID();

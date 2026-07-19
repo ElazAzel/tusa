@@ -51,6 +51,11 @@ const permissionGroups: {
     titleEn: "Analytics & ads",
     items: ["analytics_read", "ads_read", "ads_write"],
   },
+  {
+    titleRu: "Модерация",
+    titleEn: "Moderation",
+    items: ["moderation_read", "moderation_write"],
+  },
   { titleRu: "Команда", titleEn: "Team", items: ["team_read", "team_manage"] },
   { titleRu: "Система", titleEn: "System", items: ["system_read"] },
 ];
@@ -80,6 +85,8 @@ function PermissionPicker({
           analytics_read: "Аналитика",
           ads_read: "Смотреть рекламу",
           ads_write: "Менять рекламу",
+          moderation_read: "Смотреть жалобы",
+          moderation_write: "Обрабатывать жалобы",
           team_read: "Смотреть команду",
           team_manage: "Управлять командой",
         }
@@ -94,6 +101,8 @@ function PermissionPicker({
           analytics_read: "Analytics",
           ads_read: "View ads",
           ads_write: "Edit ads",
+          moderation_read: "View reports",
+          moderation_write: "Review reports",
           system_read: "View system health",
           team_read: "View team",
           team_manage: "Manage team",

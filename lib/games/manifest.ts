@@ -62,6 +62,8 @@ export const GAME_MANIFEST = [
 
 export type GameId = (typeof GAME_MANIFEST)[number]["id"];
 export const GAME_COUNT = GAME_MANIFEST.length;
+export const CORE_GAME_IDS = ["impostor", "alias", "trivia", "bombParty", "quiplash", "fibbage", "wouldRather", "twoTruths"] as const satisfies readonly GameId[];
+export const CORE_GAMES = CORE_GAME_IDS.map((id, index) => ({ game: GAME_MANIFEST.find((item) => item.id === id)!, priority: index + 1, certificationOwner: "games" as const }));
 
 export function getGameById(id: string) { return GAME_MANIFEST.find((game) => game.id === id); }
 export function getGameBySlug(slug: string) { return GAME_MANIFEST.find((game) => game.seo.slug === slug || ("legacySlugs" in game.seo && game.seo.legacySlugs?.includes(slug))); }

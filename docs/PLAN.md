@@ -1,6 +1,6 @@
 # Генеральный план доведения TUSA.game до полной функциональной готовности
 
-> Current implementation checkpoint: `docs/IMPLEMENTATION_STATUS_2026-07-16.md`. Use that file as the latest reconciliation between this master plan, git history and production incidents before choosing the next task.
+> **Актуализировано: 19.07.2026.** Current implementation checkpoint: `docs/IMPLEMENTATION_STATUS_2026-07-19.md`. Этот план описывает target; shipped/gap/pre-implementation определяются текущим checkpoint и `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md`.
 
 ## 1. Цель, исходное состояние и критерии финиша
 

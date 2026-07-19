@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
-import { getGratitudeTips, sendGratitudeTip, requirePartyMember } from "@/lib/parties";
+import { getGratitudeTips, sendGratitudeTip, requirePartyMember, trackQuestProgress } from "@/lib/parties";
 import { publish } from "@/lib/live";
 import { resolveActor } from "@/lib/guest-session";
 
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid transfer.", details: parsed.error.flatten() }, { status: 400 });
   try {
     await sendGratitudeTip({ ...parsed.data, fromUser: actor.id });
+    await trackQuestProgress("thankothers", parsed.data.partyId, actor.id);
     publish(`party:${parsed.data.partyId}`, { type: "gratitude:sent", fromUser: actor.id, toUser: parsed.data.toUser, amount: parsed.data.amount });
     return NextResponse.json({ sent: true }, { status: 201 });
   } catch (error) {
