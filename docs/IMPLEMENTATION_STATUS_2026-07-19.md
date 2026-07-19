@@ -3,9 +3,27 @@
 **Repository:** `ElazAzel/tusa`<br>
 **Branch:** `main`<br>
 **Commit:** `0356f6d`<br>
-**Product status:** public beta / supported pilot at 8.6/10; autonomous paid production remains 7.6/10
+**Product status:** public beta / supported pilot at 8.8/10; autonomous paid production remains 7.9/10 until external release gates pass
 
-**Remediation update:** controlled Blob media, moderation/report/appeal, atomic KOINS bets, first-party error monitoring, a production health gate, email verification lifecycle, optional root-admin TOTP, ten applied migrations with schema version 9, and a 120-request production baseline are verified. Browser certification, actual email delivery/TOTP enrollment, DNS and legal/venue gates remain open. See `docs/FULL_PLATFORM_AUDIT_2026-07-19.md` and `docs/PRODUCTION_PREFLIGHT_2026-07-19.md`.
+**Remediation update:** controlled Blob media, moderation/report/appeal, atomic KOINS bets, first-party error monitoring, a production health gate, email verification lifecycle, Resend delivery adapter/webhook journal, database-backed TOTP enrollment and one-use recovery codes, operational SLO events, certification/load/canonical harnesses, eleven applied migrations with schema version 10, 58 unit/invariant tests and 52 browser smokes are verified. Core evidence is still 0/8 because an isolated preview party and Host storage state were not supplied; Resend DNS/domain verification, root enrollment, venue load, public DNS/legal approval and the in-person pilot remain external gates.
+
+## 12-week roadmap implementation checkpoint
+
+Shipped in code on 19.07.2026:
+
+- Playwright core-eight harness with isolated Host + two Controller contexts, real guest joins, full round drivers, reconnect, rematch, privacy, moderation, spectator/leave, RU/EN and mobile evidence.
+- Source-bound certification gate in CI. `releaseStatus: "certified"` fails CI without current evidence and every required scenario.
+- Resend verification/reset delivery, signed Svix webhook verification and hashed-recipient delivery journal.
+- Root-admin TOTP enrollment with QR provisioning, AES-256-GCM secret storage and ten one-use hashed recovery codes.
+- Join, game action/start/round, reconnect and media operational events plus 24-hour SLO and email delivery summaries in `/admin/system`.
+- Confirmed venue-load harness for 30 real guest/SSE clients, DNS/canonical checker, incident drill and Venue Night runbook.
+- Technical `www.tusa.game` to apex 308 redirect and privacy processor disclosure for Vercel, Blob, Neon, Ably, Clerk and Resend.
+
+Not claimed as complete:
+
+- Core games remain Beta (`0/8 certified`) until the preview certification run writes valid evidence.
+- Resend domain delivery to Gmail, Outlook and Yandex, root-admin enrollment, 20-minute venue load, DNS/TLS, WCAG manual pass, legal approval and Venue Night require owner/external execution.
+- The autonomous production score reaches the planned 8.2 only after those gates pass. Commercial expansion remains frozen.
 
 Этот checkpoint синхронизирует документацию с актуальным пакетом в `tmp/pdfs/` и фактическим состоянием репозитория. Термины `shipped`, `gap`, `target` и `pre-implementation` определены в `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md`.
 

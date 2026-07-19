@@ -3,7 +3,9 @@
 **Дата проверки:** 19.07.2026  
 **Репозиторий:** `ElazAzel/tusa`  
 **Проверенный baseline:** текущая рабочая копия поверх `main@0356f6d`  
-**Вердикт:** сильная public beta, но не готовая к автономным платным B2B-мероприятиям
+**Вердикт:** supported public beta — 8.8/10; автономный production — 7.9/10 до прохождения внешних release gates.
+
+**Обновление ремедиации 19.07.2026:** реализованы multi-context certification harness и CI evidence gate для core eight, Resend adapter и подписанный delivery webhook, зашифрованный enrollment MFA root-admin с одноразовыми recovery-кодами, продуктовые SLO в `/admin/system`, venue-load/canonical инструменты и schema v10. Проверено: 58/58 тестов, 52 browser smoke, lint, typecheck, build и RAG. Все игры намеренно остаются Beta (`0/8 certified`) до получения реального evidence; Resend/DNS/MFA enrollment/load/legal/pilot не объявляются выполненными.
 
 ## 1. Основание аудита
 

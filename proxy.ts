@@ -3,6 +3,14 @@ import type { NextRequest } from "next/server";
 
 function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
+  if (host.split(":")[0].toLowerCase() === "www.tusa.game") {
+    const canonical = request.nextUrl.clone();
+    canonical.hostname = "tusa.game";
+    canonical.port = "";
+    canonical.protocol = "https:";
+    return NextResponse.redirect(canonical, 308);
+  }
   const hasSession = Boolean(request.cookies.get("tusa_auth")?.value);
   const hasGuestSession = Boolean(request.cookies.get("tusa_guest_session")?.value);
 

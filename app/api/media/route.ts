@@ -4,12 +4,14 @@ import { resolveActor } from "@/lib/guest-session";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { requirePartyMember } from "@/lib/parties";
 import { storeMedia } from "@/lib/media";
+import { recordOperationalEvent } from "@/lib/operations";
 
 export const runtime = "nodejs";
 
 const partyIdSchema = z.string().uuid();
 
 export async function POST(request: NextRequest) {
+  const startedAt = performance.now();
   const actor = await resolveActor();
   if (!actor) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   const rate = await distributedRateLimit(`media:${actor.id}:${getClientIp(request.headers)}`, 12, 60_000);
@@ -24,6 +26,7 @@ export async function POST(request: NextRequest) {
     if (!consent) return NextResponse.json({ error: "Media consent is required." }, { status: 400 });
     await requirePartyMember(partyId, actor.id);
     const media = await storeMedia(file, partyId, kind);
+    void recordOperationalEvent({ eventType: "media_upload", durationMs: performance.now() - startedAt, dimensions: { kind, sizeBucket: file.size < 1_000_000 ? "small" : "large" } }).catch(() => undefined);
     return NextResponse.json({ media, retentionDays: 90 }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Upload failed.";

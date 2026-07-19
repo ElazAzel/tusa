@@ -6,12 +6,13 @@ This run verifies the production runtime without creating users, parties, messag
 
 ## Verified production state
 
-- Deployment: `dpl_BUTwHn2UUBQPTDLLAzS6TJaFRPK6`.
+- Deployment: `dpl_2fW9fH2h3s5ubETt7zQEWD2UPUSy`.
 - Public URL: `https://tusagame.vercel.app`.
 - `/api/health`: HTTP 200, `status=ready`.
-- Database schema: version 9, ten applied migrations.
+- Database schema: version 10, eleven applied migrations.
 - Database, authentication, realtime, rate limiting, media and first-party observability report ready.
-- Email delivery and root-admin MFA report missing until their production secrets are configured.
+- Resend delivery and database-backed root-admin MFA are implemented; production health still reports both missing until the owner configures `RESEND_API_KEY`, `AUTH_EMAIL_FROM`, `RESEND_WEBHOOK_SECRET`, `ADMIN_MFA_ENCRYPTION_KEY` and completes enrollment.
+- `tusa.game` is assigned as the Vercel production alias, but external DNS does not resolve as of the last check. `tusagame.vercel.app` remains reachable.
 
 ## Load baseline
 
@@ -38,8 +39,8 @@ The profile covers `/`, `/api/public/content`, `/api/auth/session` and `/api/hea
 
 ## Remaining release gates
 
-- Stage + two isolated Controller browsers, reconnect, rematch and privacy certification for the core eight.
-- Production auth email webhook and a delivered verification/reset message.
-- Root-admin TOTP enrollment and production activation.
+- Run the implemented Stage + two isolated Controller certification harness against an isolated preview party; core status remains 0/8 until evidence passes.
+- Configure and verify Resend domain delivery for Gmail, Outlook and Yandex.
+- Set the MFA encryption key and complete root-admin enrollment, invalid-code and recovery-code checks.
 - Canonical `tusa.game` DNS smoke.
 - Real device/network Venue Night rehearsal and legal/privacy sign-off.

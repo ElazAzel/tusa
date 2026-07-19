@@ -28,6 +28,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run certification:verify
       - run: npm run rag:build
       - run: npm run build
       - run: npm audit --audit-level=high

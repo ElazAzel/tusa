@@ -98,7 +98,7 @@ export async function getDatabaseHealth() {
   const startedAt = performance.now();
   const [row] = await db()`SELECT version, applied_at FROM platform_schema_version WHERE singleton = TRUE LIMIT 1` as unknown as Array<{ version: number; applied_at: string | Date }>;
   return {
-    ready: Number(row?.version ?? 0) >= 9,
+    ready: Number(row?.version ?? 0) >= 10,
     schemaVersion: Number(row?.version ?? 0),
     latencyMs: Math.round(performance.now() - startedAt),
     appliedAt: row?.applied_at ? new Date(row.applied_at).toISOString() : null,

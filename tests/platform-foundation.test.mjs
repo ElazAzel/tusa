@@ -35,6 +35,8 @@ const observabilitySource = readFileSync(new URL("../lib/observability.ts", impo
 const observabilityMigration = readFileSync(new URL("../drizzle/0008_platform_observability.sql", import.meta.url), "utf8");
 const verificationMigration = readFileSync(new URL("../drizzle/0009_auth_verification.sql", import.meta.url), "utf8");
 const adminAuth = readFileSync(new URL("../lib/admin-auth.ts", import.meta.url), "utf8");
+const adminMfa = readFileSync(new URL("../lib/admin-mfa.ts", import.meta.url), "utf8");
+const certificationMigration = readFileSync(new URL("../drizzle/0010_production_certification.sql", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -210,5 +212,8 @@ test("local auth supports email verification and optional root-admin TOTP", () =
   assert.match(localAuth, /verifyEmail/);
   assert.match(localAuth, /email_verified_at/);
   assert.match(adminAuth, /isValidAdminTotp/);
-  assert.match(adminAuth, /createHmac\("sha1"/);
+  assert.match(adminMfa, /createHmac\("sha1"/);
+  assert.match(adminMfa, /aes-256-gcm/);
+  assert.match(certificationMigration, /admin_mfa_recovery_codes/);
+  assert.match(certificationMigration, /auth_email_deliveries/);
 });

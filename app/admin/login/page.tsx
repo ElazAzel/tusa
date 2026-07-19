@@ -15,5 +15,5 @@ export default async function AdminLoginPage({ searchParams }: { searchParams: P
   const cookieLocale = store.get("tusa_locale")?.value;
   const browserLocale = detectLocale(requestHeaders.get("accept-language"));
   const locale = normalizeLocale(cookieLocale ?? browserLocale);
-  return <AdminLoginForm initialError={params.error === "invalid" ? copy(locale, "adminLoginInvalid") : ""} mfaRequired={isAdminMfaConfigured()} />;
+  return <AdminLoginForm initialError={params.error === "invalid" ? copy(locale, "adminLoginInvalid") : ""} mfaRequired={await isAdminMfaConfigured()} />;
 }

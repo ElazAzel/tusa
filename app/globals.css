@@ -2702,9 +2702,19 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .admin-login-card input { height: 53px; border: 3px solid var(--black); border-radius: 11px; background: var(--white); padding: 0 13px; font-size: 16px; }
 .admin-login-card .admin-button { width: 100%; min-height: 54px; font-size: 15px; }
 .admin-error { margin: 16px 0 0; color: #b40050; font-weight: 900; }
+.admin-mfa-switch { display: block; min-height: 44px; margin: -8px 0 16px; border: 0; background: transparent; color: var(--blue); font-weight: 900; text-decoration: underline; cursor: pointer; }
+.admin-mfa-panel { max-width: 1320px; margin: 24px auto 0; padding: 24px; }
+.admin-mfa-form { display: grid; grid-template-columns: minmax(240px, 1fr) auto; align-items: end; gap: 16px; margin-top: 20px; }
+.admin-mfa-form label { display: grid; gap: 8px; font-weight: 900; }
+.admin-mfa-form input { min-height: 48px; border: 3px solid var(--black); border-radius: 8px; padding: 0 12px; font-size: 16px; }
+.admin-mfa-enrollment { max-width: 620px; margin-top: 20px; }
+.admin-mfa-enrollment img { display: block; width: 240px; height: 240px; border: 3px solid var(--black); background: var(--white); }
+.admin-recovery-codes pre { max-width: 460px; overflow: auto; border: 2px solid #4b4b55; padding: 18px; color: var(--lime); font-size: 15px; line-height: 1.7; }
+.admin-slo-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 
 @media (max-width: 900px) {
   .admin-metrics { grid-template-columns: repeat(2, 1fr); }
+  .admin-mfa-form { grid-template-columns: 1fr; }
   .admin-settings-card { align-items: flex-end; flex-wrap: wrap; }
   .admin-settings-card > div { width: 100%; }
   .admin-toolbar { align-items: stretch; flex-direction: column; }

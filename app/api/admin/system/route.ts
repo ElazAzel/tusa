@@ -3,6 +3,8 @@ import { getAdminAccess } from "@/lib/admin-auth";
 import { getRuntimeStatus } from "@/lib/runtime-status";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getDatabaseHealth, getPlatformErrorSummary } from "@/lib/observability";
+import { getEmailDeliverySummary, getOperationalSummary } from "@/lib/operations";
+import { getAdminMfaStatus } from "@/lib/admin-mfa";
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +16,15 @@ export async function GET(request: Request) {
   const limit = await distributedRateLimit(`admin:system:${access.clerkUserId}:${getClientIp(request.headers)}`, 30, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
-  const [database, errors] = await Promise.all([
+  const [database, errors, slo, email, mfa] = await Promise.all([
     getDatabaseHealth().catch(() => ({ ready: false, schemaVersion: 0, latencyMs: 0, appliedAt: null })),
     getPlatformErrorSummary().catch(() => ({ lastHour: 0, last24Hours: 0, latestAt: null, top: [] })),
+    getOperationalSummary(),
+    getEmailDeliverySummary(),
+    getAdminMfaStatus("root"),
   ]);
   return NextResponse.json(
-    { checkedAt: new Date().toISOString(), runtime: getRuntimeStatus(), database, errors },
+    { checkedAt: new Date().toISOString(), runtime: getRuntimeStatus(), database, errors, slo, email, mfa: { enabled: mfa.enabled, recoveryCodesRemaining: mfa.recoveryCodesRemaining } },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

@@ -16,6 +16,7 @@ import { parseGameCommand } from "@/lib/games/commands";
 import { applyServerGameCommand, initialServerGameState, isServerGameState } from "@/lib/games/engine";
 import { sanitizeSdkState } from "@/lib/games/sdk";
 import { recordPlatformError } from "@/lib/observability";
+import { recordOperationalEvent } from "@/lib/operations";
 
 const gameRequestSchema = z.object({
   action: z.enum(["create", "join", "start", "leave", "update", "complete", "score", "playerAction"]),
@@ -37,6 +38,7 @@ function apiError(message: string, status: number, details?: unknown) {
 }
 
 export async function POST(request: Request) {
+  const startedAt = performance.now();
   const actor = await resolveActor();
   if (!actor) return apiError("Authentication required.", 401);
   const userId = actor.id;
@@ -85,6 +87,7 @@ export async function POST(request: Request) {
       const publicSession = sanitizeControllerSession(responseSession, "");
       publish(`game:${body.sessionId}`, { type: "session:started", session: publicSession });
       publish(`party:${session.partyId}`, { type: "session:updated", session: publicSession });
+      void recordOperationalEvent({ eventType: "game_start", durationMs: performance.now() - startedAt, dimensions: { game: current.game } }).catch(() => undefined);
       return NextResponse.json({ session: sanitizeControllerSession(responseSession, userId) });
     }
 
@@ -112,6 +115,7 @@ export async function POST(request: Request) {
       if (!session) return apiError("Session version changed. Refresh and retry.", 409);
       publish(`game:${body.sessionId}`, { type: "session:completed", sessionId: body.sessionId });
       publish(`party:${session.partyId}`, { type: "session:completed", sessionId: body.sessionId });
+      void recordOperationalEvent({ eventType: "round_complete", durationMs: performance.now() - startedAt, dimensions: { game: current.game } }).catch(() => undefined);
       return NextResponse.json({ session });
     }
 
@@ -158,6 +162,8 @@ export async function POST(request: Request) {
             const gameAction = await addGameAction(body.sessionId, userId, actionType, command.payload, commandId);
             const responseSession = { ...updated, participants: snapshot.participants, createdBy: snapshot.createdBy };
             publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, state: sanitizeControllerState(snapshot.game, reduced.state, ""), version: updated.version });
+            void recordOperationalEvent({ eventType: "game_action", durationMs: performance.now() - startedAt, dimensions: { game: current.game, actionType } }).catch(() => undefined);
+            if (actionType === "next") void recordOperationalEvent({ eventType: "round_complete", durationMs: performance.now() - startedAt, dimensions: { game: current.game } }).catch(() => undefined);
             return NextResponse.json({ ok: true, commandId, action: gameAction, session: sanitizeControllerSession(responseSession, userId) });
           }
           const latest = await getGameSessionById(body.sessionId);
@@ -176,6 +182,7 @@ export async function POST(request: Request) {
         payload: gameAction.payload,
         commandId,
       });
+      void recordOperationalEvent({ eventType: "game_action", durationMs: performance.now() - startedAt, dimensions: { game: current.game, actionType } }).catch(() => undefined);
       return NextResponse.json({ ok: true, commandId, action: gameAction });
     }
   } catch (error) {
@@ -183,6 +190,7 @@ export async function POST(request: Request) {
     console.error("[api/games] request failed", { action: body.action, sessionId: body.sessionId, partyId: body.partyId, userId, error: message });
     if (/member|creator|player/i.test(message)) return apiError(message, 403);
     void recordPlatformError({ source: "server", route: "/api/games", method: "POST", error, context: { action: body.action, sessionId: body.sessionId ?? "", partyId: body.partyId ?? "" } }).catch(() => undefined);
+    void recordOperationalEvent({ eventType: "game_action", durationMs: performance.now() - startedAt, success: false, dimensions: { action: body.action } }).catch(() => undefined);
     return apiError("Game request failed.", 500);
   }
 

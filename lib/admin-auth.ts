@@ -7,6 +7,7 @@ import {
   type AdminRole,
 } from "@/lib/admin-permissions";
 import { getAdminMember } from "@/lib/admin-members";
+import { consumeAdminRecoveryCode, getAdminMfaStatus, verifyAdminMfaCode, verifyTotpSecret } from "@/lib/admin-mfa";
 
 const COOKIE_NAME = "tusa_admin_session";
 const SESSION_SECONDS = 60 * 60 * 12;
@@ -43,37 +44,23 @@ export function isValidAdminPassword(password: string) {
   return Boolean(expected) && safeEqual(password, expected);
 }
 
-export function isAdminMfaConfigured() {
-  return Boolean(process.env.ADMIN_TOTP_SECRET?.trim());
-}
-
-function decodeBase32(value: string) {
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-  let bits = "";
-  for (const character of value.toUpperCase().replace(/[^A-Z2-7]/g, "")) {
-    const index = alphabet.indexOf(character);
-    if (index < 0) return Buffer.alloc(0);
-    bits += index.toString(2).padStart(5, "0");
-  }
-  const bytes = [];
-  for (let offset = 0; offset + 8 <= bits.length; offset += 8) bytes.push(Number.parseInt(bits.slice(offset, offset + 8), 2));
-  return Buffer.from(bytes);
-}
-
-function totpAt(secret: string, step: number) {
-  const counter = Buffer.alloc(8);
-  counter.writeBigUInt64BE(BigInt(step));
-  const digest = createHmac("sha1", decodeBase32(secret)).update(counter).digest();
-  const offset = digest[digest.length - 1] & 0x0f;
-  return ((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).toString().padStart(6, "0");
+export async function isAdminMfaConfigured() {
+  if (process.env.ADMIN_TOTP_SECRET?.trim()) return true;
+  return (await getAdminMfaStatus("root")).enabled;
 }
 
 export function isValidAdminTotp(code: string, now = Date.now()) {
   const secret = process.env.ADMIN_TOTP_SECRET?.trim() ?? "";
   if (!secret) return true;
-  if (!/^\d{6}$/.test(code)) return false;
-  const step = Math.floor(now / 30_000);
-  return [-1, 0, 1].some((offset) => safeEqual(totpAt(secret, step + offset), code));
+  return verifyTotpSecret(secret, code, now);
+}
+
+export async function verifyRootAdminSecondFactor(code: string, recoveryCode: string) {
+  if (process.env.ADMIN_TOTP_SECRET?.trim()) return isValidAdminTotp(code);
+  const status = await getAdminMfaStatus("root");
+  if (!status.enabled) return true;
+  if (code && await verifyAdminMfaCode("root", code)) return true;
+  return Boolean(recoveryCode && await consumeAdminRecoveryCode("root", recoveryCode));
 }
 
 export function sessionValue() {
