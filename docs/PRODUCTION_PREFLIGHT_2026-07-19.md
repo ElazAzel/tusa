@@ -19,7 +19,7 @@ This run verifies the production runtime without creating users, parties, messag
 Command:
 
 ```bash
-PREFLIGHT_BASE_URL=https://tusagame.vercel.app PREFLIGHT_REQUESTS=120 PREFLIGHT_CONCURRENCY=6 npm run load:preflight
+PREFLIGHT_BASE_URL=https://tusagame.vercel.app PREFLIGHT_REQUESTS=120 PREFLIGHT_CONCURRENCY=6 PREFLIGHT_OUTPUT=docs/audit-evidence-2026-07-19/load-preflight.json npm run load:preflight
 ```
 
 Result: 120 requests, 100% success, p50 288 ms, p95 1641 ms, p99 2007 ms, max 2011 ms. Evidence is stored in `docs/audit-evidence-2026-07-19/load-preflight.json`.

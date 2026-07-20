@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 const baseUrl = (process.env.PREFLIGHT_BASE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
 const requestCount = Math.max(10, Number(process.env.PREFLIGHT_REQUESTS ?? 120));
 const concurrency = Math.min(20, Math.max(1, Number(process.env.PREFLIGHT_CONCURRENCY ?? 6)));
-const outputPath = resolve(process.env.PREFLIGHT_OUTPUT ?? "docs/audit-evidence-2026-07-19/load-preflight.json");
+const outputPath = process.env.PREFLIGHT_OUTPUT ? resolve(process.env.PREFLIGHT_OUTPUT) : null;
 const targets = ["/", "/api/public/content", "/api/auth/session", "/api/health"];
 const results = [];
 let cursor = 0;
@@ -45,7 +45,9 @@ const report = {
   failures: failures.slice(0, 20),
 };
 
-await mkdir(dirname(outputPath), { recursive: true });
-await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+if (outputPath) {
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
 console.log(JSON.stringify(report, null, 2));
 if (report.successRate < 99 || report.latencyMs.p95 > 3_000) process.exitCode = 1;
