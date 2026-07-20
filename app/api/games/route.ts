@@ -8,7 +8,7 @@ import {
   leaveGameSession, requirePartyMember, updateGameSession, trackAnalytics, grantEngagementReward,
   addPassXp, trackQuestProgress, saveHighlight,
 } from "@/lib/parties";
-import { isGameId } from "@/lib/games/manifest";
+import { getGameById, isGameId } from "@/lib/games/manifest";
 import { publish } from "@/lib/live";
 import { resolveActor } from "@/lib/guest-session";
 import { deriveVerifiedScore } from "@/lib/games/scoring";
@@ -79,7 +79,9 @@ export async function POST(request: Request) {
     if (body.action === "start") {
       if (current.createdBy !== userId) return apiError("Only the game creator can start.", 403);
       if (current.status !== "lobby") return apiError("Only a lobby can be started.", 409);
-      if (current.participants.length < 2) return apiError("At least two players are required.", 400);
+      const gameDefinition = getGameById(current.game);
+      if (!gameDefinition) return apiError("Game definition was not found.", 400);
+      if (current.participants.length < gameDefinition.minPlayers) return apiError(`At least ${gameDefinition.minPlayers} players are required.`, 400);
       const initialState = initialServerGameState(current.game, current.participants, current.config);
       const session = await updateGameSession(body.sessionId, userId, { status: "active", state: initialState ?? undefined, expectedVersion: current.version });
       if (!session) return apiError("Session version changed. Refresh and retry.", 409);

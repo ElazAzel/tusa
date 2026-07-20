@@ -5,13 +5,13 @@
 **Commit:** `0356f6d`<br>
 **Product status:** public beta / supported pilot at 8.8/10; autonomous paid production remains 7.9/10 until external release gates pass
 
-**Remediation update:** controlled Blob media, moderation/report/appeal, atomic KOINS bets, first-party error monitoring, a production health gate, email verification lifecycle, Resend delivery adapter/webhook journal, database-backed TOTP enrollment and one-use recovery codes, operational SLO events, certification/load/canonical harnesses, eleven applied migrations with schema version 10, 58 unit/invariant tests and 52 browser smokes are verified. Core evidence is still 0/8 because an isolated preview party and Host storage state were not supplied; Resend DNS/domain verification, root enrollment, venue load, public DNS/legal approval and the in-person pilot remain external gates.
+**Remediation update:** controlled Blob media, moderation/report/appeal, atomic KOINS bets, first-party error monitoring, a production health gate, email verification lifecycle, Resend delivery adapter/webhook journal, database-backed TOTP enrollment and one-use recovery codes, operational SLO events, certification/load/canonical harnesses, eleven applied migrations with schema version 10, 59 unit/invariant tests and 52 browser smokes are verified. Core evidence is still 0/8 because an isolated preview party and Host storage state were not supplied; Resend DNS/domain verification, root enrollment, venue load, public DNS/legal approval and the in-person pilot remain external gates.
 
 ## 12-week roadmap implementation checkpoint
 
 Shipped in code on 19.07.2026:
 
-- Playwright core-eight harness with isolated Host + two Controller contexts, real guest joins, full round drivers, reconnect, rematch, privacy, moderation, spectator/leave, RU/EN and mobile evidence.
+- Playwright core-eight harness with isolated Host + two Controller contexts, real guest joins, manifest-minimum participant coverage, full round drivers, reconnect, rematch, privacy, moderation, spectator/leave, RU/EN and mobile evidence. The supplied preview URL is now used as the Playwright base URL, and evidence requires screenshots for both locales.
 - Source-bound certification gate in CI. `releaseStatus: "certified"` fails CI without current evidence and every required scenario.
 - Resend verification/reset delivery, signed Svix webhook verification and hashed-recipient delivery journal.
 - Root-admin TOTP enrollment with QR provisioning, AES-256-GCM secret storage and ten one-use hashed recovery codes.

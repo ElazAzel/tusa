@@ -21,6 +21,8 @@
     "rag:search": "tsx scripts/rag-search.ts",
     "load:preflight": "node scripts/load-preflight.mjs",
     "certification:verify": "tsx scripts/verify-certification.ts",
+    "certification:preflight": "tsx scripts/certification-preflight.ts",
+    "test:certification": "npm run certification:preflight && playwright test tests/e2e/core-certification.spec.ts",
     "load:venue": "node scripts/venue-load.mjs",
     "check:canonical": "node scripts/check-canonical.mjs"
   },

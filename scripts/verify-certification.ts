@@ -21,7 +21,11 @@ for (const gameId of certificationGameIds) {
   if ((evidence.contexts ?? 0) < 3) failures.push(`${gameId}: Host + two Controller contexts are required`);
   if (evidence.sourceHash !== computeCertificationSourceHash(gameId)) failures.push(`${gameId}: evidence is stale for current source`);
   for (const scenario of certificationScenarios) if (!evidence.scenarios?.[scenario]?.passed) failures.push(`${gameId}: scenario ${scenario} did not pass`);
-  if (!evidence.screenshots?.length) failures.push(`${gameId}: screenshots are missing`);
+  const expectedScreenshots = [`screenshots/${gameId}-ru.png`, `screenshots/${gameId}-en.png`];
+  for (const screenshot of expectedScreenshots) {
+    if (!evidence.screenshots?.includes(screenshot)) failures.push(`${gameId}: ${screenshot} is missing from evidence`);
+    else if (!existsSync(resolve("docs/game-certification", screenshot))) failures.push(`${gameId}: ${screenshot} file is missing`);
+  }
 }
 
 if (failures.length) {

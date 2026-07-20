@@ -12,7 +12,7 @@
 npm install          # dependencies
 npm run dev          # dev server (localhost:3000)
 npm run build        # production build
-npm test             # 58 unit/contract/platform tests (must pass before commit)
+npm test             # 59 unit/contract/platform tests (must pass before commit)
 npm run lint         # 0 errors required
 npm run rag:build    # rebuild RAG index after changes
 ```
@@ -222,4 +222,4 @@ Load a skill with `opencode use-skill <name>` (or equivalent in your AI tool).
 - **Realtime**: Ably (production) / SSE in-memory fallback
 - **Rate limiting**: Upstash Redis (production) / in-memory fallback
 - **Deployment**: Vercel; 46 route handler files at the 19.07.2026 baseline
-- **CI**: GitHub Actions (typecheck → lint → test → build → audit → e2e)
+- **CI**: GitHub Actions (typecheck → lint → test → certification gate → build → audit → e2e)

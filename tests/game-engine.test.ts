@@ -3,6 +3,7 @@ import test from "node:test";
 import { applyServerGameCommand, initialServerGameState } from "../lib/games/engine";
 import { GAME_MANIFEST } from "../lib/games/manifest";
 import { getDefinition, hasDefinition } from "../lib/games/sdk";
+import { certificationGameIds, certificationParticipantCount } from "../lib/games/certification-node";
 
 const players = ["host", "guest"];
 const context = (actorId: string, now: number) => ({ actorId, creatorId: "host", participants: players, now });
@@ -270,6 +271,15 @@ test("Color Cards deals private hands and enforces player turns on the server", 
   assert.match(blocked.error ?? "", /turn/);
   const drawn = applyServerGameCommand("uno", started, "draw", {}, ctx("host"))!;
   assert.equal((drawn.state.hands as Record<string, unknown[]>).host.length, 8);
+});
+
+test("core certification uses at least each mode's manifest minimum", () => {
+  for (const gameId of certificationGameIds) {
+    const game = GAME_MANIFEST.find((item) => item.id === gameId);
+    assert.ok(game, `${gameId} must exist in the manifest`);
+    assert.ok(certificationParticipantCount(gameId) >= game.minPlayers, `${gameId} certification player count must meet the manifest minimum`);
+    assert.ok(certificationParticipantCount(gameId) >= 3, `${gameId} certification must include Host and two Controllers`);
+  }
 });
 
 test("Secret Grid and Color Cards do not expose hidden state to another controller", () => {

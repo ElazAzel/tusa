@@ -2,7 +2,7 @@ import { test, expect, type APIRequestContext, type BrowserContext } from "@play
 import { mkdir, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
-import { certificationGameIds, certificationScenarios, computeCertificationSourceHash } from "../../lib/games/certification-node";
+import { certificationGameIds, certificationParticipantCount, certificationScenarios, computeCertificationSourceHash } from "../../lib/games/certification-node";
 
 const inviteCode = process.env.CERTIFICATION_INVITE_CODE;
 const partyId = process.env.CERTIFICATION_PARTY_ID;
@@ -79,11 +79,11 @@ test.describe("core game browser certification", () => {
   test.skip(!canRun, "Certification requires an isolated preview party and Host storage state.");
   for (const gameId of certificationGameIds) test(`${gameId}: Host + 2 Controllers`, async ({ browser, baseURL }) => {
     const hostContext = await browser.newContext({ storageState: hostStorageState });
-    const controllerOne = await browser.newContext();
-    const controllerTwo = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    const contexts = [hostContext, controllerOne, controllerTwo];
-    const controllerOneId = await joinGuest(controllerOne, "Controller One");
-    const controllerTwoId = await joinGuest(controllerTwo, "Controller Two");
+    const controllerContexts = await Promise.all(Array.from({ length: certificationParticipantCount(gameId) - 1 }, (_, index) => browser.newContext(index === 1 ? { viewport: { width: 390, height: 844 } } : undefined)));
+    const contexts = [hostContext, ...controllerContexts];
+    const controllerIds = await Promise.all(controllerContexts.map((context, index) => joinGuest(context, `Controller ${index + 1}`)));
+    const [controllerOne, controllerTwo] = controllerContexts;
+    const [controllerOneId, controllerTwoId] = controllerIds;
     const screenshots: string[] = [];
     const results = Object.fromEntries(certificationScenarios.map((scenario) => [scenario, { passed: false }])) as Record<string, { passed: boolean }>;
 
@@ -92,15 +92,16 @@ test.describe("core game browser certification", () => {
       const sessionId = created.session.id;
       const hostView = await state(hostContext.request, sessionId);
       const hostId = String(hostView.viewerId);
-      await post(controllerOne.request, { action: "join", sessionId });
-      await post(controllerTwo.request, { action: "join", sessionId });
+      await Promise.all(controllerContexts.map((context) => post(context.request, { action: "join", sessionId })));
+      const lobby = await state(hostContext.request, sessionId);
+      expect(lobby.session.participants).toHaveLength(certificationParticipantCount(gameId));
       await post(hostContext.request, { action: "start", sessionId });
       results.create_join_start.passed = true;
       const stageBefore = await state(hostContext.request, sessionId);
       const controllerBefore = await state(controllerOne.request, sessionId);
       if (["impostor", "trivia", "bombParty", "quiplash", "fibbage", "twoTruths"].includes(gameId)) expect(JSON.stringify(controllerBefore.session.state)).not.toEqual(JSON.stringify(stageBefore.session.state));
       results.privacy.passed = true;
-      await playRound(gameId, sessionId, hostContext.request, [controllerOne.request, controllerTwo.request], [hostId, controllerOneId, controllerTwoId]);
+      await playRound(gameId, sessionId, hostContext.request, controllerContexts.map((context) => context.request), [hostId, ...controllerIds]);
       results.full_round.passed = true;
       const page = await controllerOne.newPage();
       await page.goto(`${baseURL}/party/${inviteCode}`); await page.reload(); await expect(page.locator("body")).toBeVisible();

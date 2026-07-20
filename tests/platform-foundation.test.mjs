@@ -60,6 +60,7 @@ test("game endpoints validate input and authorize party access", () => {
   assert.match(gamesApi, /deriveVerifiedScore\(current\.state\)/);
   assert.doesNotMatch(gamesApi, /body\.score/);
   assert.match(scoring, /persisted server snapshot/i);
+  assert.match(gamesApi, /current\.participants\.length < gameDefinition\.minPlayers/);
 });
 
 test("sitemap and AI discovery are manifest driven", () => {

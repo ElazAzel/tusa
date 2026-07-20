@@ -1,9 +1,14 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { getGameById } from "./manifest";
 
 export const certificationScenarios = ["create_join_start", "full_round", "reconnect", "rematch", "privacy", "moderation", "spectator_leave", "ru", "en", "mobile"] as const;
 export const certificationGameIds = ["impostor", "alias", "trivia", "bombParty", "quiplash", "fibbage", "wouldRather", "twoTruths"] as const;
+
+export function certificationParticipantCount(gameId: (typeof certificationGameIds)[number]) {
+  return Math.max(3, getGameById(gameId)?.minPlayers ?? 3);
+}
 
 const sources: Record<(typeof certificationGameIds)[number], [string, string]> = {
   impostor: ["lib/games/definitions/impostor.ts", "app/components/games/Impostor.tsx"],
