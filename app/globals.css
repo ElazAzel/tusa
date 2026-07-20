@@ -4145,6 +4145,21 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 }
 @media (prefers-reduced-motion: reduce) { .party-chat-bubble { animation: none; } }
 
+@media (max-width: 600px) {
+  .chat-input-wrap textarea { padding: 12px 14px 12px 52px; resize: none; }
+  .chat-emoji-btn { left: 8px; width: 36px; height: 36px; min-height: 36px; }
+  .emoji-picker { position: fixed; inset: auto 12px calc(76px + env(safe-area-inset-bottom, 0px)); margin: 0; z-index: 310; }
+  .emoji-picker-grid { display: grid; grid-template-columns: repeat(4, minmax(44px, 1fr)); gap: 6px; width: 100%; padding: 10px; border-radius: 14px; box-shadow: var(--shadow-lg); }
+  .emoji-picker-item { width: 100%; min-width: 44px; height: 44px; font-size: 22px; }
+  .more-modal-backdrop { z-index: 500; align-items: end; padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .more-modal { width: 100%; max-width: 540px; max-height: min(78dvh, 640px); padding: 18px 16px; border-radius: 20px 20px 14px 14px; animation: slideUp .2s var(--ease) both; }
+  .more-modal-header { margin-bottom: 12px; }
+  .more-modal-header .game-step { font-size: 13px; }
+  .more-modal-close { display: grid; width: 44px; height: 44px; place-items: center; border: 2px solid var(--black); border-radius: 12px; background: var(--cream); }
+  .more-modal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .more-modal-grid > button { min-height: 84px; padding: 10px 6px; font-size: 10px; overflow-wrap: anywhere; }
+}
+
 /* Party feature surfaces */
 .live-party-shell.party-room { min-height: 100svh; padding: 0; background: #ecece6; color: var(--black); }
 .live-party-shell.party-room--adult { background: #ecece6; color: var(--black); }

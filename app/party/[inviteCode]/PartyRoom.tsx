@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Party, PartyRole, RsvpStatus, GameSession, ChatMessage, GameScore } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import LocaleToggle from "@/app/components/LocaleToggle";
@@ -98,6 +99,18 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   const chatStreamRef = useRef<HTMLDivElement>(null);
   const chatAtBottomRef = useRef(true);
   const gameRecoveryRef = useRef(false);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setMoreOpen(false); };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [moreOpen]);
   const { locale, t } = useLocale();
   const isOwner = party.role === "owner";
   const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/join/${party.inviteCode}` : "";
@@ -487,9 +500,9 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
           </div>
           <div className="demo-hero-stamp"><strong>{rsvpCounts.going}</strong><span>{t("eventHubGoing")}</span></div>
         </section>}
-    {moreOpen && <div className="more-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setMoreOpen(false); }}>
-      <section aria-label={t("moreTab")} aria-modal="true" className="more-modal" role="dialog">
-        <div className="more-modal-header"><span className="game-step">{t("moreTab")}</span><button aria-label={locale === "ru" ? "Закрыть" : "Close"} onClick={() => setMoreOpen(false)} type="button" className="more-modal-close"><span aria-hidden="true" className="material-symbols-rounded">close</span></button></div>
+    {moreOpen && typeof document !== "undefined" && createPortal(<div className="more-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setMoreOpen(false); }}>
+      <section aria-labelledby="more-modal-title" aria-modal="true" className="more-modal" role="dialog">
+        <div className="more-modal-header"><h2 id="more-modal-title" className="game-step">{t("moreTab")}</h2><button aria-label={locale === "ru" ? "Закрыть" : "Close"} onClick={() => setMoreOpen(false)} type="button" className="more-modal-close"><span aria-hidden="true" className="material-symbols-rounded">close</span></button></div>
         <div className="more-modal-grid">
           <button onClick={() => { setTab("gallery"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">photo_library</span>{t("gallerySub")}</button>
           <button onClick={() => { setTab("koins"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">paid</span>{t("demoNavKoins")}</button>
@@ -499,10 +512,10 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
           <button onClick={() => { setTab("gratitude"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">favorite</span>{t("gratitudeTab")}</button>
           <button onClick={() => { setTab("daily"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">today</span>{t("dailyTitle")}</button>
           <button onClick={() => { setTab("theme"); setMoreOpen(false); }} type="button"><span className="material-symbols-rounded">palette</span>{t("themeTab")}</button>
-          <button onClick={() => router.push("/app/profile")} type="button"><span className="material-symbols-rounded">person</span>{t("demoNavProfile")}</button>
+          <button onClick={() => { setMoreOpen(false); router.push("/app/profile"); }} type="button"><span className="material-symbols-rounded">person</span>{t("demoNavProfile")}</button>
         </div>
       </section>
-    </div>}
+    </div>, document.body)}
 
     {tab === "space" && <section className="party-room-panel live-party-overview">
       <div className="demo-panel-title"><div><span>{t("roomSpace")}</span><h2>{t("roomHero")}</h2></div><span className="demo-chip">{members.length || party.memberCount}</span></div>
