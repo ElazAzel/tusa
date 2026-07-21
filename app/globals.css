@@ -230,7 +230,7 @@ select:focus-visible {
   letter-spacing: .02em;
 }
 
-.badge-lime { background: var(--lime); }
+.badge-lime { background: var(--lime); color: var(--black) !important; }
 .badge-pink { background: var(--pink); color: var(--white); }
 .badge-blue { background: var(--blue); color: var(--white); }
 
@@ -304,14 +304,19 @@ select:focus-visible {
   box-shadow: 3px 3px 0 var(--black);
 }
 
+.button:active {
+  transform: translate(5px, 5px);
+  box-shadow: 1px 1px 0 var(--black);
+}
+
 .button-primary {
   background: var(--lime);
-  color: var(--black);
+  color: var(--black) !important;
 }
 
 .button-secondary {
   background: var(--white);
-  color: var(--black);
+  color: var(--black) !important;
 }
 
 .trust-line {
