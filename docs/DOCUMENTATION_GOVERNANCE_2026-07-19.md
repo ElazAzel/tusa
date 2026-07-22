@@ -2,7 +2,7 @@
 
 **Версия:** 2.1<br>
 **Дата актуализации:** 19.07.2026<br>
-**Repository baseline:** `main` through the 22.07.2026 production schema-gate follow-up<br>
+**Repository baseline:** `main@edee56e` on 22.07.2026<br>
 **Статус продукта:** public beta; не готов к автономным платным B2B-событиям
 
 ## Источник истины
@@ -33,7 +33,7 @@ PDF из `tmp/pdfs/PDF_Exports/` являются опубликованными
 - Все 32 режима имеют `releaseStatus: "beta"`; certified = 0.
 - Guest-first join, Party Room, chat, gallery, profile, KOINS, SSE/Ably integration, Upstash integration и CI существуют.
 - Production build использует local email/password compatibility layer через aliases; старые упоминания активного Clerk-flow не являются фактом.
-- Drizzle migrations are the production source of schema changes. Runtime DDL remains only as a non-production developer compatibility fallback; Vercel production requires schema version 11 before serving party and admin data.
+- Drizzle migrations are the production source of schema changes. Runtime DDL remains only as a non-production developer compatibility fallback; Vercel production requires schema version 12 before serving party, auth, waitlist and admin data.
 - Venue Night, Event Pass, TUSA Plus, payments, white-label, partner console и marketplace являются pre-implementation.
 
 ## Release gates

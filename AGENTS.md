@@ -1,6 +1,6 @@
 # TUSA.game — AI Context & Orchestration Hub
 
-> Updated 22.07.2026 · Supported pilot 8.6/10 · Next.js 16 · React 19 · TypeScript · verified local accounts + HMAC guests · Neon Postgres · first-party observability · SSE/Ably/Neon fallback · 50+ route handlers · 32 Beta modes · certified = 0
+> Updated 22.07.2026 · Supported pilot 8.8/10 · Next.js 16 · React 19 · TypeScript · verified local accounts + HMAC guests · Neon Postgres · first-party observability · SSE/Ably/Neon fallback · 50+ route handlers · 32 Beta modes · certified = 0
 
 > Current source of truth: `docs/IMPLEMENTATION_STATUS_2026-07-19.md`. Documentation precedence and shipped/gap/target/pre-implementation semantics: `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md`.
 
@@ -12,7 +12,7 @@
 npm install          # dependencies
 npm run dev          # dev server (localhost:3000)
 npm run build        # production build
-npm test             # 60 unit/contract/platform tests (must pass before commit)
+npm test             # 61 unit/contract/platform tests (must pass before commit)
 npm run lint         # 0 errors required
 npm run rag:build    # rebuild RAG index after changes
 ```
@@ -87,7 +87,7 @@ app/globals.css       ← ~3980 lines brand CSS, brutal design, mobile-first
 
 ### RAG index structure
 
-- **1061 chunks** across 9 types: `docs`, `component`, `utility`, `route`, `css`, `game`, `hook`, `config`, `type` (built 22.07.2026)
+- **1065 chunks** across 9 types: `docs`, `component`, `utility`, `route`, `css`, `game`, `hook`, `config`, `type` (built 22.07.2026)
 - Index stored at `.rag/index.json` (~6 MB, auto-generated, gitignored)
 - **Always rebuild after changes**: `npm run rag:build`
 
@@ -128,7 +128,7 @@ export default function Game({ partyId, sessionId, onSave, role }:
 ### Testing
 
 ```bash
-npm test             # 60 tests: game engine, contracts, routes and security
+npm test             # 61 tests: game engine, contracts, routes and security
 npm run test:e2e     # Playwright E2E (requires install)
 ```
 

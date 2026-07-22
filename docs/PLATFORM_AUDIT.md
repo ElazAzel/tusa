@@ -1,8 +1,11 @@
 # TUSA.game - platform completion audit
 
 **Актуализировано:** 19.07.2026<br>
-**Baseline:** `main@0356f6d`<br>
+**Original audit baseline:** `main@0356f6d`<br>
+**Current reconciliation:** `main@edee56e` on 22.07.2026<br>
 **Status:** public beta; 32 Beta modes; certified = 0
+
+> **Reconciled 22.07.2026 — `main@edee56e`:** this dated audit is retained for its certification criteria. Its findings about request-time business DDL, non-atomic KOINS bets, absent moderation/reporting and incomplete controlled media are resolved in the current beta baseline. Production schema v12 and `/api/health` are verified. All 32 games still remain Beta; no mode may be called certified until current browser evidence is recorded.
 
 Источник текущих фактов: `docs/IMPLEMENTATION_STATUS_2026-07-19.md`. Target-требования определяются актуальными документами 02 Product Requirements и 04 Game Platform из `tmp/pdfs/Editable_DOCX/`.
 

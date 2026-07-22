@@ -4,6 +4,14 @@
 
 This runbook records the production configuration that cannot be safely invented in source code. Values are added as **sensitive** Vercel environment variables; the application reports their state through `/admin/system` but never returns values.
 
+## Verified checkpoint — 22.07.2026
+
+- `main@edee56e` is deployed to `https://tusa.game` and `https://tusagame.vercel.app`.
+- The connected production database is at schema version 12. Party, local auth, waitlist and admin traffic fail closed before issuing queries when the migration baseline is missing.
+- `/api/health` reports `ready` for database, local auth, realtime, rate limit, media and observability.
+- `/api/health` still reports `missing` for email delivery and admin MFA because their provider/enrollment configuration cannot be completed from source code.
+- This does not certify games or replace the venue-load, incident and real-device gates.
+
 ## Required before strict production mode
 
 | Integration | Required variables | Purpose |

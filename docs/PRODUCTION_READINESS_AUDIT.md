@@ -2,8 +2,11 @@
 
 **Date:** 19.07.2026<br>
 **Branch:** `main`<br>
-**Commit:** `0356f6d`<br>
+**Original audit commit:** `0356f6d`<br>
+**Current reconciliation:** `main@edee56e` on 22.07.2026<br>
 **Decision:** not ready for unsupervised paid B2B events
+
+> **Reconciled 22.07.2026 — `main@edee56e`:** the migration-first schema, atomic KOINS betting/rewards, moderation, controlled Blob media, production health, certification harness and fail-closed production guards described as gaps below are now shipped for the beta. Schema v12 is applied and production health reports database, local auth, realtime, rate limit, media and observability as ready. The remaining gates are current browser certification evidence (`0/8`), production email and root-admin MFA configuration, venue/load and incident drills, plus DNS, legal/privacy and naming/IP review.
 
 This audit follows `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md` and `docs/IMPLEMENTATION_STATUS_2026-07-19.md`.
 
