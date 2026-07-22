@@ -12,7 +12,7 @@
 npm install          # dependencies
 npm run dev          # dev server (localhost:3000)
 npm run build        # production build
-npm test             # 59 unit/contract/platform tests (must pass before commit)
+npm test             # 60 unit/contract/platform tests (must pass before commit)
 npm run lint         # 0 errors required
 npm run rag:build    # rebuild RAG index after changes
 ```
@@ -87,7 +87,7 @@ app/globals.css       ← ~3980 lines brand CSS, brutal design, mobile-first
 
 ### RAG index structure
 
-- **849 chunks** across 9 types: `docs`, `component`, `utility`, `route`, `css`, `game`, `hook`, `config`, `type` (built 19.07.2026)
+- **1061 chunks** across 9 types: `docs`, `component`, `utility`, `route`, `css`, `game`, `hook`, `config`, `type` (built 22.07.2026)
 - Index stored at `.rag/index.json` (~6 MB, auto-generated, gitignored)
 - **Always rebuild after changes**: `npm run rag:build`
 
@@ -128,7 +128,7 @@ export default function Game({ partyId, sessionId, onSave, role }:
 ### Testing
 
 ```bash
-npm test             # 58 tests: game engine, contracts, routes and security
+npm test             # 60 tests: game engine, contracts, routes and security
 npm run test:e2e     # Playwright E2E (requires install)
 ```
 
@@ -200,6 +200,7 @@ npm run test:e2e     # Playwright E2E (requires install)
 | Master Plan (RU) | `docs/PLAN.md` | Target plan for full readiness |
 | Monetization | `docs/TUSA_io_Партнёрства_реклама_монетизация.md` | Pre-implementation partnerships, ads and monetization model |
 | Global Platform | `docs/GLOBAL_SOCIAL_GAMING_PLATFORM_2.0.md` | Target strategic proposal |
+| Market Research | `docs/MARKET_RESEARCH_2026-07-22.md` | Market signals, positioning and 90-day validation plan |
 
 ---
 
