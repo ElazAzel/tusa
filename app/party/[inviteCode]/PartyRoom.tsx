@@ -464,7 +464,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   }
 
   return <main className={`demo-shell live-party-shell party-room ${party.adultOnly ? "party-room--adult" : "party-room--family"}`}>
-    {((liveChat.hasConnectedOnce && !liveChat.connected) || (liveParty.hasConnectedOnce && !liveParty.connected)) && <div className="connection-banner connection-banner--offline">
+    {(liveChat.hasConnectedOnce && liveParty.hasConnectedOnce && !liveChat.connected && !liveParty.connected) && <div className="connection-banner connection-banner--offline">
       <span className="material-symbols-rounded">cloud_off</span>
       {locale === "ru" ? "Нет соединения. Переподключение…" : "Connection lost. Reconnecting…"}
     </div>}

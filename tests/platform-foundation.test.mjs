@@ -127,6 +127,7 @@ test("chat messages are member-scoped, idempotent and recover after reconnect", 
   assert.match(partiesSource, /ON CONFLICT \(party_id, clerk_user_id, client_mutation_id\) WHERE client_mutation_id IS NOT NULL DO NOTHING/);
   assert.match(room, /liveChat\.connectionEpoch/);
   assert.match(room, /chatSendFailed/);
+  assert.match(room, /liveChat\.hasConnectedOnce && liveParty\.hasConnectedOnce && !liveChat\.connected && !liveParty\.connected/);
 });
 
 test("runtime health never exposes secrets and strict realtime can fail closed", () => {
@@ -142,6 +143,8 @@ test("runtime schema upgrades do not drop and recreate idempotency constraints",
   assert.doesNotMatch(partiesSource, /DROP CONSTRAINT IF EXISTS chat_messages_mutation_unique/);
   assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS chat_messages_mutation_idx/);
   assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS game_scores_mutation_idx/);
+  assert.match(partiesSource, /process\.env\.VERCEL_ENV === "production"/);
+  assert.match(partiesSource, /Database schema is outdated\. Run npm run db:migrate/);
 });
 
 test("cosmetics are catalogue-backed, entitlement-gated and safe to render in chat", () => {

@@ -2,7 +2,7 @@
 
 **Версия:** 2.1<br>
 **Дата актуализации:** 19.07.2026<br>
-**Repository baseline:** `main@0356f6d`<br>
+**Repository baseline:** `main` through the 22.07.2026 production schema-gate follow-up<br>
 **Статус продукта:** public beta; не готов к автономным платным B2B-событиям
 
 ## Источник истины
@@ -33,13 +33,13 @@ PDF из `tmp/pdfs/PDF_Exports/` являются опубликованными
 - Все 32 режима имеют `releaseStatus: "beta"`; certified = 0.
 - Guest-first join, Party Room, chat, gallery, profile, KOINS, SSE/Ably integration, Upstash integration и CI существуют.
 - Production build использует local email/password compatibility layer через aliases; старые упоминания активного Clerk-flow не являются фактом.
-- Business schema всё ещё зависит от runtime DDL; Drizzle не является единым источником миграций.
+- Drizzle migrations are the production source of schema changes. Runtime DDL remains only as a non-production developer compatibility fallback; Vercel production requires schema version 10 before serving party data.
 - Venue Night, Event Pass, TUSA Plus, payments, white-label, partner console и marketplace являются pre-implementation.
 
 ## Release gates
 
 1. Выбрать и укрепить одну auth-модель.
-2. Перевести business schema на versioned migrations.
+2. Keep the schema migration gate and validate it on every production deploy; the legacy local compatibility fallback must not be enabled in production.
 3. Завершить atomic join/settle/cancel betting и reconciliation; reward double-credit уже закрыт.
 4. Закрепить core eight в manifest и пройти browser, reconnect, rematch, privacy и moderation certification.
 5. Проверить Ably/Upstash strict production mode, load, monitoring и incident fallback.
