@@ -109,6 +109,11 @@ export function ensureAdminSchema() {
   if (schemaPromise) return schemaPromise;
   schemaPromise = (async () => {
     const sql = db();
+    if (process.env.VERCEL_ENV === "production") {
+      const [version] = await sql`SELECT version FROM platform_schema_version WHERE singleton = TRUE LIMIT 1` as unknown as { version: number }[];
+      if (!version || Number(version.version) < 11) throw new Error("Database schema is outdated. Run npm run db:migrate before serving admin traffic.");
+      return;
+    }
     await sql`CREATE TABLE IF NOT EXISTS admin_members (
       id UUID PRIMARY KEY,
       clerk_user_id TEXT NOT NULL UNIQUE,

@@ -1,6 +1,6 @@
 # TUSA.game — AI Context & Orchestration Hub
 
-> Updated 19.07.2026 · Supported pilot 8.6/10 · Next.js 16 · React 19 · TypeScript · verified local accounts + HMAC guests · Neon Postgres · first-party observability · SSE/Ably/Neon fallback · 50+ route handlers · 32 Beta modes · certified = 0
+> Updated 22.07.2026 · Supported pilot 8.6/10 · Next.js 16 · React 19 · TypeScript · verified local accounts + HMAC guests · Neon Postgres · first-party observability · SSE/Ably/Neon fallback · 50+ route handlers · 32 Beta modes · certified = 0
 
 > Current source of truth: `docs/IMPLEMENTATION_STATUS_2026-07-19.md`. Documentation precedence and shipped/gap/target/pre-implementation semantics: `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md`.
 
@@ -217,7 +217,7 @@ Load a skill with `opencode use-skill <name>` (or equivalent in your AI tool).
 
 ## Environment
 
-- **DB**: Neon Postgres via `@neondatabase/serverless` (versioned schema v9, raw SQL + Drizzle)
+- **DB**: Neon Postgres via `@neondatabase/serverless` (versioned schema v11, raw SQL + Drizzle)
 - **Auth**: local email/password compatibility layer for accounts + HMAC guest sessions; final provider decision is P0
 - **Realtime**: Ably (production) / SSE in-memory fallback
 - **Rate limiting**: Upstash Redis (production) / in-memory fallback

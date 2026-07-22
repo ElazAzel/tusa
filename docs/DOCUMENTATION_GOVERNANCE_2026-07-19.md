@@ -33,7 +33,7 @@ PDF из `tmp/pdfs/PDF_Exports/` являются опубликованными
 - Все 32 режима имеют `releaseStatus: "beta"`; certified = 0.
 - Guest-first join, Party Room, chat, gallery, profile, KOINS, SSE/Ably integration, Upstash integration и CI существуют.
 - Production build использует local email/password compatibility layer через aliases; старые упоминания активного Clerk-flow не являются фактом.
-- Drizzle migrations are the production source of schema changes. Runtime DDL remains only as a non-production developer compatibility fallback; Vercel production requires schema version 10 before serving party data.
+- Drizzle migrations are the production source of schema changes. Runtime DDL remains only as a non-production developer compatibility fallback; Vercel production requires schema version 11 before serving party and admin data.
 - Venue Night, Event Pass, TUSA Plus, payments, white-label, partner console и marketplace являются pre-implementation.
 
 ## Release gates

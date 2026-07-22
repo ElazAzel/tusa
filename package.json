@@ -17,6 +17,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:verbose": "node scripts/migrate-database.mjs",
     "db:check": "drizzle-kit check",
+    "admin:grant": "tsx scripts/grant-admin.ts",
     "rag:build": "tsx scripts/rag-build.ts",
     "rag:search": "tsx scripts/rag-search.ts",
     "load:preflight": "node scripts/load-preflight.mjs",
