@@ -146,6 +146,7 @@ test("runtime schema upgrades do not drop and recreate idempotency constraints",
   assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS chat_messages_mutation_idx/);
   assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS game_scores_mutation_idx/);
   assert.match(partiesSource, /process\.env\.VERCEL_ENV === "production"/);
+  assert.match(partiesSource, /Number\(version\.version\) < 11/);
   assert.match(partiesSource, /Database schema is outdated\. Run npm run db:migrate/);
 });
 
@@ -194,6 +195,9 @@ test("local auth supports reset tokens and global session revocation", () => {
   assert.match(localAuth, /password_reset_tokens/);
   assert.match(localAuth, /used_at = NOW\(\)/);
   assert.match(authMigration, /CREATE TABLE IF NOT EXISTS password_reset_tokens/);
+  assert.match(localAuth, /process\.env\.VERCEL_ENV === "production"/);
+  assert.match(localAuth, /Number\(version\.version\) < PRODUCTION_SCHEMA_VERSION/);
+  assert.match(localAuth, /before serving auth traffic/);
 });
 
 test("production realtime and rate limits have distributed database fallbacks", () => {

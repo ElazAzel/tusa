@@ -70,6 +70,7 @@ Venue Night, Event Pass, TUSA Plus, subscriptions, payments, white-label, brand 
 - Mobile Party Room now keeps emoji input clear, keeps reactions and the More sheet inside the viewport, and uses a body-level sheet with safe-area handling.
 - The offline banner now appears only when both authenticated party streams have actually disconnected. A single channel reconnect no longer falsely tells participants that the whole party is offline.
 - RBAC tables are migration-backed at schema version 11; production admin traffic fails closed if this migration is absent. `elaz263@gmail.com` is an active full-permission `admin` through the local account mapping and the assignment is audited.
+- Local account, party and admin traffic now share the schema-version-11 production gate. Runtime DDL remains a local-development compatibility fallback only and is never attempted for production auth requests.
 - The next code-independent release gates remain unchanged: isolated core-eight evidence, provider setup for production email/TOTP, venue load and incident drill, then DNS and legal approval.
 
 ## Document impact

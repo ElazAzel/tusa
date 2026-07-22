@@ -7,6 +7,7 @@ import { neon } from "@neondatabase/serverless";
 const scrypt = promisify(scryptCallback);
 const COOKIE_NAME = "tusa_auth";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+const PRODUCTION_SCHEMA_VERSION = 11;
 
 type AccountRow = { id: string; email: string; display_name: string; password_hash: string; image_url: string | null; session_version: number; email_verified_at: string | Date | null };
 export type LocalUser = { id: string; fullName: string; firstName: string; imageUrl: string; emailVerified: boolean; primaryEmailAddress: { emailAddress: string } };
@@ -63,6 +64,18 @@ function readToken(token?: string | null) {
 
 async function ensureSchema() {
   if (schemaPromise) return schemaPromise;
+  const requiresMigrationGate = process.env.TUSA_STRICT_SCHEMA === "true" || process.env.VERCEL_ENV === "production";
+  if (requiresMigrationGate) {
+    schemaPromise = db()`SELECT version FROM platform_schema_version WHERE singleton = TRUE LIMIT 1`
+      .then((rows) => {
+        const [version] = rows as unknown as { version: number }[];
+        if (!version || Number(version.version) < PRODUCTION_SCHEMA_VERSION) {
+          throw new Error("Database schema is outdated. Run npm run db:migrate before serving auth traffic.");
+        }
+      })
+      .catch((error) => { schemaPromise = null; throw error; });
+    return schemaPromise;
+  }
   schemaPromise = db()`CREATE TABLE IF NOT EXISTS local_accounts (
     id TEXT PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
