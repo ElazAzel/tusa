@@ -44,6 +44,8 @@ type ApplicationRow = {
 };
 
 let sqlClient: ReturnType<typeof neon> | null = null;
+let schemaPromise: Promise<void> | null = null;
+const PRODUCTION_SCHEMA_VERSION = 12;
 
 function sql() {
   if (!sqlClient) {
@@ -86,7 +88,21 @@ function applicationFromRow(row: ApplicationRow): WaitlistApplication {
 }
 
 export async function ensureWaitlistSchema() {
+  if (schemaPromise) return schemaPromise;
   const database = sql();
+  const requiresMigrationGate = process.env.TUSA_STRICT_SCHEMA === "true" || process.env.VERCEL_ENV === "production";
+  if (requiresMigrationGate) {
+    schemaPromise = database`SELECT version FROM platform_schema_version WHERE singleton = TRUE LIMIT 1`
+      .then((rows) => {
+        const [version] = rows as unknown as { version: number }[];
+        if (!version || Number(version.version) < PRODUCTION_SCHEMA_VERSION) {
+          throw new Error("Database schema is outdated. Run npm run db:migrate before serving waitlist traffic.");
+        }
+      })
+      .catch((error) => { schemaPromise = null; throw error; });
+    return schemaPromise;
+  }
+  schemaPromise = (async () => {
   await database`CREATE TABLE IF NOT EXISTS waitlist_settings (
     id TEXT PRIMARY KEY,
     capacity INTEGER NOT NULL CHECK (capacity > 0),
@@ -109,6 +125,8 @@ export async function ensureWaitlistSchema() {
   await database`INSERT INTO waitlist_settings (id, capacity, baseline_count)
     VALUES ('primary', ${WAITLIST_CAPACITY_DEFAULT}, ${WAITLIST_BASELINE_DEFAULT})
     ON CONFLICT (id) DO NOTHING`;
+  })().catch((error) => { schemaPromise = null; throw error; });
+  return schemaPromise;
 }
 
 export async function getWaitlistStats(): Promise<WaitlistStats> {

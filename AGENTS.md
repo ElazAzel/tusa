@@ -218,7 +218,7 @@ Load a skill with `opencode use-skill <name>` (or equivalent in your AI tool).
 
 ## Environment
 
-- **DB**: Neon Postgres via `@neondatabase/serverless` (versioned schema v11, raw SQL + Drizzle)
+- **DB**: Neon Postgres via `@neondatabase/serverless` (versioned schema v12, raw SQL + Drizzle)
 - **Auth**: local email/password compatibility layer for accounts + HMAC guest sessions; final provider decision is P0
 - **Realtime**: Ably (production) / SSE in-memory fallback
 - **Rate limiting**: Upstash Redis (production) / in-memory fallback

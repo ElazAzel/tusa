@@ -13,6 +13,7 @@
     { "idx": 8, "version": "7", "when": 1784485800000, "tag": "0008_platform_observability", "breakpoints": true },
     { "idx": 9, "version": "7", "when": 1784487600000, "tag": "0009_auth_verification", "breakpoints": true },
     { "idx": 10, "version": "7", "when": 1784574000000, "tag": "0010_production_certification", "breakpoints": true },
-    { "idx": 11, "version": "7", "when": 1784703600000, "tag": "0011_admin_rbac", "breakpoints": true }
+    { "idx": 11, "version": "7", "when": 1784703600000, "tag": "0011_admin_rbac", "breakpoints": true },
+    { "idx": 12, "version": "7", "when": 1784710800000, "tag": "0012_waitlist_schema", "breakpoints": true }
   ]
 }

@@ -39,6 +39,8 @@ const adminMfa = readFileSync(new URL("../lib/admin-mfa.ts", import.meta.url), "
 const certificationMigration = readFileSync(new URL("../drizzle/0010_production_certification.sql", import.meta.url), "utf8");
 const adminRbacMigration = readFileSync(new URL("../drizzle/0011_admin_rbac.sql", import.meta.url), "utf8");
 const adminMembers = readFileSync(new URL("../lib/admin-members.ts", import.meta.url), "utf8");
+const waitlistMigration = readFileSync(new URL("../drizzle/0012_waitlist_schema.sql", import.meta.url), "utf8");
+const waitlist = readFileSync(new URL("../lib/waitlist.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -146,7 +148,7 @@ test("runtime schema upgrades do not drop and recreate idempotency constraints",
   assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS chat_messages_mutation_idx/);
   assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS game_scores_mutation_idx/);
   assert.match(partiesSource, /process\.env\.VERCEL_ENV === "production"/);
-  assert.match(partiesSource, /Number\(version\.version\) < 11/);
+  assert.match(partiesSource, /Number\(version\.version\) < 12/);
   assert.match(partiesSource, /Database schema is outdated\. Run npm run db:migrate/);
 });
 
@@ -197,6 +199,7 @@ test("local auth supports reset tokens and global session revocation", () => {
   assert.match(authMigration, /CREATE TABLE IF NOT EXISTS password_reset_tokens/);
   assert.match(localAuth, /process\.env\.VERCEL_ENV === "production"/);
   assert.match(localAuth, /Number\(version\.version\) < PRODUCTION_SCHEMA_VERSION/);
+  assert.match(localAuth, /const PRODUCTION_SCHEMA_VERSION = 12/);
   assert.match(localAuth, /before serving auth traffic/);
 });
 
@@ -233,5 +236,14 @@ test("admin RBAC is migration-backed and production never provisions it on a req
   assert.match(adminRbacMigration, /CREATE TABLE IF NOT EXISTS admin_audit_log/);
   assert.match(adminRbacMigration, /VALUES \(TRUE, 11, NOW\(\)\)/);
   assert.match(adminMembers, /process\.env\.VERCEL_ENV === "production"/);
-  assert.match(adminMembers, /Number\(version\.version\) < 11/);
+  assert.match(adminMembers, /Number\(version\.version\) < 12/);
+});
+
+test("waitlist is migration-backed and production never provisions it on a request", () => {
+  assert.match(waitlistMigration, /CREATE TABLE IF NOT EXISTS waitlist_settings/);
+  assert.match(waitlistMigration, /CREATE TABLE IF NOT EXISTS waitlist_applications/);
+  assert.match(waitlistMigration, /VALUES \(TRUE, 12, NOW\(\)\)/);
+  assert.match(waitlist, /process\.env\.VERCEL_ENV === "production"/);
+  assert.match(waitlist, /const PRODUCTION_SCHEMA_VERSION = 12/);
+  assert.match(waitlist, /before serving waitlist traffic/);
 });
