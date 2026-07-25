@@ -4314,6 +4314,95 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
   .party-chat-stream { padding: 9px; }
   .live-party-mobile-nav button span:last-child { display: none; }
 }
+
+/* App/profile mobile audit: keep the account surfaces inside the viewport. */
+.profile-editor-layout > * { min-width: 0; }
+.profile-editor-page .profile-stats,
+.profile-editor-page .profile-grid,
+.profile-editor-page .badge-grid { min-width: 0; }
+
+@media (max-width: 600px) {
+  .profile-editor-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 14px 14px calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow-x: clip;
+  }
+  .profile-editor-page > .product-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    min-height: 52px;
+    margin-bottom: 20px;
+  }
+  .profile-editor-page .product-header__brand .brand-logo--long {
+    width: auto;
+    max-width: 122px;
+    height: 38px;
+  }
+  .profile-editor-page .product-header__actions { gap: 6px; }
+  .profile-editor-page .product-header__back {
+    max-width: 104px;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .profile-editor-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .profile-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+    width: 100%;
+    gap: 14px;
+    padding: 18px;
+    text-align: left;
+    justify-items: stretch;
+  }
+  .profile-hero > div:last-child { display: block; min-width: 0; }
+  .profile-hero > div:last-child > span { display: block; font-size: 10px; }
+  .profile-hero h2 { margin: 4px 0 6px; font-size: clamp(24px, 7vw, 32px); letter-spacing: -.025em; overflow-wrap: anywhere; }
+  .profile-hero p { display: -webkit-box; overflow: hidden; font-size: 13px; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .profile-meta { gap: 5px; margin-top: 9px; }
+  .profile-meta b { max-width: 100%; padding: 5px 7px; overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+  .profile-avatar { width: 72px; height: 72px; border-width: 4px; border-radius: 20px; box-shadow: 4px 4px 0 var(--black); font-size: 21px; }
+  .profile-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin: 18px 0;
+  }
+  .profile-stats article {
+    min-width: 0;
+    min-height: 142px;
+    padding: 15px;
+    overflow: hidden;
+  }
+  .profile-stats strong { font-size: clamp(23px, 7vw, 30px); }
+  .profile-stats span { overflow-wrap: anywhere; font-size: 10px; line-height: 1.25; }
+  .profile-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .league-card, .frame-card { padding: 18px; }
+  .league-card h3, .frame-card h3 { font-size: 22px; }
+  .frame-preview-row { flex-wrap: wrap; gap: 8px !important; margin-top: 16px !important; }
+  .frame-option { min-width: 48px; min-height: 58px; }
+  .badge-section, .profile-editor-card, .promo-redeem-card { min-width: 0; }
+  .profile-editor-card { width: 100%; padding: 20px 16px; border-radius: 18px; box-shadow: 5px 5px 0 var(--black); }
+  .profile-editor-card h1 { font-size: clamp(30px, 9vw, 38px); }
+  .avatar-upload { align-items: flex-start; flex-wrap: wrap; }
+  .mobile-bottom-nav {
+    min-height: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding: 6px 0 env(safe-area-inset-bottom, 0px);
+  }
+  .mobile-bottom-nav a { min-height: 52px; justify-content: center; }
+}
+
+@media (max-width: 380px) {
+  .profile-editor-page { padding-inline: 10px !important; }
+  .profile-editor-page .product-header__back { width: 44px; justify-content: center; font-size: 0; }
+  .profile-editor-page .product-header__back > span { font-size: 20px; }
+  .profile-hero { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .profile-hero > div:last-child { width: 100%; }
+  .profile-meta { justify-content: center; }
+  .profile-stats article { min-height: 132px; padding: 13px; }
+}
 .party-feature-surface { width: min(100%, 920px); min-height: 0; margin: 24px auto 0; padding: clamp(22px,4vw,36px); border: var(--line); border-radius: 18px; background: var(--white); box-shadow: var(--shadow-lg); color: var(--black); }
 .party-feature-loading { margin: 0; color: #626268; font-weight: 800; }
 .party-feature-list { display: grid; gap: 12px; margin-top: 18px; }
