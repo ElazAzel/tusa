@@ -25,7 +25,6 @@ const gameRequestSchema = z.object({
   game: z.string().max(64).optional(),
   config: z.record(z.string(), z.unknown()).optional(),
   status: z.enum(["active", "paused"]).optional(),
-  state: z.record(z.string(), z.unknown()).optional(),
   version: z.number().int().positive().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
   clientMutationId: z.string().min(8).max(64).optional(),
@@ -104,8 +103,8 @@ export async function POST(request: Request) {
     if (body.action === "update") {
       if (current.createdBy !== userId) return apiError("Only the game creator can update shared state.", 403);
       if (current.status === "completed" || current.status === "cancelled") return apiError("The session is closed.", 409);
-      if (!body.state && !body.status) return apiError("No state or status update was provided.", 400);
-      const session = await updateGameSession(body.sessionId, userId, { status: body.status, state: body.state, expectedVersion: body.version });
+      if (!body.status) return apiError("Only a status update is supported.", 400);
+      const session = await updateGameSession(body.sessionId, userId, { status: body.status, expectedVersion: body.version });
       if (!session) return apiError("Session version changed. Restore the latest snapshot.", 409, { retry: true });
       publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, version: session.version });
       return NextResponse.json({ session });

@@ -38,7 +38,7 @@
     "ably": "^2.24.0",
     "drizzle-orm": "^0.45.2",
     "material-symbols": "^0.45.7",
-    "next": "^16.2.10",
+    "next": "^16.2.11",
     "qrcode": "^1.5.4",
     "react": "19.2.6",
     "react-dom": "19.2.6",
@@ -53,13 +53,14 @@
     "@types/react-dom": "19.2.3",
     "drizzle-kit": "^0.31.10",
     "eslint": "9.39.4",
-    "eslint-config-next": "^16.2.10",
+    "eslint-config-next": "^16.2.11",
     "tailwindcss": "4.2.1",
     "tsx": "^4.23.0",
     "typescript": "5.9.3"
   },
   "overrides": {
-    "postcss": "8.5.14"
+    "postcss": "8.5.18",
+    "sharp": "0.35.0"
   },
   "type": "module"
 }

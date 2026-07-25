@@ -73,6 +73,16 @@ Venue Night, Event Pass, TUSA Plus, subscriptions, payments, white-label, brand 
 - Local account, party, waitlist and admin traffic now share the schema-version-12 production gate. Runtime DDL remains a local-development compatibility fallback only and is never attempted for production requests.
 - The next code-independent release gates remain unchanged: isolated core-eight evidence, provider setup for production email/TOTP, venue load and incident drill, then DNS and legal approval.
 
+## 25.07.2026 OWASP remediation
+
+- `GET /api/gallery` now verifies party membership before returning gallery records; gallery reads and writes use distributed limits.
+- Local sign-in and sign-up have strict request schemas and independent distributed limits for IP and normalized email. Invalid sign-in responses remain generic.
+- Root admin authentication fails closed until MFA is configured and uses distributed, normalized client-IP limits.
+- Browser clients can no longer submit arbitrary game session state through the generic `update` action. Shared state changes continue through server reducers and optimistic version checks.
+- Media uploads verify permitted MIME type, size and the first file-byte signature before Blob storage. `InlineSvg` no longer injects fetched SVG markup into the DOM.
+- CSP no longer grants `unsafe-eval`. Production dependencies are pinned/overridden to `next@16.2.11`, `postcss@8.5.18` and `sharp@0.35.0`; `npm audit --omit=dev` reported zero advisories at this checkpoint.
+- Verification completed locally: typecheck, lint, 62 tests, production build, RAG rebuild and dependency audit. External release gates remain MFA enrollment, Resend/domain setup, canonical DNS verification and browser certification evidence.
+
 ## Document impact
 
 - `README.md` и `AGENTS.md` описывают shipped baseline, а не target architecture.

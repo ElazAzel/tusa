@@ -41,6 +41,11 @@ const adminRbacMigration = readFileSync(new URL("../drizzle/0011_admin_rbac.sql"
 const adminMembers = readFileSync(new URL("../lib/admin-members.ts", import.meta.url), "utf8");
 const waitlistMigration = readFileSync(new URL("../drizzle/0012_waitlist_schema.sql", import.meta.url), "utf8");
 const waitlist = readFileSync(new URL("../lib/waitlist.ts", import.meta.url), "utf8");
+const galleryApi = readFileSync(new URL("../app/api/gallery/route.ts", import.meta.url), "utf8");
+const signInApi = readFileSync(new URL("../app/api/auth/sign-in/route.ts", import.meta.url), "utf8");
+const signUpApi = readFileSync(new URL("../app/api/auth/sign-up/route.ts", import.meta.url), "utf8");
+const adminAuthApi = readFileSync(new URL("../app/api/admin/auth/route.ts", import.meta.url), "utf8");
+const mediaSource = readFileSync(new URL("../lib/media.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -65,6 +70,19 @@ test("game endpoints validate input and authorize party access", () => {
   assert.doesNotMatch(gamesApi, /body\.score/);
   assert.match(scoring, /persisted server snapshot/i);
   assert.match(gamesApi, /current\.participants\.length < gameDefinition\.minPlayers/);
+  assert.doesNotMatch(gamesApi, /state: z\.record/);
+  assert.match(gamesApi, /Only a status update is supported/);
+});
+
+test("OWASP remediation keeps party media, auth and admin controls server-enforced", () => {
+  assert.match(galleryApi, /requirePartyMember\(partyId, actor\.id\)/);
+  assert.match(galleryApi, /distributedRateLimit/);
+  assert.match(signInApi, /auth:sign-in:ip/);
+  assert.match(signInApi, /auth:sign-in:email/);
+  assert.match(signUpApi, /auth:sign-up:ip/);
+  assert.match(adminAuthApi, /isAdminMfaConfigured/);
+  assert.match(adminAuthApi, /distributedRateLimit/);
+  assert.match(mediaSource, /matchesMediaSignature/);
 });
 
 test("sitemap and AI discovery are manifest driven", () => {
