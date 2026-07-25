@@ -4184,9 +4184,136 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .live-party-mobile-nav .demo-mobile-nav-track { grid-template-columns: repeat(7,minmax(50px,1fr)); overflow-x: auto; }
 .live-party-content:has(.more-modal-backdrop) { position: relative; z-index: 201; }
 .live-party-shell:has(.more-modal-backdrop) .live-party-mobile-nav { visibility: hidden; }
+.live-party-shell.is-modal-open .live-party-mobile-nav { visibility: hidden; }
 .live-party-shell .connection-banner { position: fixed; z-index: 120; top: 12px; left: 50%; width: min(560px,calc(100% - 28px)); transform: translateX(-50%); }
 @media (max-width: 1040px) { .live-party-back { width: 58px; justify-content: center; font-size: 0; }.live-party-back .material-symbols-rounded { font-size: 22px; } }
 @media (max-width: 760px) { .live-party-topbar .topbar-event-copy h1 { max-width: 45vw; font-size: 14px; }.live-party-content { gap: 16px; }.live-party-content .party-room-panel, .live-party-content .party-feature-surface { padding: 20px 16px; }.live-party-hero h2 { max-width: 100%; font-size: clamp(32px,9.5vw,44px); overflow-wrap: anywhere; }.live-party-hero .party-room-rsvp-toggle { max-width: calc(100% - 116px); }.live-party-hero .party-room-rsvp-toggle button { min-width: 0; padding-inline: 9px; }.live-party-mobile-nav { grid-template-columns: 1fr; }.live-party-mobile-nav .demo-mobile-nav-track { width: 100%; }.live-party-mobile-nav span { overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; } }
+
+/* Party room UX consolidation: the live shell has one stacking and scroll model. */
+.live-party-workspace,
+.live-party-content,
+.live-party-content > * { min-width: 0; }
+.live-party-content { padding-bottom: 32px; }
+.live-party-content .party-room-panel h2 { letter-spacing: -.035em; line-height: 1.06; }
+.party-chat {
+  height: clamp(440px, calc(100dvh - 190px), 700px);
+  min-height: 440px;
+  padding: clamp(20px, 3vw, 34px);
+}
+.party-chat-stream {
+  min-height: 220px;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.party-chat-bubble {
+  width: fit-content;
+  max-width: min(72%, 640px);
+  color: var(--black);
+}
+.party-chat-bubble .chat-meta { color: #5b5b64; }
+.party-chat-bubble.is-me .chat-meta { color: #34343a; }
+.party-chat-bubble.is-other { background: var(--white); }
+.party-chat-bubble.is-sticker { max-width: 140px; }
+.chat-input-wrap textarea { padding: 12px 14px 12px 52px; }
+.chat-emoji-btn { left: 8px; }
+.chat-input-bar { position: relative; z-index: 3; }
+.chat-input-bar > button { flex: 0 0 48px; }
+.chat-message-tools { z-index: 2; }
+
+.emoji-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 560;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, .35);
+}
+.emoji-picker {
+  position: static;
+  width: min(352px, 100%);
+  margin: 0;
+  padding: 12px;
+  border: var(--line);
+  border-radius: 16px;
+  background: var(--white);
+  box-shadow: var(--shadow-lg);
+}
+.emoji-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: var(--black);
+  font: 900 11px/1 var(--font-mono), monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.emoji-picker-close {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 2px solid var(--black);
+  border-radius: 10px;
+  background: var(--cream);
+  color: var(--black);
+  cursor: pointer;
+}
+.emoji-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(44px, 1fr));
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+.emoji-picker-item { width: 100%; min-width: 44px; height: 44px; border: 2px solid var(--black); background: var(--cream); }
+.emoji-picker-item:hover { background: var(--lime); transform: translate(1px, 1px); }
+
+@media (max-width: 760px) {
+  .live-party-content {
+    padding: 16px 14px calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+  .live-party-content .party-room-panel,
+  .live-party-content .party-feature-surface { min-width: 0; }
+  .party-chat {
+    height: calc(100dvh - 166px);
+    min-height: 0;
+    padding: 16px 14px 12px;
+    border-radius: 16px;
+  }
+  .party-chat h2 { margin-bottom: 12px; font-size: clamp(27px, 8vw, 34px); }
+  .party-chat-stream { min-height: 0; margin-bottom: 10px; padding: 12px; }
+  .party-chat-bubble { max-width: calc(100% - 12px); padding: 10px 12px; font-size: 15px; }
+  .chat-message-tools { position: static; margin-top: 8px; opacity: 1; }
+  .chat-input-bar {
+    position: relative;
+    bottom: auto;
+    grid-template-columns: minmax(0, 1fr) 48px;
+    padding: 0;
+    background: transparent;
+  }
+  .chat-input-wrap textarea { min-height: 48px; max-height: 96px; resize: none; }
+  .emoji-picker-backdrop { place-items: end center; padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .emoji-picker { width: min(100%, 440px); border-radius: 18px 18px 14px 14px; }
+  .live-party-mobile-nav { height: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .live-party-mobile-nav .demo-mobile-nav-track { grid-template-columns: repeat(7, minmax(0, 1fr)); overflow: hidden; }
+  .live-party-mobile-nav button { min-width: 0; }
+  .live-party-mobile-nav button span:last-child { font-size: clamp(7px, 2vw, 9px); }
+  .more-modal-backdrop { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .more-modal { max-height: min(80dvh, 640px); overscroll-behavior: contain; }
+}
+
+@media (max-width: 380px) {
+  .live-party-content { padding-inline: 10px; }
+  .party-chat { padding-inline: 10px; }
+  .party-chat-stream { padding: 9px; }
+  .live-party-mobile-nav button span:last-child { display: none; }
+}
 .party-feature-surface { width: min(100%, 920px); min-height: 0; margin: 24px auto 0; padding: clamp(22px,4vw,36px); border: var(--line); border-radius: 18px; background: var(--white); box-shadow: var(--shadow-lg); color: var(--black); }
 .party-feature-loading { margin: 0; color: #626268; font-weight: 800; }
 .party-feature-list { display: grid; gap: 12px; margin-top: 18px; }

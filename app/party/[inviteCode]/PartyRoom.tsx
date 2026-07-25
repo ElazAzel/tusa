@@ -463,7 +463,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
     await copyPartyInvite();
   }
 
-  return <main className={`demo-shell live-party-shell party-room ${party.adultOnly ? "party-room--adult" : "party-room--family"}`}>
+  return <main className={`demo-shell live-party-shell party-room ${party.adultOnly ? "party-room--adult" : "party-room--family"} ${moreOpen ? "is-modal-open" : ""}`}>
     {(liveChat.hasConnectedOnce && liveParty.hasConnectedOnce && !liveChat.connected && !liveParty.connected) && <div className="connection-banner connection-banner--offline">
       <span className="material-symbols-rounded">cloud_off</span>
       {locale === "ru" ? "Нет соединения. Переподключение…" : "Connection lost. Reconnecting…"}
@@ -645,7 +645,6 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
               <button className="chat-reaction-trigger" onClick={() => setReactionTarget(reactionTarget === item.id ? null : item.id)} type="button" aria-label={t("chatReact")}>+</button>
               {!isMe && <ReportContentButton partyId={party.id} targetId={item.id} targetType="chat_message" targetUserId={item.userId} onBlocked={(userId) => setChatMessages((current) => current.filter((entry) => entry.userId !== userId))} />}
             </div>}
-            {reactionTarget === item.id && <EmojiPicker onSelect={(emoji) => { react(item.id, emoji); setReactionTarget(null); }} onClose={() => setReactionTarget(null)} />}
           </article>;
         }) : <p className="party-chat-system">{t("roomChatEmpty")}</p>}
         <div ref={chatEndRef} />
@@ -666,6 +665,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       </div>
       {chatError && <p className="chat-error" role="status">{chatError}</p>}
     </section>}
+    {tab === "chat" && reactionTarget && typeof document !== "undefined" && createPortal(<EmojiPicker label={t("chatReact")} closeLabel={t("gameRoomsClose")} onSelect={(emoji) => { react(reactionTarget, emoji); setReactionTarget(null); }} onClose={() => setReactionTarget(null)} />, document.body)}
       </div>
     </section>
 
