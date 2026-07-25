@@ -9,6 +9,28 @@ const targets = ["/", "/api/public/content", "/api/auth/session", "/api/health"]
 const results = [];
 let cursor = 0;
 
+async function verifyTarget() {
+  const healthUrl = `${baseUrl}/api/health`;
+  try {
+    const response = await fetch(healthUrl, {
+      headers: { "User-Agent": "TUSA-safe-preflight/1.0" },
+      signal: AbortSignal.timeout(8_000),
+    });
+    await response.arrayBuffer();
+  } catch (error) {
+    const report = {
+      kind: "safe-read-only-preflight",
+      status: "unreachable",
+      baseUrl,
+      healthUrl,
+      hint: "Start the app first or set PREFLIGHT_BASE_URL to a reachable deployment.",
+      error: error instanceof Error ? error.message : String(error),
+    };
+    console.error(JSON.stringify(report, null, 2));
+    process.exit(1);
+  }
+}
+
 async function worker() {
   while (cursor < requestCount) {
     const index = cursor++;
@@ -25,6 +47,7 @@ async function worker() {
 }
 
 const startedAt = new Date();
+await verifyTarget();
 await Promise.all(Array.from({ length: concurrency }, () => worker()));
 const sorted = results.map((item) => item.latencyMs).sort((a, b) => a - b);
 const percentile = (value) => sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * value) - 1))] ?? 0;

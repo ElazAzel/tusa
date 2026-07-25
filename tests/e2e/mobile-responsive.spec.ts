@@ -1,12 +1,23 @@
 import { expect, test } from "@playwright/test";
 
-const widths = [320, 360, 375, 390, 412, 430, 768, 1024];
+const viewports = [
+  { width: 320, height: 568 },
+  { width: 360, height: 640 },
+  { width: 375, height: 667 },
+  { width: 390, height: 844 },
+  { width: 412, height: 915 },
+  { width: 430, height: 932 },
+  { width: 667, height: 375 },
+  { width: 844, height: 390 },
+  { width: 768, height: 1024 },
+  { width: 1024, height: 768 },
+];
 const publicRoutes = ["/", "/demo", "/partners", "/sign-in", "/games", "/games/word-blast"];
 
-for (const width of widths) {
+for (const viewport of viewports) {
   for (const route of publicRoutes) {
-    test(`${route} stays inside ${width}px`, async ({ browser }) => {
-      const context = await browser.newContext({ viewport: { width, height: width >= 768 ? 1024 : 812 }, serviceWorkers: "block" });
+    test(`${route} stays inside ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport, serviceWorkers: "block" });
       const page = await context.newPage();
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(1_100);
