@@ -9,14 +9,14 @@ export default function CreatePartyForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [adultOnly, setAdultOnly] = useState(true);
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
-  const { t } = useLocale();
+  const [hasAccess, setHasAccess] = useState(false);
+  const { locale, t } = useLocale();
 
   useEffect(() => {
-    fetch("/api/promos/redeem").then((response) => response.json()).then((data) => {
-      if (data.redemptions) setHasAccess(data.redemptions.some((redemption: { benefits: { type: string }[] }) => redemption.benefits.some((benefit: { type: string }) => benefit.type === "party_creation")));
-      else setHasAccess(false);
-    }).catch(() => setHasAccess(false));
+    fetch("/api/promos/redeem", { cache: "no-store" })
+      .then(async (response) => response.ok ? response.json() : null)
+      .then((data) => setHasAccess(Boolean(data?.redemptions?.some((redemption: { benefits?: { type: string }[] }) => redemption.benefits?.some((benefit) => benefit.type === "party_creation")))))
+      .catch(() => setHasAccess(false));
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -27,15 +27,15 @@ export default function CreatePartyForm() {
     const body: Record<string, unknown> = Object.fromEntries(data);
     body.adultOnly = adultOnly;
     if (typeof body.date !== "string" || !body.date || typeof body.time !== "string" || !body.time) {
-      setError(`${t("createDate")} и ${t("createTime")} нужно выбрать перед созданием тусы.`);
+      setError(locale === "ru" ? "Выберите дату и время перед созданием тусы." : "Choose a date and time before creating the hangout.");
       setLoading(false);
       return;
     }
     if (hasAccess) delete body.promoCode;
     try {
       const response = await fetch("/api/parties", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const result = await response.json();
-      if (!response.ok) { setError(result.error); return; }
+      const result = await response.json().catch(() => null) as { error?: string; party?: { inviteCode?: string } } | null;
+      if (!response.ok || !result?.party?.inviteCode) { setError(result?.error || t("createError")); return; }
       window.location.assign(`/party/${result.party.inviteCode}`);
     } catch { setError(t("createError")); }
     finally { setLoading(false); }
@@ -60,7 +60,7 @@ export default function CreatePartyForm() {
           <label>{t("createDetails")}<textarea name="description" placeholder={t("createDetailsPlace")} maxLength={500} /></label>
           {hasAccess === false && <label className="promo-input">{t("createPromo")}<input name="promoCode" placeholder="ELAZ" autoCapitalize="characters" maxLength={32} required /><small>{t("createRepeated")}</small></label>}
           {hasAccess === true && <p className="promo-unlocked"><span className="material-symbols-rounded" aria-hidden="true">lock_open</span>{t("createUnlocked")}</p>}
-          <button type="submit" disabled={loading || hasAccess === null}>{loading ? t("createCreating") : t("createCreate")}</button>
+          <button type="submit" disabled={loading}>{loading ? t("createCreating") : t("createCreate")}</button>
           {error && <p className="form-error" role="alert">{error}</p>}
         </form>
       </section>

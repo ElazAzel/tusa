@@ -81,7 +81,7 @@ export default async function RemoteTeamsPage() {
             No employee needs to install software or create an account. The
             facilitator shares a single link; everyone opens it on their phone
             or laptop. The facilitator&apos;s screen becomes the stage and
-            everyone else&apos;s device becomes a controller. Real-time SSE
+            everyone else&apos;s device becomes a controller. A real-time connection
             keeps the action synced across cities and continents.
           </p>
         </section>

@@ -87,7 +87,8 @@ export default async function InPersonPartiesPage() {
             to a TV or keeps it on their screen. Everyone else opens the same
             link on their phones. The stage player controls the game flow;
             friends use their phones as controllers to draw, guess, vote, or
-            type answers. Real-time SSE means every response shows up instantly.
+            type answers. A real-time connection keeps every controller in sync,
+            and the latest party state can be restored after reconnecting.
           </p>
         </section>
 

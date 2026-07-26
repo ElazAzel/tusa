@@ -413,7 +413,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
         { name: "Кодовые имена (Codenames)", desc: "Командная битва 5 на 5 на логику и взаимопонимание." }
       ],
       faqs: [
-        { q: "Не будет ли задержек при 10 игроках?", a: "Нет, наша платформа использует оптимизированный протокол SSE, гарантирующий мгновенный отклик." },
+        { q: "Будет ли удобно 10 игрокам?", a: "Да. У каждого игрока есть личный контроллер, а общая сессия хранит последнее состояние для восстановления после переподключения." },
         { q: "Нужно ли покупать платные наборы?", a: "Все основные игры и режимы для больших компаний полностью бесплатны." },
         { q: "Можно ли играть со смартфона?", a: "Да, каждый игрок использует свой смартфон в качестве геймпада." }
       ]
@@ -438,7 +438,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
         { name: "Codenames", desc: "A massive 5v5 team association match. Perfect for group synergy." }
       ],
       faqs: [
-        { q: "Is the connection stable for 10 players?", a: "Yes, TUSA's SSE real-time sync is optimized for large concurrent groups." },
+        { q: "Can 10 players stay in the same session?", a: "Yes. Each player uses a personal controller while the shared session keeps the latest saved state available after a reconnect." },
         { q: "Do guests need to sign up?", a: "No, guests join instantly with a nickname. No registration required." },
         { q: "Can we play on a Zoom call?", a: "Yes, simply share the Stage screen and play remotely." }
       ]

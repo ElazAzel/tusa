@@ -87,7 +87,8 @@ export default async function OnlinePartiesPage() {
             A host creates a party and shares the link. Every guest joins on
             their own device — no account needed. The host&apos;s phone acts as
             the game stage while players use their phones as controllers.
-            Everything updates in real time over SSE, so there is no lag or
+            Everything updates through a real-time connection, so players can
+            stay in the same session and recover the latest saved state after a
             refresh button mashing.
           </p>
         </section>

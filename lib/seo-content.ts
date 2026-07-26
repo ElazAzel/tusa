@@ -295,7 +295,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       ],
       faqs: [
         { q: "Какой голосовой чат лучше использовать?", a: "Платформа работает с любым сервисом: Discord, Zoom, Skype или Telegram." },
-        { q: "Будет ли задержка при игре?", a: "Наша система синхронизирована по протоколу SSE, что гарантирует задержку менее 300мс." },
+        { q: "Будет ли задержка при игре?", a: "TUSA синхронизирует общий экран и контроллеры в реальном времени. При потере сети сессия может восстановить последнее сохранённое состояние после переподключения." },
         { q: "Могут ли играть люди из разных стран?", a: "Да, наши серверы оптимизированы для глобального доступа, интерфейс переведен на русский и английский." }
       ]
     },
@@ -319,7 +319,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
         { name: "Guess the Song", desc: "Listen to music clips and guess the song or artist before your friends do." }
       ],
       faqs: [
-        { q: "Is there any lag when playing remotely?", a: "No, TUSA uses Server-Sent Events (SSE) to sync all actions instantly under 300ms." },
+        { q: "How does realtime play work remotely?", a: "TUSA keeps the shared stage and each player’s controller synchronized in real time. If a connection drops, the session can refresh its latest saved state after reconnecting." },
         { q: "Does everyone need a computer?", a: "Only the host needs a screen to share. Guests can join and play entirely from their smartphones." },
         { q: "Can we play across different time zones?", a: "Yes, our global infrastructure ensures low latency for international players." }
       ]

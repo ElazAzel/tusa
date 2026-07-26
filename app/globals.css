@@ -231,7 +231,7 @@ select:focus-visible {
 }
 
 .badge-lime { background: var(--lime); color: var(--black) !important; }
-.badge-pink { background: var(--pink); color: var(--white); }
+.badge-pink { background: var(--pink); color: var(--black); }
 .badge-blue { background: var(--blue); color: var(--white); }
 
 .kicker,
@@ -547,7 +547,7 @@ select:focus-visible {
   font-weight: 800;
 }
 
-.sticker-pink { top: 42px; left: 12px; background: var(--pink); color: var(--white); transform: rotate(-8deg); }
+.sticker-pink { top: 42px; left: 12px; background: var(--pink); color: var(--black); transform: rotate(-8deg); }
 .sticker-lime { top: 30px; right: 5px; background: var(--lime); transform: rotate(7deg); }
 .sticker-white { left: 6px; bottom: 52px; background: var(--white); transform: rotate(-5deg); }
 
@@ -2922,7 +2922,7 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 /* Cookie consent */
 .cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border-top: 2px solid var(--black); background: var(--white); z-index: 1000; font-size: 13px; }
 .cookie-banner p { margin: 0; }
-.cookie-banner a { color: var(--pink); font-weight: 700; }
+.cookie-banner a { color: var(--black); font-weight: 800; text-decoration-thickness: 2px; }
 .cookie-banner button { padding: 8px 18px; border: 2px solid var(--black); border-radius: 10px; background: var(--lime); font-weight: 700; cursor: pointer; white-space: nowrap; }
 
 /* ===== BRAND BOOK: RSVP Toggle ===== */
@@ -3728,7 +3728,9 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 /* ===== Canonical game catalogue ===== */
 .game-card { display: flex; flex-direction: column; min-width: 0; }
 .game-card--lime { background: var(--lime); color: var(--black); }
-.game-card--pink { background: var(--pink); color: var(--white); }
+.game-card--pink { background: var(--pink); color: var(--black); }
+.partners-grid article:nth-child(2n) { color: var(--black); }
+.cookie-banner button { color: var(--black); }
 .game-card--blue { background: var(--blue); color: var(--white); }
 .game-card--cream { background: var(--cream); color: var(--black); }
 .game-card-meta, .game-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
