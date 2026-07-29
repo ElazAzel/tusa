@@ -1,5 +1,9 @@
 # Landing and Party Room alignment audit
 
+## Editable Figma audit
+
+- [TUSA — Landing ↔ Party Room Responsive Audit](https://www.figma.com/design/FsjbNbACMHuSAVkSMk81AE)
+
 ## Scope
 
 Visual and responsive alignment between the approved Party OS landing and the Party Room shell on desktop and mobile.
