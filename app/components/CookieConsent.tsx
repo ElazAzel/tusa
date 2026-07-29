@@ -22,5 +22,14 @@ export default function CookieConsent() {
 
   if (!visible) return null;
 
-  return <div className="cookie-banner"><p>{t("privacyCookiesText")} <Link href="/privacy">{t("privacyTitle")}</Link></p><button onClick={accept}>OK</button></div>;
+  return (
+    <div className="cookie-banner">
+      <p>
+        <span className="cookie-copy-full">{t("privacyCookiesText")} </span>
+        <span className="cookie-copy-short">{t("privacyCookiesShort")} </span>
+        <Link href="/privacy">{t("privacyTitle")}</Link>
+      </p>
+      <button onClick={accept}>{t("cookieAccept")}</button>
+    </div>
+  );
 }
