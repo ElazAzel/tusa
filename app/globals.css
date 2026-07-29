@@ -4666,3 +4666,50 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 @media (max-width: 360px) {
   .local-auth-form { padding: 24px 20px; }
 }
+
+.demo-shell > .demo-rail {
+  width: 274px;
+  padding: 30px 26px 26px;
+  border-right: 0;
+}
+.demo-shell > .demo-rail .demo-logo { padding: 0 0 54px; }
+.demo-shell > .demo-rail .demo-logo .brand-logo--long { width: min(100%,190px); }
+.demo-shell > .demo-rail .demo-nav button { min-height: 48px; padding: 8px 12px; border: 0; border-radius: 8px; }
+.demo-shell > .demo-rail .demo-nav button.active { background: #202020; box-shadow: inset 3px 0 0 var(--lime); color: var(--white); }
+.demo-shell > .demo-workspace { margin-left: 274px; padding: 0 clamp(28px,4vw,58px) 48px; }
+.demo-shell > .demo-workspace > .demo-topbar { min-height: 76px; padding: 0; border-bottom: 1px solid #d8d7d0; background: rgba(247,247,242,.94); }
+.demo-shell > .demo-workspace > .demo-topbar .topbar-event-copy h1 { font: 900 18px/1.15 var(--font-inter),sans-serif; letter-spacing: -.025em; }
+.demo-shell > .demo-workspace > .demo-content { width: 100%; max-width: 1320px; gap: 20px; padding: 28px 0 32px; }
+.demo-shell .demo-hero-card h2 { max-width: 760px; font-family: var(--font-inter),sans-serif; font-weight: 900; line-height: .94; letter-spacing: -.065em; }
+
+@media (max-width: 1040px) {
+  .demo-shell > .demo-rail { width: 92px; padding-inline: 14px; }
+  .demo-shell > .demo-rail .demo-logo { padding: 0 3px 42px; }
+  .demo-shell > .demo-rail .demo-logo .demo-logo-icon { width: 58px; height: 58px; }
+  .demo-shell > .demo-workspace { margin-left: 92px; }
+}
+
+@media (max-width: 760px) {
+  .demo-shell > .demo-rail {
+    position: relative;
+    inset: auto;
+    display: flex;
+    width: 100%;
+    height: 68px;
+    min-height: 68px;
+    align-items: center;
+    padding: 10px 15px;
+  }
+  .demo-shell > .demo-rail .demo-logo { width: 112px; align-self: flex-start; margin: 0; padding: 0; }
+  .demo-shell > .demo-rail .demo-logo .brand-logo--long { display: block; width: 112px; height: auto; }
+  .demo-shell > .demo-rail .demo-logo .demo-logo-icon,
+  .demo-shell > .demo-rail .demo-nav,
+  .demo-shell > .demo-rail .demo-reset,
+  .demo-shell > .demo-rail .live-party-back { display: none; }
+  .demo-shell > .demo-workspace { margin-left: 0; padding: 0 15px 82px; }
+  .demo-shell > .demo-workspace > .demo-topbar { min-height: 62px; padding: 0; }
+  .demo-shell > .demo-workspace > .demo-topbar .topbar-event-copy h1 { max-width: 50vw; font-size: 14px; }
+  .demo-shell > .demo-workspace > .demo-content { gap: 16px; padding: 16px 0 calc(92px + env(safe-area-inset-bottom,0px)); }
+  .demo-shell .demo-hero-card { min-height: 420px; padding: 22px; }
+  .demo-shell .demo-hero-card h2 { font-size: clamp(42px,12vw,58px); }
+}
