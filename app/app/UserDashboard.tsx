@@ -7,7 +7,8 @@ import type { Party, UserProfile } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { formatEventDate } from "@/lib/event-format";
 import { soundTap, soundSuccess } from "@/lib/audio";
-import ProductHeader from "@/app/components/ProductHeader";
+import BrandLogo from "@/app/components/BrandLogo";
+import LocaleToggle from "@/app/components/LocaleToggle";
 
 function Icon({ name }: { name: string }) {
   return <span className="material-symbols-rounded" aria-hidden="true">{name}</span>;
@@ -47,12 +48,25 @@ export default function UserDashboard({ profile, parties, emailVerified }: { pro
     window.setTimeout(() => setCopied(""), 1600);
   }
 
-  return <main className="user-app-page">
-    <ProductHeader className="user-app-header" showLocale={false}>
-        <Link href="/app/friends">{t("friendsTitle")}</Link>
-        <Link href="/app/leaderboard">{t("leaderboardTitle")}</Link>
-        <Link href="/app/profile">{t("profile")}</Link>
-    </ProductHeader>
+  return <main className="user-app-page party-os-app">
+    <aside className="user-app-rail">
+      <Link className="user-app-rail__brand" href="/app" aria-label="TUSA.game"><BrandLogo priority /></Link>
+      <nav aria-label={t("launcherParties")}>
+        <Link className="active" href="/app"><Icon name="celebration" />{t("launcherParties")}</Link>
+        <Link href="/app/friends"><Icon name="group" />{t("friendsTitle")}</Link>
+        <Link href="/app/leaderboard"><Icon name="leaderboard" />{t("launcherStats")}</Link>
+        <Link href="/app/profile"><Icon name="person" />{t("profile")}</Link>
+      </nav>
+      <Link className="user-app-rail__profile" href="/app/profile">
+        <img src={profile.imageUrl || "/brand/tusa-game-icon.png"} alt="" />
+        <span><strong>@{profile.handle}</strong><small>{profile.xp} XP</small></span>
+      </Link>
+    </aside>
+    <section className="user-app-workspace">
+    <header className="user-app-topbar">
+      <strong>{t("launcherKicker")}</strong>
+      <div><LocaleToggle /><Link href="/app/profile"><Icon name="account_circle" />{t("profile")}</Link></div>
+    </header>
     <section className="user-app-hero">
       <div>
         <span className="app-kicker">{t("dashKicker")}</span>
@@ -111,5 +125,6 @@ export default function UserDashboard({ profile, parties, emailVerified }: { pro
       <Link href="/app/leaderboard"><Icon name="leaderboard" /><span>{t("leaderboardTitle")}</span></Link>
       <Link href="/app/profile"><Icon name="person" /><span>{t("profile")}</span></Link>
     </nav>
+    </section>
   </main>;
 }

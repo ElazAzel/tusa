@@ -8,6 +8,9 @@ import InstallButton from "./components/InstallButton";
 import Link from "next/link";
 import { useLocale } from "./components/LocaleProvider";
 import { GAME_COUNT, GAME_MANIFEST } from "@/lib/games/manifest";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 function Icon({ name, className }: { name: string; className?: string }) {
   return <span className={`material-symbols-rounded${className ? ` ${className}` : ""}`} aria-hidden="true">{name}</span>;
@@ -16,6 +19,14 @@ function Icon({ name, className }: { name: string; className?: string }) {
 export default function Home() {
   const { t } = useLocale();
   const { isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
+  const [inviteCode, setInviteCode] = useState("");
+
+  function joinParty(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const code = inviteCode.trim().toUpperCase();
+    if (code) router.push(`/join/${encodeURIComponent(code)}`);
+  }
 
   const painPoints = [
     { id: "01", title: t("pain01"), copy: t("pain01Copy"), tone: "lime" },
@@ -46,9 +57,84 @@ export default function Home() {
     { question: t("faq05"), answer: t("faq05Answer") },
   ];
 
+  const tickerItems = [
+    t("tickerOneLink"),
+    t("tickerAllInside"),
+    t("tickerNoDownload"),
+    t("tickerSquads"),
+  ];
+
   return (
     <main>
-      <header className="site-header">
+      <section className="party-os-landing" id="party-launcher">
+        <aside className="party-os-rail">
+          <a className="party-os-brand" href="#party-launcher" aria-label="TUSA.game">
+            <BrandLogo priority />
+          </a>
+          <nav aria-label={t("navFeatures")}>
+            <a className="active" href="#party-launcher"><Icon name="celebration" />{t("launcherParties")}</a>
+            <Link href="/games"><Icon name="sports_esports" />{t("navFeatures")}</Link>
+            <a href="#how"><Icon name="route" />{t("navHow")}</a>
+            <Link href={isLoaded && isSignedIn ? "/app/profile" : "/sign-in"}><Icon name="person" />{t("profile")}</Link>
+          </nav>
+          <div className="party-os-rail-foot">
+            <span>{t("heroMadeIn")}</span>
+            <small>{t("heroNoDownload")} · Beta</small>
+          </div>
+        </aside>
+
+        <div className="party-os-workspace">
+          <header className="party-os-topbar">
+            <strong>{t("launcherKicker")}</strong>
+            <div>
+              <AccountNav />
+            </div>
+          </header>
+
+          <div className="party-os-launcher">
+            <div className="party-os-copy motion-hero-copy">
+              <p className="party-os-kicker">{t("heroKicker")}</p>
+              <h1>{t("launcherTitle")}</h1>
+              <p>{t("heroLead")}</p>
+              <div className="party-os-primary-actions">
+                <Link className="party-os-create" href={isLoaded && isSignedIn ? "/app/new" : "/sign-in"}>
+                  {t("heroCta")} <Icon name="play_arrow" />
+                </Link>
+                <Link className="party-os-demo" href="/demo">{t("navOpenDemo")} <Icon name="arrow_forward" /></Link>
+              </div>
+              <div className="party-os-stats">
+                <div><strong>{t("heroSec")}</strong><span>{t("heroSecLabel")}</span></div>
+                <div><strong>{t("heroGamesNum")}</strong><span>{t("heroGamesLabel")}</span></div>
+                <div><strong>{t("heroFriends")}</strong><span>{t("heroOneLinkShort")}</span></div>
+              </div>
+            </div>
+
+            <form className="party-os-join" onSubmit={joinParty}>
+              <label htmlFor="landing-invite-code">{t("launcherJoinLabel")}</label>
+              <input id="landing-invite-code" maxLength={20} onChange={(event) => setInviteCode(event.target.value)} placeholder={t("joinPlaceholder")} value={inviteCode} />
+              <button disabled={!inviteCode.trim()} type="submit">{t("launcherJoinAction")}</button>
+            </form>
+
+            <article className="party-os-preview motion-product-stage">
+              <Image src="/images/party-os-hero.png" alt="" fill sizes="(max-width: 760px) 100vw, 42vw" priority />
+              <div className="party-os-preview-head">
+                <span><BrandLogo compact /> {t("launcherPreview")}</span>
+                <span className="live-status"><i /> LIVE</span>
+              </div>
+              <div className="party-os-people" aria-label={t("mockInside")}>
+                <span>{t("mockInside")}</span>
+                <b>5 / 10</b>
+              </div>
+              <div className="party-os-game">
+                <span>{t("mockNext")}</span>
+                <strong>{t("mockAlias")}</strong>
+              </div>
+              <footer>{t("launcherWaiting")} · 5/10</footer>
+            </article>
+          </div>
+        </div>
+      </section>
+      {false && <header className="site-header">
         <div className="container header-inner">
           <a className="brand" href="#top" aria-label="TUSA.game — наверх">
             <BrandLogo priority />
@@ -67,9 +153,9 @@ export default function Home() {
             </Link>
           </div>
         </div>
-      </header>
+      </header>}
 
-      <section className="hero" id="top">
+      {false && <section className="hero" id="top">
         <div className="container hero-grid">
           <div className="hero-copy motion-hero-copy">
             <div className="eyebrows" aria-label={t("heroEarly")}>
@@ -137,16 +223,20 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </section>}
 
       <div className="ticker" aria-hidden="true">
-        <div>
-          <span>{t("tickerOneLink")}</span><i />
-          <span>{t("tickerAllInside")}</span><i />
-          <span>{t("tickerNoDownload")}</span><i />
-          <span>{t("tickerSquads")}</span><i />
-          <span>{t("tickerOneLink")}</span><i />
-          <span>{t("tickerAllInside")}</span><i />
+        <div className="ticker-track">
+          {[0, 1].map((copy) => (
+            <div className="ticker-group" key={copy}>
+              {tickerItems.map((item) => (
+                <span className="ticker-item" key={item}>
+                  <span>{item}</span>
+                  <i />
+                </span>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
 
