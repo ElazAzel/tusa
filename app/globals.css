@@ -3731,7 +3731,7 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .games-page { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
 .games-page h1 { font-size: clamp(28px, 5vw, 48px); font-family: var(--font-unbounded); margin-bottom: 8px; }
 .games-page .subtitle { font-size: clamp(14px, 2vw, 18px); color: var(--gray); margin-bottom: 40px; }
-.games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.games-page .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 .game-card { background: var(--white); border: 3px solid var(--black); padding: 20px; border-radius: 0; transition: transform .15s; }
 .game-card:hover { transform: translate(-4px, -4px); box-shadow: 4px 4px 0 var(--black); }
 .game-card h2 { font-size: 15px; font-family: var(--font-unbounded); margin: 0 0 6px; letter-spacing: -.02em; }
