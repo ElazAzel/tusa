@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/local-auth/server";
 import { cookies } from "next/headers";
 import {
   ADMIN_PERMISSIONS,

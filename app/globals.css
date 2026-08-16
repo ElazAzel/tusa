@@ -3845,7 +3845,7 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .catalogue-empty { min-height: 280px; display: grid; place-items: center; align-content: center; gap: 12px; padding: 30px; border: 3px dashed var(--black); border-radius: 20px; text-align: center; }
 .catalogue-empty > span { color: var(--pink); font-size: 48px; }
 
-/* ===== Auth: TUSA shell around Clerk ===== */
+/* ===== Auth: TUSA local account shell ===== */
 .auth-page { padding: max(18px, env(safe-area-inset-top, 0px)) 14px max(18px, env(safe-area-inset-bottom, 0px)); }
 .auth-shell { width: min(100%, 540px); display: grid; gap: 16px; }
 .auth-shell > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px; border: var(--line); border-radius: 16px; background: var(--black); box-shadow: var(--shadow); color: var(--white); }

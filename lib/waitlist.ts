@@ -45,7 +45,7 @@ type ApplicationRow = {
 
 let sqlClient: ReturnType<typeof neon> | null = null;
 let schemaPromise: Promise<void> | null = null;
-const PRODUCTION_SCHEMA_VERSION = 12;
+const PRODUCTION_SCHEMA_VERSION = 13;
 
 function sql() {
   if (!sqlClient) {

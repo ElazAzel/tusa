@@ -20,7 +20,6 @@ export function useStageGame<T extends Record<string, unknown>>(
   const initialStateRef = useRef(initialState);
   const versionRef = useRef<number>(1);
   const seenActionsRef = useRef<Set<string>>(new Set());
-  const syncQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     if (!sessionId) { _setState(initialStateRef.current); return; }
@@ -61,9 +60,7 @@ export function useStageGame<T extends Record<string, unknown>>(
       es.onmessage = (msg) => {
         try {
           const event = JSON.parse(msg.data) as { type: string; id?: string; state?: Partial<T>; version?: number; userId?: string; actionType?: string; payload?: unknown };
-          if (event.type === "state:updated" && event.state) {
-            void syncSnapshot();
-          } else if (event.type === "state:updated" && (!event.version || event.version > versionRef.current)) {
+          if (event.type === "state:updated" && (!event.version || event.version > versionRef.current)) {
             void syncSnapshot();
           }
           if (event.type === "player:action" && event.userId && event.actionType) {
@@ -87,27 +84,9 @@ export function useStageGame<T extends Record<string, unknown>>(
   const setState = useCallback((updater: T | ((prev: T) => T)) => {
     _setState((prev) => {
       const next = typeof updater === "function" ? (updater as (prev: T) => T)(prev) : updater;
-      if (sessionId) {
-        syncQueueRef.current = syncQueueRef.current.then(async () => {
-          const ver = versionRef.current;
-          const res = await fetch("/api/games", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "update", sessionId, state: next, version: ver }),
-          });
-          if (res.status === 409) {
-            const data = await fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json());
-            if (data.session?.version) versionRef.current = data.session.version;
-            if (data.session?.state) _setState((current) => ({ ...current, ...data.session.state }));
-          } else if (res.ok) {
-            const data = await res.json();
-            if (data.session?.version) versionRef.current = data.session.version;
-          }
-        }).catch(() => undefined);
-      }
       return next;
     });
-  }, [sessionId]);
+  }, []);
 
   const clearActions = useCallback(() => setPlayerActions([]), []);
 

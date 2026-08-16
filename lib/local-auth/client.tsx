@@ -23,7 +23,7 @@ async function fetchSession(signal?: AbortSignal): Promise<ClientUser | null> {
   }
 }
 
-export function ClerkProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ClientUser | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const refresh = useCallback(async () => {
@@ -62,7 +62,7 @@ export function ClerkProvider({ children }: { children: ReactNode }) {
 
 function useAuthState() {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("ClerkProvider is required.");
+  if (!context) throw new Error("AuthProvider is required.");
   return context;
 }
 
@@ -76,16 +76,16 @@ export function useUser() {
   return { isLoaded, isSignedIn: !!user, user };
 }
 
-export function useClerk() {
+export function useAuthClient() {
   const { refresh } = useAuthState();
   return { signOut: async (options?: { redirectUrl?: string }) => { await fetch("/api/auth/sign-out", { method: "POST" }); await refresh(); window.location.assign(options?.redirectUrl ?? "/"); } };
 }
 
-export function ClerkLoading({ children }: { children: ReactNode }) {
+export function AuthLoading({ children }: { children: ReactNode }) {
   return useAuthState().isLoaded ? null : <>{children}</>;
 }
 
-export function ClerkLoaded({ children }: { children: ReactNode }) {
+export function AuthLoaded({ children }: { children: ReactNode }) {
   return useAuthState().isLoaded ? <>{children}</> : null;
 }
 
@@ -120,8 +120,8 @@ function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   </form>;
 }
 
-export function SignIn(props: Record<string, unknown>) { void props; return <AuthForm mode="sign-in" />; }
-export function SignUp(props: Record<string, unknown>) { void props; return <AuthForm mode="sign-up" />; }
+export function SignInForm(props: Record<string, unknown>) { void props; return <AuthForm mode="sign-in" />; }
+export function SignUpForm(props: Record<string, unknown>) { void props; return <AuthForm mode="sign-up" />; }
 
 export function PasswordResetForm({ token }: { token?: string }) {
   const [busy, setBusy] = useState(false);
@@ -162,7 +162,7 @@ export function PasswordResetForm({ token }: { token?: string }) {
 export function UserButton({ appearance }: { appearance?: unknown }) {
   void appearance;
   const { user } = useAuthState();
-  const { signOut } = useClerk();
+  const { signOut } = useAuthClient();
   if (!user) return null;
   return <button className="account-avatar" title="Выйти" onClick={() => void signOut()} type="button">{user.firstName.slice(0, 1).toUpperCase()}</button>;
 }

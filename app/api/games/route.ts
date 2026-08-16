@@ -11,7 +11,7 @@ import {
 import { getGameById, isGameId } from "@/lib/games/manifest";
 import { publish } from "@/lib/live";
 import { resolveActor } from "@/lib/guest-session";
-import { deriveVerifiedScore } from "@/lib/games/scoring";
+import { deriveScore } from "@/lib/games/sdk";
 import { parseGameCommand } from "@/lib/games/commands";
 import { applyServerGameCommand, initialServerGameState, isServerGameState } from "@/lib/games/engine";
 import { sanitizeSdkState } from "@/lib/games/sdk";
@@ -56,9 +56,10 @@ export async function POST(request: Request) {
       const session = await createGameSession(body.partyId, body.game, body.config, userId);
       await joinGameSession(session.id, userId);
       const updated = await getGameSessionById(session.id);
-      publish(`game:${session.id}`, { type: "session:created", session: updated });
-      publish(`party:${body.partyId}`, { type: "session:created", session: updated });
-      return NextResponse.json({ session: updated }, { status: 201 });
+      if (!updated) return apiError("Game session was not found after creation.", 500);
+      publish(`game:${session.id}`, { type: "session:created", session: publicGameSession(updated) });
+      publish(`party:${body.partyId}`, { type: "session:created", session: publicGameSession(updated) });
+      return NextResponse.json({ session: sanitizeControllerSession(updated, userId) }, { status: 201 });
     }
 
     if (!body.sessionId) return apiError("sessionId is required.", 400);
@@ -71,8 +72,8 @@ export async function POST(request: Request) {
       const session = await joinGameSession(body.sessionId, userId);
       if (!session) return apiError("Session not found.", 404);
       publish(`game:${body.sessionId}`, { type: "player:joined", sessionId: body.sessionId, userId, participants: session.participants });
-      publish(`party:${session.partyId}`, { type: "session:updated", session });
-      return NextResponse.json({ session });
+      publish(`party:${session.partyId}`, { type: "session:updated", session: publicGameSession(session) });
+      return NextResponse.json({ session: sanitizeControllerSession(session, userId) });
     }
 
     if (body.action === "start") {
@@ -85,9 +86,8 @@ export async function POST(request: Request) {
       const session = await updateGameSession(body.sessionId, userId, { status: "active", state: initialState ?? undefined, expectedVersion: current.version });
       if (!session) return apiError("Session version changed. Refresh and retry.", 409);
       const responseSession = { ...session, participants: current.participants, createdBy: current.createdBy };
-      const publicSession = sanitizeControllerSession(responseSession, "");
-      publish(`game:${body.sessionId}`, { type: "session:started", session: publicSession });
-      publish(`party:${session.partyId}`, { type: "session:updated", session: publicSession });
+      publish(`game:${body.sessionId}`, { type: "session:started", session: publicGameSession(responseSession) });
+      publish(`party:${session.partyId}`, { type: "session:updated", session: publicGameSession(responseSession) });
       void recordOperationalEvent({ eventType: "game_start", durationMs: performance.now() - startedAt, dimensions: { game: current.game } }).catch(() => undefined);
       return NextResponse.json({ session: sanitizeControllerSession(responseSession, userId) });
     }
@@ -96,8 +96,8 @@ export async function POST(request: Request) {
       const session = await leaveGameSession(body.sessionId, userId);
       if (!session) return apiError("Session not found.", 404);
       publish(`game:${body.sessionId}`, { type: "player:left", sessionId: body.sessionId, userId, participants: session.participants });
-      publish(`party:${session.partyId}`, { type: "session:updated", session });
-      return NextResponse.json({ session });
+      publish(`party:${session.partyId}`, { type: "session:updated", session: publicGameSession(session) });
+      return NextResponse.json({ session: sanitizeControllerSession(session, userId) });
     }
 
     if (body.action === "update") {
@@ -123,8 +123,8 @@ export async function POST(request: Request) {
     if (body.action === "score") {
       if (current.createdBy !== userId) return apiError("Only the game creator can submit the verified result.", 403);
       if (body.metadata?.game && body.metadata.game !== current.game) return apiError("Game metadata does not match the session.", 400);
-      const verifiedScore = deriveVerifiedScore(current.state);
-      const metadata = { game: current.game, scoring: "server-snapshot-v1", clientMutationId: body.clientMutationId || `${userId}_${body.sessionId}_${current.version}` };
+      const verifiedScore = deriveScore(current.game, current.state);
+      const metadata = { game: current.game, scoring: "server-snapshot-v1", clientMutationId: `score:${body.sessionId}` };
       const score = await addGameScore(body.sessionId, userId, verifiedScore, metadata);
       const scores = await getGameScores(body.sessionId);
       publish(`game:${body.sessionId}`, { type: "score:added", sessionId: body.sessionId, score, scores });
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
           if (updated) {
             const gameAction = await addGameAction(body.sessionId, userId, actionType, command.payload, commandId);
             const responseSession = { ...updated, participants: snapshot.participants, createdBy: snapshot.createdBy };
-            publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, state: sanitizeControllerState(snapshot.game, reduced.state, ""), version: updated.version });
+            publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, version: updated.version });
             void recordOperationalEvent({ eventType: "game_action", durationMs: performance.now() - startedAt, dimensions: { game: current.game, actionType } }).catch(() => undefined);
             if (actionType === "next") void recordOperationalEvent({ eventType: "round_complete", durationMs: performance.now() - startedAt, dimensions: { game: current.game } }).catch(() => undefined);
             return NextResponse.json({ ok: true, commandId, action: gameAction, session: sanitizeControllerSession(responseSession, userId) });
@@ -239,6 +239,10 @@ export async function GET(request: NextRequest) {
 }
 
 type SessionView = NonNullable<Awaited<ReturnType<typeof getGameSessionById>>>;
+
+function publicGameSession(session: SessionView) {
+  return Object.fromEntries(Object.entries(session).filter(([key]) => key !== "state"));
+}
 
 function sanitizeControllerSession(session: SessionView, userId: string) {
   return { ...session, state: sanitizeControllerState(session.game, session.state, userId, session.createdBy) };

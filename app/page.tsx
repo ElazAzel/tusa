@@ -3,7 +3,7 @@
 import WaitlistForm from "./WaitlistForm";
 import BrandLogo from "./components/BrandLogo";
 import AccountNav from "./components/AccountNav";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/local-auth/client";
 import InstallButton from "./components/InstallButton";
 import Link from "next/link";
 import { useLocale } from "./components/LocaleProvider";

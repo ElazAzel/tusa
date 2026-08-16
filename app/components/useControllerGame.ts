@@ -44,10 +44,7 @@ export function useControllerGame<T extends Record<string, unknown>>(
       es.onmessage = (msg) => {
         try {
           const event = JSON.parse(msg.data) as { type: string; state?: Partial<T>; version?: number };
-          if (event.type === "state:updated" && event.state) {
-            if (event.version) versionRef.current = event.version;
-            setState((prev) => ({ ...prev, ...event.state }));
-          } else if (event.type === "state:updated" && (!event.version || event.version > versionRef.current)) {
+          if (event.type === "state:updated" && (!event.version || event.version > versionRef.current)) {
             void syncSnapshot();
           }
         } catch { /* ping */ }

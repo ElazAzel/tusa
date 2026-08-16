@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/local-auth/server";
 import { NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit } from "@/lib/rate-limit";
 import { getFriends, getFriendRequests, sendFriendRequest, respondToFriendRequest, removeFriend, resolveHandleToUserId, grantEngagementReward } from "@/lib/parties";
 
 export async function GET(request: Request) {
@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = rateLimit(`api:${ip}:friends`, 60, 60000);
+    const rl = await distributedRateLimit(`api:${ip}:friends`, 60, 60000);
     if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
     const url = new URL(request.url);
     const scope = url.searchParams.get("scope") || "friends";
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = rateLimit(`api:${ip}:friends`, 20, 60000);
+    const rl = await distributedRateLimit(`api:${ip}:friends`, 20, 60000);
     if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
     const body = await request.json().catch(() => ({}));
     if (body.action === "request") {
@@ -58,7 +58,7 @@ export async function DELETE(request: Request) {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = rateLimit(`api:${ip}:friends`, 20, 60000);
+    const rl = await distributedRateLimit(`api:${ip}:friends`, 20, 60000);
     if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
     const body = await request.json().catch(() => ({}));
     if (!body.friendId) return NextResponse.json({ error: "friendId required" }, { status: 400 });

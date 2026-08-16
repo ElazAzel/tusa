@@ -7,7 +7,6 @@ export type RuntimeStatus = {
   services: {
     database: RuntimeServiceState;
     localAuth: RuntimeServiceState;
-    clerk: "live" | "development" | "unconfigured";
     realtime: RuntimeServiceState;
     rateLimit: RuntimeServiceState;
     media: RuntimeServiceState;
@@ -53,8 +52,6 @@ export function getRuntimeStatus(): RuntimeStatus {
   const localAuth = configured(process.env.LOCAL_AUTH_SECRET) || configured(process.env.GUEST_SESSION_SECRET) || configured(process.env.ADMIN_SESSION_SECRET)
     ? "ready"
     : "missing";
-  const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
-  const clerk = clerkKey?.startsWith("pk_live_") ? "live" : clerkKey ? "development" : "unconfigured";
   const realtime = hasAblyConfiguration() || hasDatabaseTransport() ? "ready" : strictDistributedServices ? "missing" : "fallback";
   const rateLimit = hasUpstashConfiguration() || hasDatabaseTransport() ? "ready" : strictDistributedServices ? "missing" : "fallback";
   const media = configured(process.env.BLOB_READ_WRITE_TOKEN) ? "ready" : "fallback";
@@ -68,6 +65,6 @@ export function getRuntimeStatus(): RuntimeStatus {
     environment: runtimeEnvironment(),
     strictDistributedServices,
     overall: blocked ? "blocked" : degraded ? "degraded" : "ready",
-    services: { database, localAuth, clerk, realtime, rateLimit, media, observability, email, adminMfa },
+    services: { database, localAuth, realtime, rateLimit, media, observability, email, adminMfa },
   };
 }

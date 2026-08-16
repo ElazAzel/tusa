@@ -1,13 +1,13 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/local-auth/server";
 import { NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit } from "@/lib/rate-limit";
 import { getFriendLists, createFriendList, updateFriendList, deleteFriendList, addFriendToList, removeFriendFromList } from "@/lib/parties";
 
 export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:friend-lists`, 60, 60000);
+  const rl = await distributedRateLimit(`api:${ip}:friend-lists`, 60, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const lists = await getFriendLists(userId);
   return NextResponse.json({ lists });
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:friend-lists`, 20, 60000);
+  const rl = await distributedRateLimit(`api:${ip}:friend-lists`, 20, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   if (body.action === "add") {
@@ -41,7 +41,7 @@ export async function PATCH(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:friend-lists`, 20, 60000);
+  const rl = await distributedRateLimit(`api:${ip}:friend-lists`, 20, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   if (!body.listId || !body.name) return NextResponse.json({ error: "listId and name required" }, { status: 400 });
@@ -53,7 +53,7 @@ export async function DELETE(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:friend-lists`, 20, 60000);
+  const rl = await distributedRateLimit(`api:${ip}:friend-lists`, 20, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   if (!body.listId) return NextResponse.json({ error: "listId required" }, { status: 400 });

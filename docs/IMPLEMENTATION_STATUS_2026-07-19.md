@@ -5,7 +5,9 @@
 **Baseline:** `main@edee56e` as of 22.07.2026<br>
 **Product status:** public beta / supported pilot at 8.8/10; autonomous paid production remains 7.9/10 until external release gates pass
 
-**Remediation update:** controlled Blob media, moderation/report/appeal, atomic KOINS bets, first-party error monitoring, a production health gate, email verification lifecycle, Resend delivery adapter/webhook journal, database-backed TOTP enrollment and one-use recovery codes, operational SLO events, certification/load/canonical harnesses, thirteen applied migrations with schema version 12, 61 unit/invariant tests and 52 browser smokes are verified. Vercel production now always enforces the migration gate instead of falling through to request-time DDL; RBAC and waitlist are also migration-backed. Core evidence is still 0/8 because an isolated preview party and Host storage state were not supplied; Resend DNS/domain verification, root enrollment, venue load, public DNS/legal approval and the in-person pilot remain external gates.
+**Remediation update:** controlled Blob media, moderation/report/appeal, atomic KOINS bets, first-party error monitoring, a production health gate, email verification lifecycle, Resend delivery adapter/webhook journal, database-backed TOTP enrollment and one-use recovery codes, operational SLO events, certification/load/canonical harnesses, and thirteen versioned migrations are implemented. The current code gate is schema v13; the last externally verified database baseline was v12, so migration 0013 must be applied before deployment. Vercel production fails closed instead of falling through to request-time DDL; RBAC, waitlist and safety restrictions are migration-backed. Core evidence is still 0/8 because an isolated preview party and Host storage state were not supplied; Resend DNS/domain verification, root enrollment, venue load, public DNS/legal approval and the in-person pilot remain external gates.
+
+**Current code checkpoint — 16.08.2026:** migration `0013_safety_restrictions.sql` raises the production schema gate to v13 and makes moderation suspensions enforceable. The migration is committed in this repository; it must be applied to the connected production database before deploying this checkpoint.
 
 ## 12-week roadmap implementation checkpoint
 
@@ -17,7 +19,7 @@ Shipped in code on 19.07.2026:
 - Root-admin TOTP enrollment with QR provisioning, AES-256-GCM secret storage and ten one-use hashed recovery codes.
 - Join, game action/start/round, reconnect and media operational events plus 24-hour SLO and email delivery summaries in `/admin/system`.
 - Confirmed venue-load harness for 30 real guest/SSE clients, DNS/canonical checker, incident drill and Venue Night runbook.
-- Technical `www.tusa.game` to apex 308 redirect and privacy processor disclosure for Vercel, Blob, Neon, Ably, Clerk and Resend.
+- Technical `www.tusa.game` to apex 308 redirect and privacy processor disclosure for Vercel, Blob, Neon, Ably, local authentication and Resend.
 
 Not claimed as complete:
 
@@ -42,7 +44,7 @@ Not claimed as complete:
 1. Все 32 режима остаются Beta; certified = 0. Contract-tested не равно browser-certified.
 2. Core eight закреплены в manifest, но полный Stage + two Controllers + reconnect/rematch/privacy browser evidence ещё не снят.
 3. Recovery, verification tokens, session revocation и TOTP enforcement реализованы; production email webhook и enrollment `ADMIN_TOTP_SECRET` не настроены.
-4. Versioned migrations и strict schema gate работают; подключённая база подтверждена на schema version 12.
+4. Versioned migrations и strict schema gate работают; текущий код требует schema version 13, а подключённая база последний раз подтверждена на version 12.
 5. KOINS join/settle/cancel и reward idempotency выполняются атомарными SQL CTE.
 6. UGC report/block/appeal, moderator queue и controlled Blob lifecycle реализованы для Beta.
 7. First-party server/client error journal и `/api/health` работают; внешний paging/webhook для SLO alert ещё не настроен.
@@ -69,7 +71,7 @@ Venue Night, Event Pass, TUSA Plus, subscriptions, payments, white-label, brand 
 - New commits `252b8eb` and `57ce503` were reviewed and preserved: they add the current UX/UI audit, platform snapshot and plan cleanup.
 - Mobile Party Room now keeps emoji input clear, keeps reactions and the More sheet inside the viewport, and uses a body-level sheet with safe-area handling.
 - The offline banner now appears only when both authenticated party streams have actually disconnected. A single channel reconnect no longer falsely tells participants that the whole party is offline.
-- RBAC and waitlist are migration-backed at schema version 12; production admin and waitlist traffic fail closed if their migrations are absent. `elaz263@gmail.com` is an active full-permission `admin` through the local account mapping and the assignment is audited.
+- RBAC, waitlist and safety restrictions are migration-backed at schema version 13; production admin, waitlist, safety and party traffic fail closed if their migrations are absent. `elaz263@gmail.com` is an active full-permission `admin` through the local account mapping and the assignment is audited.
 - Local account, party, waitlist and admin traffic now share the schema-version-12 production gate. Runtime DDL remains a local-development compatibility fallback only and is never attempted for production requests.
 - The next code-independent release gates remain unchanged: isolated core-eight evidence, provider setup for production email/TOTP, venue load and incident drill, then DNS and legal approval.
 

@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/local-auth/server";
 import { NextRequest, NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit } from "@/lib/rate-limit";
 import { getPartyByInvite, scheduleParty } from "@/lib/parties";
 
 const ALLOWED_ORIGINS = ["http://localhost:3000", "https://tusagame.vercel.app", "https://tusa.game", "https://www.tusa.game"];
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!userId) return cors(NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 }), origin);
   const { inviteCode } = await params;
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:schedule`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${ip}:schedule`, 5, 60000);
   if (!rl.allowed) return cors(NextResponse.json({ error: "Слишком много запросов." }, { status: 429 }), origin);
   const body = await request.json().catch(() => ({}));
   if (!body.scheduledAt) return cors(NextResponse.json({ error: "Укажите scheduledAt." }, { status: 400 }), origin);

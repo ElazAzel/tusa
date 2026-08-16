@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { rateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit } from "@/lib/rate-limit";
 import { getAdminAccess } from "@/lib/admin-auth";
 import { getCosmeticsCatalogue, createCosmeticsItem, updateCosmeticsItem, deleteCosmeticsItem } from "@/lib/parties";
 
@@ -35,7 +35,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   if (!await accessFor("ads_write")) return denied();
-  const rl = rateLimit(`api:${request.headers.get("x-forwarded-for") ?? "unknown"}:admin-cosmetics`, 10, 60_000);
+  const rl = await distributedRateLimit(`api:${request.headers.get("x-forwarded-for") ?? "unknown"}:admin-cosmetics`, 10, 60_000);
   if (!rl.allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   const parsed = itemSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid cosmetics item." }, { status: 400 });
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   if (!await accessFor("ads_write")) return denied();
-  const rl = rateLimit(`api:${request.headers.get("x-forwarded-for") ?? "unknown"}:admin-cosmetics`, 10, 60_000);
+  const rl = await distributedRateLimit(`api:${request.headers.get("x-forwarded-for") ?? "unknown"}:admin-cosmetics`, 10, 60_000);
   if (!rl.allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   const parsed = itemSchema.partial().extend({ id: z.string().uuid(), active: z.boolean().optional() }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid cosmetics item." }, { status: 400 });

@@ -8,6 +8,7 @@ import { useLocale } from "@/app/components/LocaleProvider";
 import ProductHeader from "@/app/components/ProductHeader";
 import { soundTap, soundSuccess } from "@/lib/audio";
 import CosmeticsCustomizer from "./CosmeticsCustomizer";
+import SafetyAppeals from "./SafetyAppeals";
 
 const badgeFamilies = ["Организатор", "Игрок", "Хроникёр", "Казначей", "Душа компании", "Пунктуальный", "Командный", "Исследователь", "Мемолог", "Голос вечера"];
 const badgeCatalogue = Array.from({ length: 60 }, (_, index) => ({ id: `badge_${index + 1}`, name: `${badgeFamilies[index % badgeFamilies.length]} \u00b7 ${Math.floor(index / badgeFamilies.length) + 1}`, threshold: (index + 1) * 120 }));
@@ -327,6 +328,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
 
         {/* ── Sidebar ── */}
         <div>
+          <SafetyAppeals />
           <section className="promo-redeem-card">
             <Icon name="notifications" />
             <h2>{t("profileSettings")}</h2>

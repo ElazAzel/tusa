@@ -18,6 +18,18 @@ const addSchema = z.object({
   consent: z.literal(true),
 }).strict();
 
+const updateSchema = z.object({
+  action: z.literal("update"),
+  photoId: z.string().uuid(),
+  updates: z.object({
+    cover: z.boolean().optional(),
+    tags: z.array(z.string().trim().min(1).max(24)).max(20).optional(),
+    name: z.string().trim().min(1).max(200).optional(),
+  }).strict(),
+}).strict();
+
+const deleteSchema = z.object({ action: z.literal("delete"), photoId: z.string().uuid() }).strict();
+
 export async function GET(request: Request) {
   try {
     const actor = await resolveActor();
@@ -46,20 +58,25 @@ export async function POST(request: Request) {
       if (!parsed.success || !isManagedMediaUrl(parsed.data?.src ?? "")) return Response.json({ error: "Invalid managed media." }, { status: 400 });
       await requirePartyMember(parsed.data.partyId, userId);
       const photo = await addGalleryPhoto(userId, parsed.data.partyId, parsed.data);
-      trackAnalytics(userId, "photo_uploaded", { partyId: body.partyId, photoId: photo.id });
-      publish(`gallery:${body.partyId}`, { action: "add", photo });
-      grantEngagementReward(userId, "photo", body.partyId).catch(() => undefined);
+      trackAnalytics(userId, "photo_uploaded", { partyId: parsed.data.partyId, photoId: photo.id });
+      publish(`gallery:${parsed.data.partyId}`, { action: "add", photo });
+      grantEngagementReward(userId, "photo", parsed.data.partyId).catch(() => undefined);
       return Response.json({ photo });
     }
     if (body.action === "update") {
-      const photo = await updateGalleryPhoto(body.photoId, userId, body.updates);
+      const parsed = updateSchema.safeParse(body);
+      if (!parsed.success) return Response.json({ error: "Invalid gallery update." }, { status: 400 });
+      const photo = await updateGalleryPhoto(parsed.data.photoId, userId, parsed.data.updates);
       if (photo) publish(`gallery:${photo.partyId}`, { action: "update", photo });
       return Response.json({ photo });
     }
     if (body.action === "delete") {
-      const deleted = await deleteGalleryPhoto(body.photoId, userId);
+      const parsed = deleteSchema.safeParse(body);
+      if (!parsed.success) return Response.json({ error: "Invalid gallery delete." }, { status: 400 });
+      const deleted = await deleteGalleryPhoto(parsed.data.photoId, userId);
+      if (!deleted) return Response.json({ error: "Photo not found." }, { status: 404 });
       if (deleted?.src) await removeManagedMedia(deleted.src).catch(() => undefined);
-      publish(`gallery:${body.partyId}`, { action: "delete", photoId: body.photoId });
+      publish(`gallery:${deleted.partyId}`, { action: "delete", photoId: deleted.id });
       return Response.json({ ok: true });
     }
     return Response.json({ error: "Unknown action" }, { status: 400 });

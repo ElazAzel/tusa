@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
-import { getOrCreateDailyChallenge, submitDailyAnswers, getDailyLeaderboard, addPassXp } from "@/lib/parties";
+import { getOrCreateDailyChallenge, submitDailyAnswers, getDailyLeaderboard, addPassXp, getUserPassProgress } from "@/lib/parties";
 import { resolveActor } from "@/lib/guest-session";
 import { dailyQuestionIds, publicDailyQuestions } from "@/lib/games/daily-trivia";
 
@@ -37,9 +37,12 @@ export async function POST(request: Request) {
     if (!limit.allowed) return NextResponse.json({ error: "Too many submissions." }, { status: 429 });
     const parsed = submissionSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return NextResponse.json({ error: "Invalid answers.", details: parsed.error.flatten() }, { status: 400 });
-    const score = await submitDailyAnswers(parsed.data.challengeId, actor.id, parsed.data.answers);
-    if (!score) return NextResponse.json({ error: "Challenge unavailable." }, { status: 404 });
-    const [pass, leaderboard] = await Promise.all([addPassXp(actor.id, 5), getDailyLeaderboard(parsed.data.challengeId)]);
-    return NextResponse.json({ score, pass, leaderboard }, { status: 201 });
+    const submission = await submitDailyAnswers(parsed.data.challengeId, actor.id, parsed.data.answers);
+    if (!submission) return NextResponse.json({ error: "Challenge unavailable." }, { status: 404 });
+    const [pass, leaderboard] = await Promise.all([
+      submission.created ? addPassXp(actor.id, 5) : getUserPassProgress(actor.id),
+      getDailyLeaderboard(parsed.data.challengeId),
+    ]);
+    return NextResponse.json({ score: submission.score, pass, leaderboard, duplicate: !submission.created }, { status: submission.created ? 201 : 200 });
   } catch { return NextResponse.json({ error: "Daily challenge error" }, { status: 500 }); }
 }

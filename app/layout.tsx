@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
+import { AuthProvider } from "@/lib/local-auth/client";
 import { Inter, JetBrains_Mono, Unbounded } from "next/font/google";
 import { headers } from "next/headers";
 import { cookies } from "next/headers";
@@ -103,7 +103,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang={locale}>
       <body className={`${inter.variable} ${unbounded.variable} ${mono.variable}`}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
-        <ClerkProvider>
+        <AuthProvider>
           <LocaleProvider initialLocale={locale}>
             <a className="skip-link" href="#main-content">{locale === "ru" ? "К содержанию" : "Skip to content"}</a>
             <div id="main-content">{children}</div>
@@ -113,7 +113,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <Analytics />
             <SpeedInsights />
           </LocaleProvider>
-        </ClerkProvider>
+        </AuthProvider>
       </body>
     </html>
   );

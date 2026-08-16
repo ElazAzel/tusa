@@ -1,5 +1,5 @@
-import { auth } from "@clerk/nextjs/server";
-import { rateLimit } from "@/lib/rate-limit";
+import { auth } from "@/lib/local-auth/server";
+import { distributedRateLimit } from "@/lib/rate-limit";
 import { createBet, getBets, joinBet, settleBet, cancelBet, getKoinsBalance, getKoinsTransactions } from "@/lib/parties";
 import { publish } from "@/lib/live";
 
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const { userId } = await auth();
     if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = rateLimit(`api:${ip}:koins`, 60, 60000);
+    const rl = await distributedRateLimit(`api:${ip}:koins`, 60, 60000);
     if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
     const { searchParams } = new URL(request.url);
     const partyId = searchParams.get("partyId");
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:koins`, 10, 60000);
+  const rl = await distributedRateLimit(`api:${ip}:koins`, 10, 60000);
   if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json();
   try {

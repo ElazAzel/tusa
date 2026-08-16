@@ -101,6 +101,20 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   const gameRecoveryRef = useRef(false);
 
   useEffect(() => {
+    const onCommandError = (event: Event) => {
+      const message = (event as CustomEvent<{ message?: string }>).detail?.message;
+      if (message) setError(message);
+    };
+    const onCommandSuccess = () => setError("");
+    window.addEventListener("tusa:game-command-error", onCommandError);
+    window.addEventListener("tusa:game-command-success", onCommandSuccess);
+    return () => {
+      window.removeEventListener("tusa:game-command-error", onCommandError);
+      window.removeEventListener("tusa:game-command-success", onCommandSuccess);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!moreOpen) return;
     const previousOverflow = document.body.style.overflow;
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setMoreOpen(false); };
@@ -331,7 +345,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   function saveGameScore() {
     if (!gameSession || !selectedGame) return;
     const game = gameCatalogue.find((g) => g.id === selectedGame);
-    fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "score", sessionId: gameSession, metadata: { game: selectedGame } }) })
+    fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "score", sessionId: gameSession, clientMutationId: `score:${gameSession}`, metadata: { game: selectedGame } }) })
       .then((r) => r.json()).then((data) => {
         if (data.scores) setGameResults({ scores: data.scores as GameScore[], gameTitle: game ? t(game.titleKey) : "" });
         const verifiedScore = Number(data.score?.score ?? 0);
@@ -488,6 +502,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       </header>
 
       <div className="demo-content live-party-content" key={tab}>
+        {error && <p className="form-error" role="alert">{error}</p>}
         {tab === "space" && <section className="demo-hero-card live-party-hero">
           <div>
             <span className="demo-kicker">{party.adultOnly ? t("roomAdult") : t("roomFamily")}</span>
@@ -530,7 +545,6 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
         <button className="party-action-btn party-action-btn--qr" onClick={() => { if (qrUrl) setQrUrl(""); else generateQr(); }} type="button"><span className="material-symbols-rounded">qr_code</span> {t("eventHubQr")}</button>
       </div>
       {qrUrl && <div className="party-room-qr"><div className="party-room-qr__top"><span>{t("roomInvite")}</span><b>TUSA.game</b></div><div className="party-room-qr__code"><img src={qrUrl} alt={t("eventHubQr")} /></div><p>{party.title}</p><button onClick={() => navigator.clipboard.writeText(inviteUrl)} type="button"><span className="material-symbols-rounded">content_copy</span> {t("eventHubQrCopy")}</button></div>}
-      {error && <p className="form-error">{error}</p>}
       <div className="party-members">
         <h3>{t("roomInside")} ({filteredMembers.length})</h3>
         <div className="rsvp-filter-tabs">
