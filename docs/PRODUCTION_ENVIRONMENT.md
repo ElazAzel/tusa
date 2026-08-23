@@ -1,6 +1,6 @@
 # Production environment and distributed runtime
 
-> **Актуализировано: 19.07.2026 · Baseline: `main@0356f6d`.** Этот runbook задаёт production gate, а не подтверждает наличие credentials. Активный production build использует local auth compatibility layer; Clerk остаётся возможным целевым решением, пока не выбран единый provider.
+> **Актуализировано: 22.07.2026 · Baseline: `main@edee56e`.** Этот runbook задаёт production gate, а не подтверждает наличие credentials. Активный production build использует local auth compatibility layer.
 
 This runbook records the production configuration that cannot be safely invented in source code. Values are added as **sensitive** Vercel environment variables; the application reports their state through `/admin/system` but never returns values.
 
@@ -17,8 +17,8 @@ This runbook records the production configuration that cannot be safely invented
 | Integration | Required variables | Purpose |
 | --- | --- | --- |
 | Neon | `DATABASE_URL` | Authoritative party, membership, game and chat data. |
-| Local auth transition | `LOCAL_AUTH_SECRET`, `GUEST_SESSION_SECRET`, `ADMIN_SESSION_SECRET` | Signed sessions while the legacy local-auth compatibility layer remains enabled. |
-| Clerk production | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_…`, `CLERK_SECRET_KEY=sk_live_…` | Production account provider. Test keys must not be used after Clerk is re-enabled. |
+| Local auth | `LOCAL_AUTH_SECRET`, `GUEST_SESSION_SECRET`, `ADMIN_SESSION_SECRET` | Signed sessions for the current local email/password account flow. |
+| Resend | `RESEND_API_KEY`, `AUTH_EMAIL_FROM`, `RESEND_WEBHOOK_SECRET` | Production verification and password-reset delivery. The webhook fallback is development-only. |
 | Ably | `ABLY_API_KEY` | Distributed event delivery and presence. |
 | Upstash | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Distributed rate limiting. |
 | Blob | `BLOB_READ_WRITE_TOKEN` | Signed photo and voice uploads. |
@@ -35,7 +35,7 @@ When the strict flag is enabled, an unconfigured realtime provider returns a con
 
 ## External operations checklist
 
-- Replace Clerk test keys with live keys and configure the Clerk custom domain.
+- Verify local auth secrets and Resend sender/domain verification before enabling paid traffic.
 - Point `tusa.game` DNS to Vercel (`A @ → 76.76.21.21` or Vercel nameservers) and redirect `www.tusa.game` to the canonical host.
 - Keep Preview and Development credentials separate from Production.
 - Use `/admin/system` after every integration change and before enabling strict mode.

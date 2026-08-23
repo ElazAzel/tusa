@@ -19,7 +19,7 @@
 - Guest HMAC join, local email/password accounts, Party Room, chat, gallery, profile, KOINS, moderation, controlled Blob media, analytics and admin RBAC are implemented for the beta.
 - Production uses versioned Drizzle migrations. Schema v12 covers party, auth, admin and waitlist tables; runtime DDL is a local-development compatibility fallback only.
 - The connected production database reports schema v12. The latest production deployment is `Ready` on `tusa.game` and `tusagame.vercel.app`.
-- 61 unit/invariant tests, TypeScript, ESLint, production build and the local RAG build pass at this checkpoint.
+- 65 unit/invariant tests, TypeScript, ESLint, production build and the local RAG build pass at this checkpoint.
 
 ## Remaining release gates
 

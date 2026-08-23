@@ -46,6 +46,9 @@ const signInApi = readFileSync(new URL("../app/api/auth/sign-in/route.ts", impor
 const signUpApi = readFileSync(new URL("../app/api/auth/sign-up/route.ts", import.meta.url), "utf8");
 const adminAuthApi = readFileSync(new URL("../app/api/admin/auth/route.ts", import.meta.url), "utf8");
 const mediaSource = readFileSync(new URL("../lib/media.ts", import.meta.url), "utf8");
+const safetyBlocksApi = readFileSync(new URL("../app/api/safety/blocks/route.ts", import.meta.url), "utf8");
+const healthApi = readFileSync(new URL("../app/api/health/route.ts", import.meta.url), "utf8");
+const authEmail = readFileSync(new URL("../lib/auth-email.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -83,6 +86,27 @@ test("OWASP remediation keeps party media, auth and admin controls server-enforc
   assert.match(adminAuthApi, /isAdminMfaConfigured/);
   assert.match(adminAuthApi, /distributedRateLimit/);
   assert.match(mediaSource, /matchesMediaSignature/);
+});
+
+test("safety block reads and writes are rate limited per actor and client", () => {
+  assert.match(safetyBlocksApi, /distributedRateLimit/);
+  assert.match(safetyBlocksApi, /safety:blocks:read/);
+  assert.match(safetyBlocksApi, /safety:blocks:write/);
+  assert.match(safetyBlocksApi, /getClientIp/);
+  assert.match(safetyBlocksApi, /Too many requests/);
+});
+
+test("production health fails closed for degraded runtime and unenrolled admin MFA", () => {
+  assert.match(healthApi, /getAdminMfaStatus/);
+  assert.match(healthApi, /runtime\.environment === "production"/);
+  assert.match(healthApi, /runtime\.overall === "ready"/);
+  assert.match(healthApi, /adminMfaReady/);
+});
+
+test("production auth email does not use the development webhook fallback", () => {
+  assert.match(authEmail, /runtimeEnvironment/);
+  assert.match(authEmail, /runtimeEnvironment\(\) === "production"/);
+  assert.match(runtimeStatus, /environment !== "production"/);
 });
 
 test("sitemap and AI discovery are manifest driven", () => {

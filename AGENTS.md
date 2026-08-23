@@ -12,7 +12,7 @@
 npm install          # dependencies
 npm run dev          # dev server (localhost:3000)
 npm run build        # production build
-npm test             # 61 unit/contract/platform tests (must pass before commit)
+npm test             # 65 unit/contract/platform tests (must pass before commit)
 npm run lint         # 0 errors required
 npm run rag:build    # rebuild RAG index after changes
 ```
@@ -87,7 +87,7 @@ app/globals.css       ← ~3980 lines brand CSS, brutal design, mobile-first
 
 ### RAG index structure
 
-- **1065 chunks** across 9 types: `docs`, `component`, `utility`, `route`, `css`, `game`, `hook`, `config`, `type` (built 22.07.2026)
+- **1012 chunks** across 9 types: `docs`, `component`, `utility`, `route`, `css`, `game`, `hook`, `config`, `type` (built 23.08.2026)
 - Index stored at `.rag/index.json` (~6 MB, auto-generated, gitignored)
 - **Always rebuild after changes**: `npm run rag:build`
 
@@ -149,7 +149,7 @@ export default function Game({ partyId, sessionId, onSave, role }:
 ### Testing
 
 ```bash
-npm test             # 61 tests: game engine, contracts, routes and security
+npm test             # 65 tests: game engine, contracts, routes and security
 npm run test:e2e     # Playwright E2E (requires install)
 ```
 
