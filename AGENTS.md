@@ -104,6 +104,27 @@ app/globals.css       ← ~3980 lines brand CSS, brutal design, mobile-first
 - **i18n**: All user-facing text via `t()` function from `useLocale()`
 - **Never white text on lime background** — enforce `color: var(--black)`
 
+### Text Quality (RU) — MANDATORY
+
+All Russian text (i18n strings in `lib/i18n.ts`, SEO pages, landing copy, docs) must follow the **humanizer-ru** standard, local copy at `E:\Open Design\resources\humanizer-ru`:
+
+1. Entry point: `skills\humanizer-ru\SKILL.md` → full process + HARD BANS list
+2. Pattern catalog (58 patterns): `skills\humanizer-ru\references\catalog.md`
+3. No em-dashes «—», no «не просто X, а Y», «данный», «является» (>1/500 слов), «стоит отметить», «комплексный подход» — see HARD BANS in SKILL.md
+4. Факт-замок: never invent facts; only source-provided numbers/names
+5. Python scanner unavailable on this machine — work by catalog manually
+
+### Security Baseline — OWASP Top 10:2025
+
+All changes to API routes (`app/api/**`), auth (`proxy.ts`, `lib/guest-session.ts`), SQL (`lib/parties.ts`), headers (`next.config.ts`) must pass the OWASP Top 10:2025 checklist: https://owasp.org/Top10/2025/
+
+Local mapped checklist with codebase specifics: `.opencode/skills/security-review/SKILL.md`. Quick gates:
+
+- A01: every route checks session + party membership; admin via migration-backed RBAC only
+- A05: all user data in raw SQL parameterized (`$1..$n`); Zod validation for every game action
+- A04/A07: secrets from env only, HMAC guests per `lib/guest-session.ts`, session revocation intact
+- A02: CSP/security headers in `next.config.ts` never weakened
+
 ### Game architecture
 
 Every multiplayer game has two views:
@@ -201,6 +222,8 @@ npm run test:e2e     # Playwright E2E (requires install)
 | Monetization | `docs/TUSA_io_Партнёрства_реклама_монетизация.md` | Pre-implementation partnerships, ads and monetization model |
 | Global Platform | `docs/GLOBAL_SOCIAL_GAMING_PLATFORM_2.0.md` | Target strategic proposal |
 | Market Research | `docs/MARKET_RESEARCH_2026-07-22.md` | Market signals, positioning and 90-day validation plan |
+| humanizer-ru (external) | `E:\Open Design\resources\humanizer-ru` | Mandatory standard for all Russian text; entry `skills\humanizer-ru\SKILL.md` |
+| OWASP Top 10:2025 (external) | https://owasp.org/Top10/2025/ | Mandatory security checklist for API/auth/SQL/header changes |
 
 ---
 
@@ -211,8 +234,10 @@ npm run test:e2e     # Playwright E2E (requires install)
 | `add-game` | Add a new multiplayer game | `.opencode/skills/add-game.md` |
 | `fix-game-bug` | Debug and fix a game component/engine | `.opencode/skills/fix-game-bug.md` |
 | `rag-index` | Rebuild RAG index | `.opencode/skills/rag-index.md` |
+| `humanize-text` | Write/edit any Russian text per humanizer-ru standard (HARD BANS, fact-lock) | `.opencode/skills/humanize-text/SKILL.md` |
+| `security-review` | OWASP Top 10:2025 checklist mapped to this codebase | `.opencode/skills/security-review/SKILL.md` |
 
-Load a skill with `opencode use-skill <name>` (or equivalent in your AI tool).
+Load a skill with `opencode use-skill <name>` (or equivalent in your AI tool). External reference libraries registered in `opencode.json`: `humanizer-ru`, `open-design`, `owasp-top10`.
 
 ---
 
