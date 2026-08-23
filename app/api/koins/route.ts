@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/local-auth/server";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { createBet, getBets, joinBet, settleBet, cancelBet, getKoinsBalance, getKoinsTransactions, requirePartyMember } from "@/lib/parties";
 import { publish } from "@/lib/live";

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
+import { ClerkProvider } from "@/lib/local-auth/client";
 import { Inter, JetBrains_Mono, Unbounded } from "next/font/google";
 import { headers } from "next/headers";
 import { cookies } from "next/headers";

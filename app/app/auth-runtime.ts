@@ -1,6 +1,6 @@
 import "server-only";
 
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@/lib/local-auth/server";
 import { redirect } from "next/navigation";
 import type { UserProfile } from "@/lib/parties";
 

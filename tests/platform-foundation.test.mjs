@@ -21,6 +21,18 @@ const chatApi = readFileSync(new URL("../app/api/chat/route.ts", import.meta.url
 const systemApi = readFileSync(new URL("../app/api/admin/system/route.ts", import.meta.url), "utf8");
 const runtimeStatus = readFileSync(new URL("../lib/runtime-status.ts", import.meta.url), "utf8");
 const nextConfig = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
+const authRuntimeFiles = [
+  "../app/layout.tsx",
+  "../app/page.tsx",
+  "../app/app/auth-runtime.ts",
+  "../app/components/AccountNav.tsx",
+  "../app/sign-in/[[...sign-in]]/page.tsx",
+  "../app/sign-up/[[...sign-up]]/page.tsx",
+  "../app/api/auth/session/route.ts",
+  "../app/api/auth/email-verification/request/route.ts",
+  "../lib/admin-auth.ts",
+  "../lib/guest-session.ts",
+].map((file) => readFileSync(new URL(file, import.meta.url), "utf8")).join("\n");
 const cosmeticsApi = readFileSync(new URL("../app/api/cosmetics/route.ts", import.meta.url), "utf8");
 const cosmeticsAdminApi = readFileSync(new URL("../app/api/admin/cosmetics/route.ts", import.meta.url), "utf8");
 const profileApi = readFileSync(new URL("../app/api/profile/route.ts", import.meta.url), "utf8");
@@ -110,6 +122,12 @@ test("bundler auth aliases keep local auth active in production", () => {
   assert.match(nextConfig, /webpack\s*\(/);
   assert.match(nextConfig, /@clerk\/nextjs.*local-auth\/client\.tsx/s);
   assert.match(nextConfig, /@clerk\/nextjs\/server.*local-auth\/server\.ts/s);
+});
+
+test("runtime auth imports bypass third-party Clerk resolution", () => {
+  assert.doesNotMatch(authRuntimeFiles, /from [\"']@clerk\/nextjs(?:\/server)?[\"']/);
+  assert.match(authRuntimeFiles, /@\/lib\/local-auth\/client/);
+  assert.match(authRuntimeFiles, /@\/lib\/local-auth\/server/);
 });
 
 test("production auth email does not use the development webhook fallback", () => {

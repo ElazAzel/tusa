@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/local-auth/server";
 import { NextRequest, NextResponse } from "next/server";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getPartyByInvite, updatePartyTheme } from "@/lib/parties";

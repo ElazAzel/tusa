@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/local-auth/server";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { grantEngagementReward, getEngagementStats } from "@/lib/parties";
 

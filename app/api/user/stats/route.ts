@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/local-auth/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { getUserGameStats } from "@/lib/parties";
 

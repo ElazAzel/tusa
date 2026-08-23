@@ -1,6 +1,6 @@
 import "server-only";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@/lib/local-auth/server";
 import { cookies } from "next/headers";
 
 export const GUEST_COOKIE = "tusa_guest_session";

@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/local-auth/server";
 import { NextResponse } from "next/server";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getFriendLists, createFriendList, updateFriendList, deleteFriendList, addFriendToList, removeFriendFromList } from "@/lib/parties";
