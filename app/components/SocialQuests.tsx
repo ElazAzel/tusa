@@ -49,7 +49,7 @@ export default function SocialQuests({ partyId }: { partyId: string }) {
             <div style={{ height: "100%", width: `${Math.min(100, (q.progress / q.target) * 100)}%`, background: done ? "var(--lime)" : "var(--pink)", borderRadius: 4 }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ color: "var(--gray)", fontSize: 12 }}>{q.progress}/{q.target} — {q.rewardKoins} KOINS +{q.rewardXp} XP</span>
+            <span style={{ color: "var(--gray)", fontSize: 12 }}>{q.progress}/{q.target} · {q.rewardKoins} KOINS +{q.rewardXp} XP</span>
             {done && !q.claimed && <button className="demo-action demo-action--lime" onClick={() => claim(q.id)} type="button" style={{ padding: "4px 12px", fontSize: 12 }}>{t("questClaim")}</button>}
             {q.claimed && <span style={{ color: "var(--lime)", fontSize: 12, fontWeight: 700 }}>{t("questClaimed")}</span>}
           </div>

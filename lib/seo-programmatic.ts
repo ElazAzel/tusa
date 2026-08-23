@@ -30,12 +30,12 @@ export const PROGRAMMATIC_SLUGS = [
 export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageContent }> = {
   "for-2-players": {
     ru: {
-      title: "Игры на двоих на телефоне онлайн — TUSA.game",
+      title: "Игры на двоих на телефоне онлайн · TUSA.game",
       description: "Лучшие игры на двоих с одного телефона или по сети. Быстрые викторины, психологические словесные дуэли онлайн без скачивания.",
       kicker: "ИГРЫ НА ДВОИХ",
       h1: "Игры на двоих: во что поиграть вдвоем",
       intro: "Ищете интересные игры для двоих на одном телефоне или онлайн? TUSA.game предлагает захватывающие режимы для дуэлей, которые идеально скрасят вечер.",
-      body: "Больше никаких сложных правил и долгих подготовок. Выбирайте викторины на знание друг друга, проверяйте эрудицию или испытывайте интуицию. Играйте дома, в дороге или во время ожидания в очереди — вам нужны только ваши смартфоны.",
+      body: "Больше никаких сложных правил и долгих подготовок. Выбирайте викторины на знание друг друга, проверяйте эрудицию или испытывайте интуицию. Играйте дома, в дороге или во время ожидания в очереди: вам нужны только ваши смартфоны.",
       stepsTitle: "Как начать игру для двоих:",
       steps: [
         "Создайте приватную комнату на TUSA.game.",
@@ -55,7 +55,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "2 Player Party Games Online — Play on Mobile | TUSA.game",
+      title: "2 Player Party Games Online · Play on Mobile | TUSA.game",
       description: "Best 2 player games to play with friends online or on one phone. Try fast trivia and word duels free in your web browser.",
       kicker: "2 PLAYER GAMES",
       h1: "Fun and Interactive Games for 2 Players",
@@ -82,11 +82,11 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-3-players": {
     ru: {
-      title: "Игры на троих для компании онлайн — TUSA.game",
+      title: "Игры на троих для компании онлайн · TUSA.game",
       description: "Интересные онлайн игры на троих человек. Словесные баттлы, шпионские игры и викторины без скачивания на TUSA.game.",
       kicker: "ИГРЫ НА ТРОИХ",
       h1: "Во что поиграть втроем: лучшие варианты",
-      intro: "Игры на троих — отличный способ провести время в небольшой компании друзей. На TUSA.game собраны интерактивные режимы, которые идеально подходят для трех участников.",
+      intro: "Игры на троих: отличный способ провести время в небольшой компании друзей. На TUSA.game собраны интерактивные режимы, которые идеально подходят для трех участников.",
       body: "Маленькие группы часто сталкиваются с нехваткой подходящих настолок. Наша платформа предлагает веселые словесные игры и викторины, где каждый игрок вовлечен в процесс каждую секунду.",
       stepsTitle: "Запуск игры на троих:",
       steps: [
@@ -97,17 +97,17 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       gamesTitle: "Подходящие игры на троих:",
       games: [
         { name: "Шпион (Spyfall)", desc: "Тайный шпион пытается угадать локацию, пока двое других задают вопросы." },
-        { name: "Бомб Пати (Bomb Party)", desc: "Называйте слова по очереди. Скорость и память — ваши главные помощники." },
+        { name: "Бомб Пати (Bomb Party)", desc: "Называйте слова по очереди. Скорость и память: ваши главные помощники." },
         { name: "Карты Хаоса (Cards of Chaos)", desc: "Смешное соревнование ответов, где один судит, а двое других придумывают шутки." }
       ],
       faqs: [
         { q: "Будет ли весело играть втроем?", a: "Да! Такие игры как Шпион и Бомб Пати раскрываются в небольших компаниях даже лучше, так как ход переходит быстрее." },
         { q: "Нужно ли платить за игроков?", a: "Все игры полностью бесплатны для любого количества участников." },
-        { q: "Можно ли играть с компьютера?", a: "Вы можете использовать компьютер как общий экран (Stage), а телефоны — как геймпады." }
+        { q: "Можно ли играть с компьютера?", a: "Вы можете использовать компьютер как общий экран (Stage), а телефоны как геймпады." }
       ]
     },
     en: {
-      title: "3 Player Party Games Online — Group Browser Games | TUSA.game",
+      title: "3 Player Party Games Online · Group Browser Games | TUSA.game",
       description: "Best browser games for 3 players. Play fun word games, deduction, and trivia with friends on phone free on TUSA.game.",
       kicker: "3 PLAYER GAMES",
       h1: "Best Party Games for 3 Players",
@@ -134,11 +134,11 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-4-players": {
     ru: {
-      title: "Игры на четверых для компании онлайн — TUSA.game",
+      title: "Игры на четверых для компании онлайн · TUSA.game",
       description: "Веселые игры на четверых человек на вечеринку. Сыграйте в Алиас, Кодовые имена и Шпиона онлайн без скачивания на TUSA.game.",
       kicker: "ИГРЫ НА ЧЕТВЕРЫХ",
       h1: "Игры на 4 игрока: развлечение для идеальной компании",
-      intro: "Четыре человека — классический состав для большинства настольных и командных игр. TUSA.game предлагает лучшие цифровые версии любимых игр для вашей компании.",
+      intro: "Четыре человека: классический состав для большинства настольных и командных игр. TUSA.game предлагает лучшие цифровые версии любимых игр для вашей компании.",
       body: "Разделитесь на две команды по два человека или играйте каждый сам за себя. Наша платформа синхронизирует действия всех участников, превращая вечер в настоящее интеллектуальное шоу.",
       stepsTitle: "Как запустить игру на 4 человека:",
       steps: [
@@ -159,7 +159,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "4 Player Party Games Online — Play with Friends | TUSA.game",
+      title: "4 Player Party Games Online · Play with Friends | TUSA.game",
       description: "Discover the best 4 player party games. Play Codenames, Alias, and deduction games on mobile free and no install on TUSA.game.",
       kicker: "4 PLAYER GAMES",
       h1: "Best Party Games for 4 Players",
@@ -186,7 +186,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-5-players": {
     ru: {
-      title: "Игры на пятерых для компании онлайн — TUSA.game",
+      title: "Игры на пятерых для компании онлайн · TUSA.game",
       description: "Лучшие игры на 5 человек на вечеринку. Мафия, Шпион, Викторины и психологические игры онлайн без скачивания на TUSA.game.",
       kicker: "ИГРЫ НА ПЯТЕРЫХ",
       h1: "Игры на 5 человек: веселье в нечетной компании",
@@ -211,7 +211,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "5 Player Party Games Online — Play on Mobile | TUSA.game",
+      title: "5 Player Party Games Online · Play on Mobile | TUSA.game",
       description: "Best party games for 5 players. Play deduction, trivia, and word games with friends in browser free and no install.",
       kicker: "5 PLAYER GAMES",
       h1: "Best Party Games for 5 Players",
@@ -238,11 +238,11 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-6-players": {
     ru: {
-      title: "Игры на шестерых для компании онлайн — TUSA.game",
+      title: "Игры на шестерых для компании онлайн · TUSA.game",
       description: "Лучшие игры на 6 человек на вечеринку. Мафия, Алиас, Кодовые имена и психологические игры онлайн без скачивания на TUSA.game.",
       kicker: "ИГРЫ НА ШЕСТЕРЫХ",
       h1: "Игры на 6 игроков: командные баттлы и мафия",
-      intro: "Компания из шести человек — идеальный размер для захватывающих командных соревнований 3 на 3 или классических игр с тайными ролями.",
+      intro: "Компания из шести человек: идеальный размер для захватывающих командных соревнований 3 на 3 или классических игр с тайными ролями.",
       body: "TUSA.game превращает ваш вечер в интерактивное шоу. Объясняйте слова, вычисляйте предателей или соревнуйтесь в юморе. Все участники управляют игрой со своих телефонов в реальном времени.",
       stepsTitle: "Организация игры на шестерых:",
       steps: [
@@ -263,7 +263,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "6 Player Party Games Online — Play on Mobile | TUSA.game",
+      title: "6 Player Party Games Online · Play on Mobile | TUSA.game",
       description: "Discover the best party games for 6 players. Play Codenames, Werewolf, and Alias in browser free with no download.",
       kicker: "6 PLAYER GAMES",
       h1: "Best Party Games for 6 Players",
@@ -290,7 +290,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-7-players": {
     ru: {
-      title: "Игры на семерых для компании онлайн — TUSA.game",
+      title: "Игры на семерых для компании онлайн · TUSA.game",
       description: "Веселые игры на 7 человек на вечеринку. Мафия, Викторины, Шпион и словесные игры онлайн без скачивания на TUSA.game.",
       kicker: "ИГРЫ НА СЕМЕРЫХ",
       h1: "Игры на 7 человек: психологические дуэли и смех",
@@ -304,7 +304,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ],
       gamesTitle: "Рекомендуемые игры на 7 игроков:",
       games: [
-        { name: "Мафия / Оборотень", desc: "Интриги и расследования. Семь игроков — отличный состав для психологической дуэли." },
+        { name: "Мафия / Оборотень", desc: "Интриги и расследования. Семь игроков: отличный состав для психологической дуэли." },
         { name: "Quiplash (Остроумие)", desc: "Соревнуйтесь в написании самых смешных ответов на каверзные вопросы." },
         { name: "Я никогда не (Never Have I Ever)", desc: "Разговорный ледокол для раскрытия забавных секретов друзей." }
       ],
@@ -315,7 +315,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "7 Player Party Games Online — Play on Mobile | TUSA.game",
+      title: "7 Player Party Games Online · Play on Mobile | TUSA.game",
       description: "Play fun party games for 7 players online. Enjoy Werewolf, Quiplash, and trivia with friends free in browser.",
       kicker: "7 PLAYER GAMES",
       h1: "Best Party Games for 7 Players",
@@ -342,7 +342,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-8-players": {
     ru: {
-      title: "Игры на восьмерых для компании онлайн — TUSA.game",
+      title: "Игры на восьмерых для компании онлайн · TUSA.game",
       description: "Лучшие игры на 8 человек на вечеринку. Мафия, Алиас, Кодовые имена и психологические игры онлайн без скачивания на TUSA.game.",
       kicker: "ИГРЫ НА ВОСЬМЕРЫХ",
       h1: "Игры на 8 игроков: масштабные командные сражения",
@@ -367,7 +367,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "8 Player Party Games Online — Play on Mobile | TUSA.game",
+      title: "8 Player Party Games Online · Play on Mobile | TUSA.game",
       description: "Best party games for 8 players. Play Codenames, Werewolf, and team word games in browser free and no install.",
       kicker: "8 PLAYER GAMES",
       h1: "Best Party Games for 8 Players",
@@ -394,11 +394,11 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-10-players": {
     ru: {
-      title: "Игры на 10 человек для компании онлайн — TUSA.game",
+      title: "Игры на 10 человек для компании онлайн · TUSA.game",
       description: "Лучшие игры на большую компанию из 10 человек. Сыграйте в Мафию, Кодовые имена и Quiplash онлайн на TUSA.game.",
       kicker: "ИГРЫ НА 10 ЧЕЛОВЕК",
       h1: "Игры на 10 игроков: масштабное веселье",
-      intro: "Собрать 10 человек вместе — отличный повод для большой игровой вечеринки. TUSA.game предлагает форматы, разработанные специально для больших компаний.",
+      intro: "Собрать 10 человек вместе – хороший повод для большой игровой вечеринки. TUSA.game предлагает форматы, разработанные специально для больших компаний.",
       body: "Когда гостей много, классические настолки не справляются. Наша платформа позволяет всем 10 участникам играть одновременно со своих телефонов, выводя общие результаты на один экран.",
       stepsTitle: "Как запустить игру на 10 человек:",
       steps: [
@@ -419,7 +419,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "10 Player Party Games Online — Large Group Games | TUSA.game",
+      title: "10 Player Party Games Online · Large Group Games | TUSA.game",
       description: "Discover the best party games for 10 players. Play Werewolf, Codenames, and Quiplash free in web browser on TUSA.game.",
       kicker: "10 PLAYER GAMES",
       h1: "Best Party Games for 10 Players",
@@ -446,11 +446,11 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-12-players": {
     ru: {
-      title: "Игры на 12 человек для компании онлайн — TUSA.game",
+      title: "Игры на 12 человек для компании онлайн · TUSA.game",
       description: "Лучшие игры на большую компанию из 12 человек. Сыграйте в Мафию, Алиас и Quiplash онлайн без скачивания на TUSA.game.",
       kicker: "ИГРЫ НА 12 ЧЕЛОВЕК",
       h1: "Игры на 12 игроков: масштабные вечеринки",
-      intro: "Организовать 12 человек за игровым столом — непростая задача. TUSA.game решает её, превращая смартфоны гостей в геймпады, а ТВ — в игровое поле.",
+      intro: "Организовать 12 человек за игровым столом непросто. TUSA.game решает её, превращая смартфоны гостей в геймпады, а ТВ в игровое поле.",
       body: "Вам не понадобятся карточки, карандаши и кубики. Выбирайте психологические игры, командные викторины или творческие конкурсы. Все результаты подсчитываются автоматически.",
       stepsTitle: "Организация игры на 12 человек:",
       steps: [
@@ -471,7 +471,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "12 Player Party Games Online — Large Group Games | TUSA.game",
+      title: "12 Player Party Games Online · Large Group Games | TUSA.game",
       description: "Play fun browser games for 12 players. Enjoy Werewolf, Alias, and Quiplash with friends free and no install on TUSA.game.",
       kicker: "12 PLAYER GAMES",
       h1: "Best Party Games for 12 Players",
@@ -498,7 +498,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-families": {
     ru: {
-      title: "Семейные игры для компании дома — Игры для всей семьи",
+      title: "Семейные игры для компании дома · Игры для всей семьи",
       description: "Лучшие семейные игры дома онлайн. Викторины, словесные игры на телефоне без скачивания для взрослых и детей на TUSA.game.",
       kicker: "СЕМЕЙНЫЕ ИГРЫ",
       h1: "Семейные игры дома: объедините поколения",
@@ -523,7 +523,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Family Party Games Online — Games for Family Night | TUSA.game",
+      title: "Family Party Games Online · Games for Family Night | TUSA.game",
       description: "Discover the best family party games to play at home. Try trivia, word games, and drawing on TV free on TUSA.game.",
       kicker: "FAMILY PARTY GAMES",
       h1: "Fun and Friendly Games for Family Game Night",
@@ -550,7 +550,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-teams": {
     ru: {
-      title: "Командные игры для компании онлайн — Игры на сплочение",
+      title: "Командные игры для компании онлайн · Игры на сплочение",
       description: "Веселые командные игры для компании друзей или коллег. Сыграйте в Кодовые имена и Алиас онлайн без скачивания на TUSA.game.",
       kicker: "КОМАНДНЫЕ ИГРЫ",
       h1: "Командные игры: соперничество и взаимопонимание",
@@ -575,7 +575,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Team Party Games Online — Group Team Building | TUSA.game",
+      title: "Team Party Games Online · Group Team Building | TUSA.game",
       description: "Play team-based browser games with friends or colleagues. Try Codenames, Alias, and Quiz Battle free in your browser.",
       kicker: "TEAM PARTY GAMES",
       h1: "Fun and Competitive Team Party Games",
@@ -602,12 +602,12 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-college": {
     ru: {
-      title: "Игры для студентов в общежитии онлайн — TUSA.game",
+      title: "Игры для студентов в общежитии онлайн · TUSA.game",
       description: "Веселые и шумные игры для студентов в общаге или на вписке. Сыграйте в Я никогда не и Правда или Дело бесплатно на TUSA.game.",
       kicker: "ИГРЫ ДЛЯ СТУДЕНТОВ",
       h1: "Игры для студентов: веселье на вписке и в общаге",
       intro: "Студенческие вечеринки должны быть громкими, веселыми и бюджетными. TUSA.game предлагает идеальные игры для вписок и общежитий, которые не требуют затрат.",
-      body: "Забудьте про дорогие настольные игры. Все, что нужно — телефоны в руках ваших друзей. Играйте в откровенные словесные игры, веселые викторины или испытывайте удачу в фантах. TUSA сделает любую студенческую тусовку незабываемой.",
+      body: "Забудьте про дорогие настольные игры. Все, что нужно: телефоны в руках ваших друзей. Играйте в откровенные словесные игры, веселые викторины или испытывайте удачу в фантах. TUSA сделает любую студенческую тусовку незабываемой.",
       stepsTitle: "Как устроить студенческую игру:",
       steps: [
         "Создайте комнату на TUSA.game на телефоне или ноутбуке.",
@@ -627,7 +627,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "College Party Games Online — Dorm Room Game Night | TUSA.game",
+      title: "College Party Games Online · Dorm Room Game Night | TUSA.game",
       description: "Fun and cheap games to play with college friends in dorm or at parties. Play Never Have I Ever and Truth or Dare free.",
       kicker: "COLLEGE PARTY GAMES",
       h1: "Fun and Cheap Games for College Parties",
@@ -654,7 +654,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-adults": {
     ru: {
-      title: "Игры для взрослой компании 18+ онлайн — TUSA.game",
+      title: "Игры для взрослой компании 18+ онлайн · TUSA.game",
       description: "Интересные и веселые игры для взрослой компании (18+) на вечеринку. Правда или Дело, Карты Хаоса и другие развлечения онлайн.",
       kicker: "ИГРЫ ДЛЯ ВЗРОСЛЫХ",
       h1: "Игры для взрослой компании: растопите лед",
@@ -674,12 +674,12 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ],
       faqs: [
         { q: "Есть ли возрастной ценз на игры?", a: "Да, некоторые режимы («Правда или Дело», «Я никогда не») содержат категории вопросов 18+ для взрослых вечеринок." },
-        { q: "Видят ли другие игроки мои ответы?", a: "Некоторые ответы анонимны, а некоторые выводятся на общий экран для веселья — это зависит от выбранного режима." },
+        { q: "Видят ли другие игроки мои ответы?", a: "Некоторые ответы анонимны, а некоторые выводятся на общий экран для веселья; это зависит от выбранного режима." },
         { q: "Можно ли играть вдвоем?", a: "Да, наши взрослые игры отлично подходят как для пар, так и для больших компаний." }
       ]
     },
     en: {
-      title: "Adult Party Games 18+ Online — TUSA.game",
+      title: "Adult Party Games 18+ Online · TUSA.game",
       description: "Funny and provocative adult party games (18+) for couples and groups. Play Truth or Dare, Cards of Chaos, and more free in browser.",
       kicker: "ADULT PARTY GAMES",
       h1: "Provocative Adult Games for Late-Night Parties",
@@ -706,7 +706,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-kids": {
     ru: {
-      title: "Игры для детей на день рождения онлайн — TUSA.game",
+      title: "Игры для детей на день рождения онлайн · TUSA.game",
       description: "Интересные детские игры для праздников и семейных вечеров. Развивающие словесные викторины без скачивания бесплатно на TUSA.game.",
       kicker: "ИГРЫ ДЛЯ ДЕТЕЙ",
       h1: "Развивающие и веселые игры для детей",
@@ -731,7 +731,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Kids Party Games Online — Play on Mobile Free | TUSA.game",
+      title: "Kids Party Games Online · Play on Mobile Free | TUSA.game",
       description: "Fun and educational online party games for kids. Try child-friendly trivia, word puzzles, and drawing free on TUSA.game.",
       kicker: "KIDS PARTY GAMES",
       h1: "Educational and Fun Games for Kids",
@@ -758,7 +758,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-couples": {
     ru: {
-      title: "Игры для пар на телефоне онлайн — TUSA.game",
+      title: "Игры для пар на телефоне онлайн · TUSA.game",
       description: "Романтические и веселые игры для двоих влюбленных. Узнайте друг друга лучше с помощью викторин и Правда или Дело на TUSA.game.",
       kicker: "ИГРЫ ДЛЯ ПАР",
       h1: "Игры для пар: романтика и веселье для двоих",
@@ -783,7 +783,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Romantic Games for Couples Online — Play on Phone | TUSA.game",
+      title: "Romantic Games for Couples Online · Play on Phone | TUSA.game",
       description: "Fun and romantic party games for couples. Try relationship quizzes, Truth or Dare, and Never Have I Ever free on TUSA.game.",
       kicker: "GAMES FOR COUPLES",
       h1: "Fun and Romantic Games for Couples",
@@ -810,12 +810,12 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-birthday": {
     ru: {
-      title: "Игры на день рождения для компании — Игры на праздник",
+      title: "Игры на день рождения для компании · Игры на праздник",
       description: "Веселые интерактивные игры на день рождения для взрослых и детей. Развлеките гостей за праздничным столом с помощью TUSA.game.",
       kicker: "ИГРЫ НА ДЕНЬ РОЖДЕНИЯ",
       h1: "Как развлечь гостей на день рождения: праздничные игры",
-      intro: "День рождения — время радости, подарков и веселья. Но как объединить гостей разного возраста за столом? TUSA.game предлагает простые праздничные игры, в которых справится каждый.",
-      body: "Устройте веселую битву умов или творческий конкурс. Наши игры не требуют раздачи инвентаря — гости просто достают свои телефоны, подключаются к общему экрану (например, телевизору) и соревнуются за звание самого остроумного гостя.",
+      intro: "День рождения: время радости, подарков и веселья. Но как объединить гостей разного возраста за столом? TUSA.game предлагает простые праздничные игры, в которых справится каждый.",
+      body: "Устройте веселую битву умов или творческий конкурс. Наши игры не требуют раздачи инвентаря: гости просто достают свои телефоны, подключаются к общему экрану (например, телевизору) и соревнуются за звание самого остроумного гостя.",
       stepsTitle: "Организация игрового праздника:",
       steps: [
         "Подключите ноутбук к телевизору в комнате, где проходит праздник.",
@@ -830,12 +830,12 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ],
       faqs: [
         { q: "Подходит ли игра для детей?", a: "Да, у нас есть семейные наборы вопросов, которые идеально подойдут для детского праздника." },
-        { q: "Можно ли играть за праздничным столом?", a: "Да! Смартфон в руках — это все, что нужно. Никаких карточек и кубиков, мешающих посуде." },
+        { q: "Можно ли играть за праздничным столом?", a: "Да! Смартфон в руках и есть все, что нужно. Никаких карточек и кубиков, мешающих посуде." },
         { q: "Сколько гостей может играть?", a: "Платформа легко справляется с компаниями до 20-30 гостей." }
       ]
     },
     en: {
-      title: "Birthday Party Games for Large Groups — TUSA.game",
+      title: "Birthday Party Games for Large Groups · TUSA.game",
       description: "Keep your birthday guests entertained with fun interactive party games. Play on TV with mobile controllers free on TUSA.game.",
       kicker: "BIRTHDAY PARTY GAMES",
       h1: "Fun Interactive Games for Your Birthday Party",
@@ -862,7 +862,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-weddings": {
     ru: {
-      title: "Игры на свадьбу для гостей онлайн — Свадебные конкурсы",
+      title: "Игры на свадьбу для гостей онлайн · Свадебные конкурсы",
       description: "Веселые интерактивные свадебные конкурсы и игры для гостей. Устройте незабываемое развлечение за столом на TUSA.game.",
       kicker: "ИГРЫ НА СВАДЬБУ",
       h1: "Свадебные конкурсы нового поколения: игры на TUSA",
@@ -887,7 +887,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Interactive Wedding Games for Guests — TUSA.game",
+      title: "Interactive Wedding Games for Guests · TUSA.game",
       description: "Keep wedding guests entertained with modern interactive games. Cast quizzes and trivia to projector screen free on TUSA.game.",
       kicker: "WEDDING PARTY GAMES",
       h1: "Modern Interactive Games for Your Wedding Reception",
@@ -914,7 +914,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-remote-teams": {
     ru: {
-      title: "Игры для удаленных команд онлайн — Виртуальный тимбилдинг",
+      title: "Игры для удаленных команд онлайн · Виртуальный тимбилдинг",
       description: "Веселые игры на сплочение удаленных команд. Снимите стресс на созвонах в Zoom/Teams бесплатно с помощью TUSA.game.",
       kicker: "ИГРЫ ДЛЯ УДАЛЕНКИ",
       h1: "Игры для удаленных команд: сплочение на расстоянии",
@@ -939,7 +939,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Virtual Team Building Games for Remote Teams — TUSA.game",
+      title: "Virtual Team Building Games for Remote Teams · TUSA.game",
       description: "Interactive online games for remote and hybrid teams. Play Codenames, trivia, and icebreakers over Zoom/Teams free.",
       kicker: "REMOTE TEAM GAMES",
       h1: "Virtual Team Building Games for Distributed Teams",
@@ -966,7 +966,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "for-classroom": {
     ru: {
-      title: "Игры для класса в школе онлайн — Ледоколы для учеников",
+      title: "Игры для класса в школе онлайн · Ледоколы для учеников",
       description: "Интерактивные развивающие игры для школьников и студентов в классе. Викторины, квизы и словесные игры на TUSA.game.",
       kicker: "ИГРЫ ДЛЯ КЛАССА",
       h1: "Игры для класса: учеба через развлечение",
@@ -991,7 +991,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Interactive Classroom Games for Students Online — TUSA.game",
+      title: "Interactive Classroom Games for Students Online · TUSA.game",
       description: "Engage students with interactive classroom quizzes, word games, and icebreakers. Cast to projector screen free on TUSA.game.",
       kicker: "CLASSROOM GAMES",
       h1: "Fun and Educational Games for the Classroom",
@@ -1018,7 +1018,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "no-props": {
     ru: {
-      title: "Игры для компании без реквизита онлайн — TUSA.game",
+      title: "Игры для компании без реквизита онлайн · TUSA.game",
       description: "Веселые игры для большой компании, не требующие бумаги, карт и реквизита. Все игры запускаются с телефона на TUSA.game.",
       kicker: "ИГРЫ БЕЗ РЕКВИЗИТА",
       h1: "Игры без реквизита: развлечение из кармана",
@@ -1032,7 +1032,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ],
       gamesTitle: "Игры, не требующие инвентаря:",
       games: [
-        { name: "Шпион (Spyfall)", desc: "Никаких бумажных карт с ролями — сервер раздает их приватно на экраны телефонов." },
+        { name: "Шпион (Spyfall)", desc: "Никаких бумажных карт с ролями: сервер раздает их приватно на экраны телефонов." },
         { name: "Бомб Пати (Bomb Party)", desc: "Таймер-бомба и проверка словарного запаса прямо на вашем экране." },
         { name: "Правда или Дело (Truth or Dare)", desc: "Сотни встроенных заданий заменят бумажные карточки." }
       ],
@@ -1043,7 +1043,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Party Games with No Props or Materials — TUSA.game",
+      title: "Party Games with No Props or Materials · TUSA.game",
       description: "Play fun group games that require no paper, cards, or props. All games run directly on your smartphone on TUSA.game.",
       kicker: "NO PROPS PARTY GAMES",
       h1: "Fun Party Games That Require No Props or Materials",
@@ -1070,7 +1070,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "no-app": {
     ru: {
-      title: "Браузерные игры для компании без скачивания — TUSA.game",
+      title: "Браузерные игры для компании без скачивания · TUSA.game",
       description: "Играйте в игры для компании без скачивания приложений и установки программ. 32 игры прямо в браузере телефона на TUSA.game.",
       kicker: "ИГРЫ БЕЗ СКАЧИВАНИЯ",
       h1: "Браузерные игры для компании: без лишних приложений",
@@ -1095,7 +1095,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Browser Party Games No Download — Play Free Online | TUSA.game",
+      title: "Browser Party Games No Download · Play Free Online | TUSA.game",
       description: "Play multiplayer party games in browser with no downloads or installs. 32 game modes straight to your mobile screen on TUSA.game.",
       kicker: "NO DOWNLOAD GAMES",
       h1: "Multiplayer Browser Games with No Installation",
@@ -1122,7 +1122,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "free-alternatives-to-jackbox": {
     ru: {
-      title: "Бесплатный аналог Джекбокс (Jackbox) онлайн — TUSA.game",
+      title: "Бесплатный аналог Джекбокс (Jackbox) онлайн · TUSA.game",
       description: "Ищете бесплатную замену Jackbox Party Pack? TUSA.game предлагает 32 игры для компании без покупок и скачиваний приложений.",
       kicker: "АНАЛОГ ДЖЕКБОКС",
       h1: "Бесплатный аналог Jackbox: игры на русском",
@@ -1147,7 +1147,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Free Alternatives to Jackbox Games Online — TUSA.game",
+      title: "Free Alternatives to Jackbox Games Online · TUSA.game",
       description: "Looking for a free alternative to Jackbox Party Pack? Try TUSA.game for 32 browser games with mobile controllers and no downloads.",
       kicker: "FREE JACKBOX ALTERNATIVE",
       h1: "Best Free Alternative to Jackbox Party Pack",
@@ -1174,7 +1174,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "quick-5-minute": {
     ru: {
-      title: "Быстрые игры для компании онлайн — Пятиминутные игры",
+      title: "Быстрые игры для компании онлайн · Пятиминутные игры",
       description: "Короткие игры на 5 минут для начала встречи или разминки в компании. Словесные игры и викторины онлайн на TUSA.game.",
       kicker: "БЫСТРЫЕ ИГРЫ",
       h1: "Быстрые игры на 5 минут: мгновенный фан",
@@ -1199,7 +1199,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Quick 5 Minute Party Games Online — Fast Icebreakers | TUSA.game",
+      title: "Quick 5 Minute Party Games Online · Fast Icebreakers | TUSA.game",
       description: "Discover fast 5 minute party games to play with friends. Try quick trivia, word games, and wheel spins free in web browser.",
       kicker: "QUICK 5 MINUTE GAMES",
       h1: "Quick 5-Minute Games for Instant Fun",
@@ -1226,7 +1226,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
   },
   "drinking": {
     ru: {
-      title: "Алкогольные игры для компании онлайн 18+ — TUSA.game",
+      title: "Алкогольные игры для компании онлайн 18+ · TUSA.game",
       description: "Веселые игры для вечеринок с алкоголем (drinking games) на русском. Правда или Дело и Я никогда не онлайн на TUSA.game.",
       kicker: "АЛКОГОЛЬНЫЕ ИГРЫ",
       h1: "Игры с алкоголем для компании: веселые правила",
@@ -1251,7 +1251,7 @@ export const SEO_PROGRAMMATIC: Record<string, { ru: SeoPageContent; en: SeoPageC
       ]
     },
     en: {
-      title: "Drinking Party Games Online 18+ — Mobile Controller | TUSA.game",
+      title: "Drinking Party Games Online 18+ · Mobile Controller | TUSA.game",
       description: "Best drinking games for house parties and group night outs. Play Never Have I Ever and Truth or Dare free on TUSA.game.",
       kicker: "DRINKING PARTY GAMES",
       h1: "Fun and Interactive Drinking Games for Groups",

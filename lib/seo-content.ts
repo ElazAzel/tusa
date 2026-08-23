@@ -15,12 +15,12 @@ export interface SeoPageContent {
 export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageContent }> = {
   "party-games": {
     ru: {
-      title: "Игры для компании онлайн — Лучшие игры для вечеринок",
+      title: "Игры для компании онлайн · Лучшие игры для вечеринок",
       description: "Подборка лучших игр для компании друзей на вечеринку. Играйте онлайн с телефона без скачивания и установки приложений на TUSA.game.",
       kicker: "ИГРЫ ДЛЯ КОМПАНИИ",
       h1: "Лучшие игры для компании: как развлечь гостей",
-      intro: "Игры для компании — это лучший способ растопить лед, объединить гостей и превратить обычные посиделки в незабываемую вечеринку. TUSA.game предлагает 32 уникальных игровых режима, которые не требуют скачивания: достаточно открыть ссылку, и все игроки подключаются со своих телефонов.",
-      body: "Ищете, во что поиграть с друзьями дома, в гостях или онлайн? Наша платформа объединяет популярные словесные игры, викторины и психологические игры для групп любого размера. Больше не нужно раздавать бумажки или покупать дорогие коробки с настолками — ваш смартфон становится игровым контроллером, а экран планшета или ТВ — общим полем.",
+      intro: "Игры для компании: лучший способ растопить лед, объединить гостей и превратить обычные посиделки в незабываемую вечеринку. TUSA.game предлагает 32 уникальных игровых режима, которые не требуют скачивания: достаточно открыть ссылку, и все игроки подключаются со своих телефонов.",
+      body: "Ищете, во что поиграть с друзьями дома, в гостях или онлайн? Наша платформа объединяет популярные словесные игры, викторины и психологические игры для групп любого размера. Больше не нужно раздавать бумажки или покупать дорогие коробки с настолками. Ваш смартфон становится игровым контроллером, а экран планшета или ТВ служит общим полем.",
       stepsTitle: "Как начать играть в компании:",
       steps: [
         "Один человек создает комнату тусы на TUSA.game и делится ссылкой-инвайтом.",
@@ -40,7 +40,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       ]
     },
     en: {
-      title: "Best Party Games for Groups — Play Online Free",
+      title: "Best Party Games for Groups · Play Online Free",
       description: "Discover the best party games for groups. Play multiplayer browser games with friends on phone without installation on TUSA.game.",
       kicker: "PARTY GAMES FOR GROUPS",
       h1: "Best Party Games for Groups & Gatherings",
@@ -67,7 +67,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
   },
   "games-for-adults": {
     ru: {
-      title: "Игры для взрослой компании 18+ онлайн — TUSA.game",
+      title: "Игры для взрослой компании 18+ онлайн · TUSA.game",
       description: "Интересные и веселые игры для взрослой компании (18+) на вечеринку. Правда или Дело, Карты Хаоса и другие развлечения онлайн.",
       kicker: "ИГРЫ ДЛЯ ВЗРОСЛЫХ",
       h1: "Игры для взрослой компании: растопите лед",
@@ -87,12 +87,12 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       ],
       faqs: [
         { q: "Есть ли возрастной ценз на игры?", a: "Да, некоторые режимы («Правда или Дело», «Я никогда не») содержат категории вопросов 18+ для взрослых вечеринок." },
-        { q: "Видят ли другие игроки мои ответы?", a: "Некоторые ответы анонимны, а некоторые выводятся на общий экран для веселья — это зависит от выбранного режима." },
+        { q: "Видят ли другие игроки мои ответы?", a: "Некоторые ответы анонимны, а некоторые выводятся на общий экран для веселья: это зависит от выбранного режима." },
         { q: "Можно ли играть вдвоем?", a: "Да, наши взрослые игры отлично подходят как для пар, так и для больших компаний." }
       ]
     },
     en: {
-      title: "Adult Party Games 18+ Online — TUSA.game",
+      title: "Adult Party Games 18+ Online · TUSA.game",
       description: "Funny and provocative adult party games (18+) for couples and groups. Play Truth or Dare, Cards of Chaos, and more free in browser.",
       kicker: "ADULT PARTY GAMES",
       h1: "Provocative Adult Games for Late-Night Parties",
@@ -119,12 +119,12 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
   },
   "games-for-friends": {
     ru: {
-      title: "Во что поиграть с друзьями онлайн — Игры на телефоне",
+      title: "Во что поиграть с друзьями онлайн · Игры на телефоне",
       description: "Игры для компании друзей онлайн на телефоне. Словесные игры, викторины и психологические режимы без скачивания на TUSA.game.",
       kicker: "ИГРЫ С ДРУЗЬЯМИ",
       h1: "Во что поиграть с друзьями: подборка развлечений",
       intro: "Когда привычные разговоры надоедают, интерактивные игры с друзьями возвращают азарт и смех. На TUSA.game собраны десятки игр, которые идеально подходят для близкого круга.",
-      body: "Неважно, собрались ли вы дома на диване или созваниваетесь из разных городов. Наши игры соединяют людей в одно мгновение. Угадывайте мысли друг друга, соревнуйтесь в эрудиции или блефуйте — в каталоге TUSA найдется игра под любое настроение.",
+      body: "Неважно, собрались ли вы дома на диване или созваниваетесь из разных городов. Наши игры соединяют людей в одно мгновение. Угадывайте мысли друг друга, соревнуйтесь в эрудиции или блефуйте: в каталоге TUSA найдется игра под любое настроение.",
       stepsTitle: "Быстрый старт с друзьями:",
       steps: [
         "Откройте лобби и выберите игру (например, Кодовые имена или Бомб Пати).",
@@ -144,7 +144,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       ]
     },
     en: {
-      title: "Fun Games to Play with Friends Online — TUSA.game",
+      title: "Fun Games to Play with Friends Online · TUSA.game",
       description: "Explore fun multiplayer browser games to play with friends on phone. Word games, quizzes, and deduction free and no install.",
       kicker: "GAMES WITH FRIENDS",
       h1: "Interactive Games to Play with Friends",
@@ -171,7 +171,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
   },
   "team-building-games": {
     ru: {
-      title: "Игры для тимбилдинга онлайн — Тимбилдинг на удаленке",
+      title: "Игры для тимбилдинга онлайн · Тимбилдинг на удаленке",
       description: "Лучшие корпоративные игры для тимбилдинга онлайн. Сплотите команду на удаленке с помощью веселых викторин на TUSA.game.",
       kicker: "ИГРЫ ДЛЯ ТИМБИЛДИНГА",
       h1: "Онлайн тимбилдинг: сплотите вашу команду",
@@ -196,7 +196,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       ]
     },
     en: {
-      title: "Virtual Team Building Games Free — Remote Work Icebreakers",
+      title: "Virtual Team Building Games Free · Remote Work Icebreakers",
       description: "Boost employee engagement with virtual team building games. Play multiplayer browser games over Zoom/Teams free on TUSA.game.",
       kicker: "TEAM BUILDING GAMES",
       h1: "Virtual Team Building: Connect Your Remote Team",
@@ -223,12 +223,12 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
   },
   "birthday-games": {
     ru: {
-      title: "Игры на день рождения для компании — Игры на праздник",
+      title: "Игры на день рождения для компании · Игры на праздник",
       description: "Веселые интерактивные игры на день рождения для взрослых и детей. Развлеките гостей за праздничным столом с помощью TUSA.game.",
       kicker: "ИГРЫ НА ДЕНЬ РОЖДЕНИЯ",
       h1: "Как развлечь гостей на день рождения: праздничные игры",
-      intro: "День рождения — время радости, подарков и веселья. Но как объединить гостей разного возраста за столом? TUSA.game предлагает простые праздничные игры, в которых справится каждый.",
-      body: "Устройте веселую битву умов или творческий конкурс. Наши игры не требуют раздачи инвентаря — гости просто достают свои телефоны, подключаются к общему экрану (например, телевизору) и соревнуются за звание самого остроумного гостя.",
+      intro: "День рождения: время радости, подарков и веселья. Но как объединить гостей разного возраста за столом? TUSA.game предлагает простые праздничные игры, в которых справится каждый.",
+      body: "Устройте веселую битву умов или творческий конкурс. Наши игры не требуют раздачи инвентаря: гости просто достают свои телефоны, подключаются к общему экрану (например, телевизору) и соревнуются за звание самого остроумного гостя.",
       stepsTitle: "Организация игрового праздника:",
       steps: [
         "Подключите ноутбук к телевизору в комнате, где проходит праздник.",
@@ -243,12 +243,12 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       ],
       faqs: [
         { q: "Подходит ли игра для детей?", a: "Да, у нас есть семейные наборы вопросов, которые идеально подойдут для детского праздника." },
-        { q: "Можно ли играть за праздничным столом?", a: "Да! Смартфон в руках — это все, что нужно. Никаких карточек и кубиков, мешающих посуде." },
+        { q: "Можно ли играть за праздничным столом?", a: "Да! Достаточно смартфона в руках. Никаких карточек и кубиков, мешающих посуде." },
         { q: "Сколько гостей может играть?", a: "Платформа легко справляется с компаниями до 20-30 гостей." }
       ]
     },
     en: {
-      title: "Birthday Party Games for Large Groups — TUSA.game",
+      title: "Birthday Party Games for Large Groups · TUSA.game",
       description: "Keep your birthday guests entertained with fun interactive party games. Play on TV with mobile controllers free on TUSA.game.",
       kicker: "BIRTHDAY PARTY GAMES",
       h1: "Fun Interactive Games for Your Birthday Party",
@@ -275,7 +275,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
   },
   "online-party-games": {
     ru: {
-      title: "Онлайн игры для компании — Играть с друзьями по сети",
+      title: "Онлайн игры для компании · Играть с друзьями по сети",
       description: "Популярные онлайн игры для компании друзей без скачивания. 32 игровых режима с телефона в браузере бесплатно на TUSA.game.",
       kicker: "ОНЛАЙН ИГРЫ ДЛЯ КОМПАНИИ",
       h1: "Онлайн игры для компании: вечеринка на расстоянии",
@@ -300,7 +300,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       ]
     },
     en: {
-      title: "Online Party Games to Play in Web Browser — TUSA.game",
+      title: "Online Party Games to Play in Web Browser · TUSA.game",
       description: "Play online party games with friends over video chat. 32 browser-based multiplayer games with no downloads free on TUSA.game.",
       kicker: "ONLINE PARTY GAMES",
       h1: "Play Online Party Games Anywhere in the World",
@@ -327,7 +327,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
   },
   "icebreakers": {
     ru: {
-      title: "Игры для знакомства в компании — Ледоколы онлайн",
+      title: "Игры для знакомства в компании · Ледоколы онлайн",
       description: "Веселые и простые игры-ледоколы (icebreakers) для знакомства людей в новой компании. Снимите неловкость онлайн на TUSA.game.",
       kicker: "ИГРЫ ДЛЯ ЗНАКОМСТВА",
       h1: "Игры-ледоколы для новой компании: снимите напряжение",
@@ -335,7 +335,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       body: "Наши ледоколы разработаны так, чтобы не требовать сложной подготовки или личных откровений, к которым люди не готовы. Легкие вопросы, забавные ассоциации и быстрые раунды помогут быстро найти общие темы для общения.",
       stepsTitle: "Как провести ледокол:",
       steps: [
-        "Создайте лобби и выберите быстрый формат (например, Правда или Дело — легкий уровень).",
+        "Создайте лобби и выберите быстрый формат (например, Правда или Дело, легкий уровень).",
         "Раздайте QR-код участникам встречи.",
         "Запустите 5-минутную игровую сессию для поднятия настроения."
       ],
@@ -352,7 +352,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       ]
     },
     en: {
-      title: "Frictionless Icebreaker Games for Remote Teams — TUSA.game",
+      title: "Frictionless Icebreaker Games for Remote Teams · TUSA.game",
       description: "Break the ice in any group with fast interactive icebreaker games. Simple prompts, no login, free on TUSA.game.",
       kicker: "ICEBREAKER GAMES",
       h1: "Icebreaker Games to Warm Up Any Group",
@@ -379,12 +379,12 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
   },
   "party-planning": {
     ru: {
-      title: "Как организовать вечеринку дома — Чек-лист хоста",
+      title: "Как организовать вечеринку дома · Чек-лист хоста",
       description: "Практическое руководство по организации идеальной вечеринки дома. Советы по подготовке, чек-листы и игры на TUSA.game.",
       kicker: "КАК ОРГАНИЗОВАТЬ ТУСУ",
       h1: "Пошаговое руководство по планированию вечеринки",
       intro: "Хорошая вечеринка требует планирования, но не должна превращаться в рутину. В этом руководстве мы делимся практическими шагами по созданию идеального праздника без лишнего стресса.",
-      body: "Главное правило успешного хоста — минимизировать организационную суету. Наша платформа решает ключевую проблему развлечения гостей: вам не нужно продумывать сценарии, достаточно открыть TUSA.game и позволить интерактивным играм сделать всю работу за вас.",
+      body: "Главное правило успешного хоста: минимизировать организационную суету. Наша платформа решает ключевую проблему развлечения гостей: вам не нужно продумывать сценарии, достаточно открыть TUSA.game и позволить интерактивным играм сделать всю работу за вас.",
       stepsTitle: "Чек-лист подготовки к вечеринке:",
       steps: [
         "Составьте список гостей и отправьте им приглашения за неделю.",
@@ -400,11 +400,11 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       faqs: [
         { q: "За сколько дней нужно начинать планирование?", a: "Для обычной домашней вечеринки достаточно 3-5 дней подготовки." },
         { q: "Как распределить расходы на еду?", a: "Используйте наш список покупок, где каждый гость может отметить, что он приносит с собой." },
-        { q: "Что делать, если гости стесняются?", a: "Включите легкий игровой режим (например, Кто из нас) — он быстро разговорит компанию." }
+        { q: "Что делать, если гости стесняются?", a: "Включите легкий игровой режим (например, Кто из нас): он быстро разговорит компанию." }
       ]
     },
     en: {
-      title: "How to Plan a Party at Home — Host Checklist & Games",
+      title: "How to Plan a Party at Home · Host Checklist & Games",
       description: "Learn how to organize a successful house party. Step-by-step checklists, hosting tips, and games free on TUSA.game.",
       kicker: "HOW TO PLAN A PARTY",
       h1: "The Ultimate Guide to Planning a House Party",
@@ -431,11 +431,11 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
   },
   "game-night": {
     ru: {
-      title: "Как устроить игровой вечер дома — Идеи игротеки",
+      title: "Как устроить игровой вечер дома · Идеи игротеки",
       description: "Инструкция, как организовать крутой игровой вечер (Game Night) с друзьями. Идеи, форматы и 32 игры на TUSA.game.",
       kicker: "КАК УСТРОИТЬ ИГРОВОЙ ВЕЧЕР",
       h1: "Идеальный игровой вечер: от идеи до запуска",
-      intro: "Игровой вечер (Game Night) — отличная альтернатива обычным барам и ресторанам. Рассказываем, как устроить захватывающую игротеку у себя дома с помощью современных технологий.",
+      intro: "Игровой вечер (Game Night) стал отличной альтернативой обычным барам и ресторанам. Рассказываем, как устроить захватывающую игротеку у себя дома с помощью современных технологий.",
       body: "Больше не нужно тратить часы на объяснение сложных правил настольных игр. TUSA.game делает игровой процесс мгновенным: правила объясняются прямо на экране телефона, а подсчет очков происходит автоматически. Смешивайте разные жанры от интеллектуальных викторин до веселых словесных дуэлей.",
       stepsTitle: "Рецепт идеального игрового вечера:",
       steps: [
@@ -452,11 +452,11 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       faqs: [
         { q: "Какое оборудование нужно для Game Night?", a: "Вам понадобится один экран (телевизор, проектор или ноутбук) и смартфоны для всех игроков." },
         { q: "Что делать, если игроки разного уровня?", a: "Выбирайте игры на ассоциации и интуицию (например, Чистый Лист), где не нужны специальные знания." },
-        { q: "Как часто стоит проводить такие вечера?", a: "Оптимальный формат — один раз в две недели, чтобы гости успевали соскучиться по играм." }
+        { q: "Как часто стоит проводить такие вечера?", a: "Оптимальный формат: один раз в две недели, чтобы гости успевали соскучиться по играм." }
       ]
     },
     en: {
-      title: "How to Host a Game Night at Home — TUSA.game",
+      title: "How to Host a Game Night at Home · TUSA.game",
       description: "Everything you need to know to host a successful game night. Game night ideas, setups, and 32 browser games free on TUSA.game.",
       kicker: "HOW TO HOST A GAME NIGHT",
       h1: "How to Host the Perfect Game Night",
@@ -483,7 +483,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
   },
   "party-invite": {
     ru: {
-      title: "Как оригинально пригласить друзей на тусу — Шаблоны",
+      title: "Как оригинально пригласить друзей на тусу · Шаблоны",
       description: "Способы оригинально позвать друзей на вечеринку или игровой вечер. Создайте красивую ссылку-приглашение на TUSA.game.",
       kicker: "КАК ПРИГЛАСИТЬ ДРУЗЕЙ",
       h1: "Как пригласить друзей на вечеринку: оригинальные идеи",
@@ -498,7 +498,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       gamesTitle: "Что гости увидят в приглашении:",
       games: [
         { name: "Кнопка RSVP", desc: "Возможность в один клик подтвердить присутствие («Иду» / «Не иду»)." },
-        { name: "Счетчик гостей", desc: "Список тех, кто уже принял приглашение — создает приятное предвкушение." },
+        { name: "Счетчик гостей", desc: "Список тех, кто уже принял приглашение, создает приятное предвкушение." },
         { name: "Игровой тизер", desc: "Список игр, в которые вы планируете сыграть во время вечера." }
       ],
       faqs: [
@@ -508,7 +508,7 @@ export const SEO_CONTENT: Record<string, { ru: SeoPageContent; en: SeoPageConten
       ]
     },
     en: {
-      title: "How to Invite Friends to a Party — Creative Invite Links",
+      title: "How to Invite Friends to a Party · Creative Invite Links",
       description: "Create interactive invite links for your next gathering. Manage RSVPs, coordinates, and details free on TUSA.game.",
       kicker: "HOW TO INVITE FRIENDS",
       h1: "How to Invite Friends and Get Instant RSVPs",

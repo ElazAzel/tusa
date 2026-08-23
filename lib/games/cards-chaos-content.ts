@@ -1,5 +1,5 @@
 export const CHAOS_PROMPTS = {
-  ru: ["Худший способ познакомиться — это ___", "На следующую тусу я принесу ___", "Мой секретный талант — ___", "Нас спасло только ___", "Идеальный подарок бывшему — ___"],
+  ru: ["Худший способ познакомиться: ___", "На следующую тусу я принесу ___", "Мой секретный талант: ___", "Нас спасло только ___", "Идеальный подарок бывшему: ___"],
   en: ["The worst way to meet someone is ___", "At the next party I'll bring ___", "My secret talent is ___", "The only thing that saved us was ___", "The perfect gift for an ex is ___"],
 } as const;
 export const CHAOS_CARDS = {

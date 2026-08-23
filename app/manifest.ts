@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "TUSA.game — Твоя туса. Твои правила.",
+    name: "TUSA.game: Твоя туса. Твои правила.",
     short_name: "TUSA.game",
     description: "Одна ссылка для людей, игр, покупок, фото и воспоминаний.",
     id: "/app",

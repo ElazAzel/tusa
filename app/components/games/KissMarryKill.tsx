@@ -19,7 +19,7 @@ export default function KissMarryKill({ sessionId, onSave, role }: { partyId: st
   const [assignment, setAssignment] = useState<Array<Action | null>>([null, null, null]);
   const [submitted, setSubmitted] = useState(false);
   const completed = useRef(false);
-  const copy = locale === "ru" ? { title: "Выбери для троих", round: "Раунд", hint: "Назначь каждому свой вариант — каждый используется один раз", actions: ["Поцеловать", "Пожениться", "Исключить"], submit: "Подтвердить выбор", accepted: "Выбор принят", reveal: "Показать итоги", next: "Следующий раунд", finish: "Завершить", votes: "ответов" } : { title: "Pick Three", round: "Round", hint: "Assign one option to each person — use every option once", actions: ["Kiss", "Marry", "Drop"], submit: "Lock choices", accepted: "Choices locked", reveal: "Reveal results", next: "Next round", finish: "Finish", votes: "responses" };
+  const copy = locale === "ru" ? { title: "Выбери для троих", round: "Раунд", hint: "Назначь каждому свой вариант, каждый используется один раз", actions: ["Поцеловать", "Пожениться", "Исключить"], submit: "Подтвердить выбор", accepted: "Выбор принят", reveal: "Показать итоги", next: "Следующий раунд", finish: "Завершить", votes: "ответов" } : { title: "Pick Three", round: "Round", hint: "Assign one option to each person — use every option once", actions: ["Kiss", "Marry", "Drop"], submit: "Lock choices", accepted: "Choices locked", reveal: "Reveal results", next: "Next round", finish: "Finish", votes: "responses" };
 
   useEffect(() => { setAssignment([null, null, null]); setSubmitted(false); }, [state.round]);
   useEffect(() => {

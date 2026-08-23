@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const locale = normalizeLocale(store.get("tusa_locale")?.value) as "ru" | "en";
     const content = progContent[locale];
     return {
-      title: `${content.title} — TUSA.game`,
+      title: `${content.title} · TUSA.game`,
       description: content.description,
       alternates: { canonical: `/games/${slug}` },
     };
@@ -39,10 +39,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = copy(locale, game.titleKey);
   const description = copy(locale, game.descKey);
   return {
-    title: `${title} — TUSA.game`,
+    title: `${title} · TUSA.game`,
     description,
     alternates: { canonical: `/games/${game.seo.slug}` },
-    openGraph: { title: `${title} — TUSA.game`, description, type: "website", url: `/games/${game.seo.slug}` },
+    openGraph: { title: `${title} · TUSA.game`, description, type: "website", url: `/games/${game.seo.slug}` },
   };
 }
 
