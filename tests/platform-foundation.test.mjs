@@ -20,6 +20,7 @@ const commandRegistry = readFileSync(new URL("../lib/games/commands.ts", import.
 const chatApi = readFileSync(new URL("../app/api/chat/route.ts", import.meta.url), "utf8");
 const systemApi = readFileSync(new URL("../app/api/admin/system/route.ts", import.meta.url), "utf8");
 const runtimeStatus = readFileSync(new URL("../lib/runtime-status.ts", import.meta.url), "utf8");
+const nextConfig = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
 const cosmeticsApi = readFileSync(new URL("../app/api/cosmetics/route.ts", import.meta.url), "utf8");
 const cosmeticsAdminApi = readFileSync(new URL("../app/api/admin/cosmetics/route.ts", import.meta.url), "utf8");
 const profileApi = readFileSync(new URL("../app/api/profile/route.ts", import.meta.url), "utf8");
@@ -101,6 +102,14 @@ test("production health fails closed for degraded runtime and unenrolled admin M
   assert.match(healthApi, /runtime\.environment === "production"/);
   assert.match(healthApi, /runtime\.overall === "ready"/);
   assert.match(healthApi, /adminMfaReady/);
+});
+
+test("bundler auth aliases keep local auth active in production", () => {
+  assert.match(nextConfig, /turbopack:/);
+  assert.match(nextConfig, /resolveAlias:/);
+  assert.match(nextConfig, /webpack\s*\(/);
+  assert.match(nextConfig, /@clerk\/nextjs.*local-auth\/client\.tsx/s);
+  assert.match(nextConfig, /@clerk\/nextjs\/server.*local-auth\/server\.ts/s);
 });
 
 test("production auth email does not use the development webhook fallback", () => {

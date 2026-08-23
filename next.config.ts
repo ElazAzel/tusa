@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const csp = [
   "default-src 'self'",
@@ -26,6 +27,14 @@ const nextConfig: NextConfig = {
       "@clerk/nextjs": "./lib/local-auth/client.tsx",
       "@clerk/nextjs/server": "./lib/local-auth/server.ts",
     },
+  },
+  webpack(config) {
+    config.resolve.alias = {
+      ...(config.resolve.alias ?? {}),
+      "@clerk/nextjs": path.resolve(process.cwd(), "lib/local-auth/client.tsx"),
+      "@clerk/nextjs/server": path.resolve(process.cwd(), "lib/local-auth/server.ts"),
+    };
+    return config;
   },
   async redirects() {
     return [
