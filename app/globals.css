@@ -3832,7 +3832,7 @@ button.uno-card:disabled { cursor: not-allowed; filter: grayscale(.55) brightnes
 .game-card { display: flex; flex-direction: column; min-width: 0; }
 .game-card--lime { background: var(--lime); color: var(--black); }
 .game-card--pink { background: var(--pink); color: var(--black); }
-.partners-grid article:nth-child(2n) { color: var(--black); }
+.partners-grid article:nth-child(2n) { color: var(--white); }
 .cookie-banner button { color: var(--black); }
 .game-card--blue { background: var(--blue); color: var(--white); }
 .game-card--cream { background: var(--cream); color: var(--black); }
@@ -4670,6 +4670,12 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
   font-size: 13px;
   font-weight: 800;
   transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.game-detail .legal-back {
+  border-color: rgba(18,18,24,.24);
+  background: rgba(18,18,24,.04);
+  color: var(--black);
 }
 
 .legal-back::before {
