@@ -1868,18 +1868,18 @@ export async function deleteFriendList(userId: string, listId: string): Promise<
   if (!row) throw new Error("Friend list not found");
 }
 
-export async function addFriendToList(listId: string, friendId: string): Promise<void> {
+export async function addFriendToList(ownerId: string, listId: string, friendId: string): Promise<void> {
   await ensurePartySchema();
-  const [list] = await db()`SELECT clerk_user_id FROM friend_lists WHERE id = ${listId} LIMIT 1` as unknown as { clerk_user_id: string }[];
+  const [list] = await db()`SELECT clerk_user_id FROM friend_lists WHERE id = ${listId} AND clerk_user_id = ${ownerId} LIMIT 1` as unknown as { clerk_user_id: string }[];
   if (!list) throw new Error("Friend list not found");
   const [friend] = await db()`SELECT 1 FROM friend_connections WHERE ((requester_id = ${list.clerk_user_id} AND target_id = ${friendId}) OR (requester_id = ${friendId} AND target_id = ${list.clerk_user_id})) AND status = 'accepted' LIMIT 1` as unknown as Record<string, unknown>[];
   if (!friend) throw new Error("Not a friend");
   await db()`INSERT INTO friend_list_members (list_id, friend_id) VALUES (${listId}, ${friendId}) ON CONFLICT (list_id, friend_id) DO NOTHING`;
 }
 
-export async function removeFriendFromList(listId: string, friendId: string): Promise<void> {
+export async function removeFriendFromList(ownerId: string, listId: string, friendId: string): Promise<void> {
   await ensurePartySchema();
-  const [list] = await db()`SELECT clerk_user_id FROM friend_lists WHERE id = ${listId} LIMIT 1` as unknown as { clerk_user_id: string }[];
+  const [list] = await db()`SELECT clerk_user_id FROM friend_lists WHERE id = ${listId} AND clerk_user_id = ${ownerId} LIMIT 1` as unknown as { clerk_user_id: string }[];
   if (!list) throw new Error("Friend list not found");
   await db()`DELETE FROM friend_list_members WHERE list_id = ${listId} AND friend_id = ${friendId}`;
 }

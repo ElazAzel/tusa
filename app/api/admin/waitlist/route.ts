@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { isAdmin } from "@/lib/admin-auth";
 import { WAITLIST_STATUSES, deleteWaitlistApplication, getWaitlistStats, listWaitlistApplications, updateWaitlistApplication } from "@/lib/waitlist";
 
@@ -11,8 +11,7 @@ function unauthorized() {
 
 export async function GET(request: Request) {
   if (!(await isAdmin("waitlist_read"))) return unauthorized();
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:admin:waitlist`, 60, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:waitlist`, 60, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   try {
     const [stats, applications] = await Promise.all([getWaitlistStats(), listWaitlistApplications()]);
@@ -24,8 +23,7 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   if (!(await isAdmin("waitlist_write"))) return unauthorized();
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:admin:waitlist`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:waitlist`, 5, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const id = typeof body.id === "string" ? body.id : "";
@@ -39,8 +37,7 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   if (!(await isAdmin("waitlist_write"))) return unauthorized();
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:admin:waitlist`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:waitlist`, 5, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   if (typeof body.id !== "string") return NextResponse.json({ error: "Нужен id заявки." }, { status: 400 });

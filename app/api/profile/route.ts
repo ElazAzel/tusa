@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { rateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { updateProfile } from "@/lib/parties";
 
 const profileSchema = z.object({
@@ -22,8 +22,7 @@ const profileSchema = z.object({
 export async function PATCH(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Sign in to update your profile." }, { status: 401 });
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:profile`, 10, 60_000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:profile`, 10, 60_000);
   if (!rl.allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   const parsed = profileSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Check your profile fields and try again." }, { status: 400 });

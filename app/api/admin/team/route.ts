@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import {
   adminProfileExists,
   createAdminMember,
@@ -47,8 +47,7 @@ function responseForAccess(
 
 export async function GET(request: Request) {
   const access = await getAdminAccess();
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:admin:team`, 60, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:team`, 60, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const denied = responseForAccess(access, "team_read");
   if (denied) return denied;
@@ -78,8 +77,7 @@ export async function POST(request: Request) {
       { error: "Нужен вход администратора." },
       { status: 401 },
     );
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:admin:team`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:team`, 5, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const clerkUserId =
@@ -120,8 +118,7 @@ export async function PATCH(request: Request) {
       { error: "Нужен вход администратора." },
       { status: 401 },
     );
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:admin:team`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:team`, 5, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const clerkUserId =
@@ -186,8 +183,7 @@ export async function DELETE(request: Request) {
       { error: "Нужен вход администратора." },
       { status: 401 },
     );
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:admin:team`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:team`, 5, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const clerkUserId =

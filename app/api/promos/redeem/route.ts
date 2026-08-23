@@ -1,14 +1,13 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getUserRedemptions, redeemPromo, syncProfile, trackAnalytics } from "@/lib/parties";
 
 export async function POST(request: Request) {
   const { userId } = await auth();
   const user = await currentUser();
   if (!userId || !user) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:promos:redeem`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:promos:redeem`, 5, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   if (typeof body.code !== "string" || !body.code.trim()) return NextResponse.json({ error: "Введите промокод." }, { status: 400 });
@@ -22,8 +21,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`api:${ip}:promos:redeem`, 60, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:promos:redeem`, 60, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const redemptions = await getUserRedemptions(userId);
   return NextResponse.json({ redemptions });
