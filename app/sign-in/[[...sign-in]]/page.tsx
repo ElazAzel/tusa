@@ -1,4 +1,4 @@
-import { ClerkLoaded, ClerkLoading, SignIn } from "@/lib/local-auth/client";
+import { AuthLoaded, AuthLoading, SignInForm } from "@/lib/local-auth/client";
 import Link from "next/link";
 import BrandLogo from "@/app/components/BrandLogo";
 
