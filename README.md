@@ -16,8 +16,8 @@
 - Server-authoritative snapshots, strict Zod game commands, optimistic version locking и idempotency.
 - Authenticated SSE, Ably integration, reconnect и Upstash rate limiting с fail-closed режимом для strict production.
 - RU/EN UI, PWA install surface, public SEO/knowledge pages и локальный RAG index.
-- Code schema gate v13: party, auth, admin, waitlist and safety restrictions are managed by Drizzle migrations; production requests fail closed instead of running business DDL. The connected production database must still be migrated from the last verified v12 baseline before this checkpoint is deployed.
-- На checkpoint проходят 61 unit/invariant test, TypeScript, ESLint, production build и RAG build.
+- Production schema v12: party, auth, admin и waitlist управляются Drizzle migrations; production request не выполняет runtime DDL.
+- На checkpoint проходят 65 unit/invariant tests, TypeScript, ESLint, production build и RAG build.
 
 ## Запуск
 

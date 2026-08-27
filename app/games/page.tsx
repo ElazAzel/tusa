@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const labels = {
-  ru: { beta: "Мультиплеер · beta", quick_tool: "Инструмент тусы", full_game: "Полная игра", players: "игроков", open: "Правила и детали", search: "Найти игру по названию или механике", all: "Все режимы", full: "Полные игры", tools: "Быстрые режимы", result: "режимов", empty: "Ничего не найдено — сбрось фильтры" },
+  ru: { beta: "Мультиплеер · beta", quick_tool: "Инструмент тусы", full_game: "Полная игра", players: "игроков", open: "Правила и детали", search: "Найти игру по названию или механике", all: "Все режимы", full: "Полные игры", tools: "Быстрые режимы", result: "режимов", empty: "Ничего не найдено: сбрось фильтры" },
   en: { beta: "Multiplayer · beta", quick_tool: "Party tool", full_game: "Full game", players: "players", open: "Rules and details", search: "Search by title or mechanic", all: "All modes", full: "Full games", tools: "Quick modes", result: "modes", empty: "No matches — reset the filters" },
 } as const;
 

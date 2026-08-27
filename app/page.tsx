@@ -50,7 +50,7 @@ export default function Home() {
     <main>
       <header className="site-header">
         <div className="container header-inner">
-          <a className="brand" href="#top" aria-label="TUSA.game — наверх">
+          <a className="brand" href="#top" aria-label="TUSA.game: наверх">
             <BrandLogo priority />
           </a>
           <nav className="desktop-nav" aria-label={t("navFeatures")}>
@@ -287,7 +287,7 @@ export default function Home() {
       <footer className="footer">
         <div className="container footer-inner">
           <div>
-            <a className="brand" href="#top" aria-label="TUSA.game — наверх">
+            <a className="brand" href="#top" aria-label="TUSA.game: наверх">
               <BrandLogo />
             </a>
             <p>{t("footerTagline")}</p>

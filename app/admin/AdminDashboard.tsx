@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useAuthClient } from "@/lib/local-auth/client";
+import { useClerk } from "@/lib/local-auth/client";
 import { useLocale } from "@/app/components/LocaleProvider";
 import type { WaitlistApplication, WaitlistStats, WaitlistStatus } from "@/lib/waitlist";
 import type { AdminAccess } from "@/lib/admin-auth";

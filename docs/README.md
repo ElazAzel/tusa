@@ -17,9 +17,9 @@
 
 - 32 canonical modes and 32 server-owned SDK definitions; all remain Beta until browser certification evidence exists.
 - Guest HMAC join, local email/password accounts, Party Room, chat, gallery, profile, KOINS, moderation, controlled Blob media, analytics and admin RBAC are implemented for the beta.
-- Production uses versioned Drizzle migrations. Schema v13 adds enforceable safety restrictions; runtime DDL is a local-development compatibility fallback only.
-- The connected production database was last verified at schema v12. Apply `0013_safety_restrictions.sql` before deploying this checkpoint.
-- 61 unit/invariant tests, TypeScript, ESLint, production build and the local RAG build pass at this checkpoint.
+- Production uses versioned Drizzle migrations. Schema v12 covers party, auth, admin and waitlist tables; runtime DDL is a local-development compatibility fallback only.
+- The connected production database reports schema v12. The latest production deployment is `Ready` on `tusa.game` and `tusagame.vercel.app`.
+- 65 unit/invariant tests, TypeScript, ESLint, production build and the local RAG build pass at this checkpoint.
 
 ## Remaining release gates
 

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/local-auth/server";
-import { distributedRateLimit } from "@/lib/rate-limit";
-import { createBet, getBets, joinBet, settleBet, cancelBet, getKoinsBalance, getKoinsTransactions } from "@/lib/parties";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
+import { createBet, getBets, joinBet, settleBet, cancelBet, getKoinsBalance, getKoinsTransactions, requirePartyMember } from "@/lib/parties";
 import { publish } from "@/lib/live";
 
 export const dynamic = "force-dynamic";
@@ -9,8 +9,7 @@ export async function GET(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = await distributedRateLimit(`api:${ip}:koins`, 60, 60000);
+    const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:koins`, 60, 60000);
     if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
     const { searchParams } = new URL(request.url);
     const partyId = searchParams.get("partyId");
@@ -21,6 +20,11 @@ export async function GET(request: Request) {
       return Response.json({ balance, transactions });
     }
     if (!partyId) return Response.json({ error: "partyId required" }, { status: 400 });
+    try {
+      await requirePartyMember(partyId, userId);
+    } catch {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
     const bets = await getBets(partyId);
     return Response.json({ bets });
   } catch { return Response.json({ error: "Koins error" }, { status: 500 }); }
@@ -29,10 +33,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = await distributedRateLimit(`api:${ip}:koins`, 10, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:koins`, 10, 60000);
   if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
-  const body = await request.json();
+  const body = await request.json().catch(() => ({}));
   try {
     if (body.action === "create") {
       const bet = await createBet(userId, body.partyId, { text: body.text, options: body.options });

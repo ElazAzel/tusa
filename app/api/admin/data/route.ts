@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { distributedRateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getAdminAccess } from "@/lib/admin-auth";
 import {
   getAdminParties,
@@ -11,8 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const access = await getAdminAccess();
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = await distributedRateLimit(`api:${ip}:admin:data`, 60, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:data`, 60, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   if (!access)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

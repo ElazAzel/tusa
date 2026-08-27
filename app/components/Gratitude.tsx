@@ -41,8 +41,8 @@ export default function Gratitude({ partyId, actorId, members }: { partyId: stri
     <div style={{ background: "var(--dark)", borderRadius: 8, padding: 12, marginBottom: 12 }}>
       <h4 style={{ marginBottom: 8 }}>{t("gratitudeSend")}</h4>
       <select className="bs-input" value={selectedUser} onChange={(e) => setToUser(e.target.value)} style={{ width: "100%", marginBottom: 8 }}><option value="" disabled>{recipients.length ? t("gratitudeSend") : t("gratitudeEmpty")}</option>{recipients.map((m) => <option key={m.id} value={m.id}>{m.displayName || m.id.slice(0, 8)}</option>)}</select>
-      <input className="bs-input" type="number" min={1} max={100} value={amount} onChange={(e) => setAmount(Number(e.target.value))} placeholder={t("gratitudeAmount")} style={{ width: "100%", marginBottom: 8 }} />
-      <input className="bs-input" value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t("gratitudeMessage")} style={{ width: "100%", marginBottom: 8 }} />
+      <input className="bs-input" type="number" min={1} aria-label={t("gratitudeAmount")} max={100} value={amount} onChange={(e) => setAmount(Number(e.target.value))} placeholder={t("gratitudeAmount")} style={{ width: "100%", marginBottom: 8 }} />
+      <input className="bs-input" aria-label={t("gratitudeMessage")} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t("gratitudeMessage")} style={{ width: "100%", marginBottom: 8 }} />
       <button className="demo-action demo-action--lime" disabled={!selectedUser || amount < 1} onClick={send} type="button">{sent ? t("gratitudeSent") : t("gratitudeSend")}</button>
     </div>
     {error && <p className="feature-error" role="alert">{error}</p>}

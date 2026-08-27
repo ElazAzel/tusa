@@ -100,31 +100,39 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   const chatAtBottomRef = useRef(true);
   const gameRecoveryRef = useRef(false);
 
-  useEffect(() => {
-    const onCommandError = (event: Event) => {
-      const message = (event as CustomEvent<{ message?: string }>).detail?.message;
-      if (message) setError(message);
-    };
-    const onCommandSuccess = () => setError("");
-    window.addEventListener("tusa:game-command-error", onCommandError);
-    window.addEventListener("tusa:game-command-success", onCommandSuccess);
-    return () => {
-      window.removeEventListener("tusa:game-command-error", onCommandError);
-      window.removeEventListener("tusa:game-command-success", onCommandSuccess);
-    };
-  }, []);
+  const anyModalOpen = Boolean(moreOpen || roomPickerGame || gameResults || editing);
 
   useEffect(() => {
-    if (!moreOpen) return;
+    if (!anyModalOpen) return;
     const previousOverflow = document.body.style.overflow;
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setMoreOpen(false); };
+    const closeTopModal = () => {
+      if (moreOpen) setMoreOpen(false);
+      else if (roomPickerGame) setRoomPickerGame(null);
+      else if (gameResults) closeGameResults();
+      else setEditing(false);
+    };
+    const trapTab = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const surface = document.querySelector<HTMLElement>(".more-modal-backdrop .more-modal, .demo-modal-backdrop .demo-modal");
+      if (!surface) return;
+      const focusables = Array.from(surface.querySelectorAll<HTMLElement>("button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-\"])"));
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement;
+      if (!surface.contains(active)) { event.preventDefault(); first.focus(); }
+      else if (event.shiftKey && active === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && active === last) { event.preventDefault(); first.focus(); }
+    };
     document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("keydown", closeTopModal);
+    window.addEventListener("keydown", trapTab);
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("keydown", closeTopModal);
+      window.removeEventListener("keydown", trapTab);
     };
-  }, [moreOpen]);
+  }, [anyModalOpen, moreOpen, roomPickerGame, gameResults, editing]);
   const { locale, t } = useLocale();
   const isOwner = party.role === "owner";
   const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/join/${party.inviteCode}` : "";
@@ -319,7 +327,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
           setGameSession(data.session.id);
           setActiveSessions((prev) => [data.session, ...prev.filter((s) => s.id !== data.session.id)]);
         }
-      }).catch(() => undefined);
+      }).catch((err) => console.error("launchGame failed", err));
   }
 
   function openGameRooms(game: GameId) {
@@ -339,7 +347,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
         if (data.session) {
           setActiveSessions((prev) => prev.map((s) => s.id === sessionId ? data.session : s));
         }
-      }).catch(() => undefined);
+      }).catch((err) => console.error("joinSession failed", err));
   }
 
   function saveGameScore() {
@@ -352,7 +360,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
         if (verifiedScore > 0) {
           fetch("/api/highlights", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partyId: party.id, sessionId: gameSession, type: "score", data: { score: verifiedScore, game: selectedGame }, thumbnail: "" }) }).catch(() => {});
         }
-      }).catch(() => undefined);
+      }).catch((err) => console.error("saveGameScore failed", err));
   }
 
   async function startGameSession() {
@@ -510,7 +518,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
             <p><span className="material-symbols-rounded">calendar_month</span>{formatEventDate(party.date, locale)} · {party.time}</p>
             <p><span className="material-symbols-rounded">location_on</span>{party.venue}</p>
             <div className="party-room-rsvp-toggle">
-              {["going", "maybe", "pass"].map((status) => <button className={rsvp === status ? "active" : ""} key={status} onClick={() => updateRsvp(status as RsvpStatus)} type="button">{status === "going" ? (locale === "ru" ? "Иду" : "Going") : status === "maybe" ? (locale === "ru" ? "Думаю" : "Maybe") : (locale === "ru" ? "Не иду" : "Pass")}</button>)}
+              {["going", "maybe", "pass"].map((status) => <button aria-pressed={rsvp === status} className={rsvp === status ? "active" : ""} key={status} onClick={() => updateRsvp(status as RsvpStatus)} type="button">{status === "going" ? (locale === "ru" ? "Иду" : "Going") : status === "maybe" ? (locale === "ru" ? "Думаю" : "Maybe") : (locale === "ru" ? "Не иду" : "Pass")}</button>)}
             </div>
           </div>
           <div className="demo-hero-stamp"><strong>{rsvpCounts.going}</strong><span>{t("eventHubGoing")}</span></div>
@@ -549,7 +557,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
         <h3>{t("roomInside")} ({filteredMembers.length})</h3>
         <div className="rsvp-filter-tabs">
           {(["all", "going", "maybe", "pass"] as const).map((filter) => (
-            <button key={filter} className={rsvpFilter === filter ? "active" : ""} onClick={() => setRsvpFilter(filter)} type="button">
+            <button key={filter} aria-pressed={rsvpFilter === filter} className={rsvpFilter === filter ? "active" : ""} onClick={() => setRsvpFilter(filter)} type="button">
               {filter === "all" ? t("roomInside") : filter === "going" ? t("eventHubGoing") : filter === "maybe" ? t("eventHubThinkingCount") : t("eventHubPass")}
               {filter !== "all" && <span> ({members.filter((m) => m.rsvpStatus === filter).length})</span>}
             </button>

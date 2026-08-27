@@ -21,7 +21,7 @@ export async function generateMetadata({
   if (!content) return {};
 
   return {
-    title: `${content.title} — TUSA.game`,
+    title: `${content.title} · TUSA.game`,
     description: content.description,
     alternates: {
       canonical: `/${locale}/guides/${slug}`,

@@ -44,7 +44,7 @@ export default async function AdminSystemPage() {
   ]);
   const title = locale === "ru" ? "Здоровье системы" : "System health";
   const lead = locale === "ru"
-    ? "Показывает только состояние интеграций — без ключей, личных данных и содержимого тусы."
+    ? "Показывает только состояние интеграций: без ключей, личных данных и содержимого тусы."
     : "Shows integration state only — never keys, personal data, or party content.";
 
   return <main className="admin-page">

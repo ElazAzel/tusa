@@ -1,5 +1,5 @@
 import { auth } from "@/lib/local-auth/server";
-import { distributedRateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 import { getUserGameStats } from "@/lib/parties";
 
 export const dynamic = "force-dynamic";

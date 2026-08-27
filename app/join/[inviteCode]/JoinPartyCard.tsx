@@ -26,7 +26,7 @@ export default function JoinPartyCard({ party, inviteCode, isSignedIn }: { party
   if (!party) return <main className="join-party-page"><div className="join-party-card"><LocaleToggle /><h1>{t("partyMissing")}</h1><Link href="/">TUSA.game</Link></div></main>;
 
   async function join() {
-    if (!isSignedIn && displayName.trim().length < 2) { setError(locale === "ru" ? "Укажи имя — минимум 2 символа." : "Enter at least 2 characters."); return; }
+    if (!isSignedIn && displayName.trim().length < 2) { setError(locale === "ru" ? "Укажи имя: минимум 2 символа." : "Enter at least 2 characters."); return; }
     setLoading(true); setError("");
     try {
       const response = await fetch(`/api/parties/${inviteCode}/join`, {

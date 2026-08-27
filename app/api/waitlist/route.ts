@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { distributedRateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { createWaitlistApplication, getWaitlistStatsSafe } from "@/lib/waitlist";
 
 export const dynamic = "force-dynamic";
@@ -9,15 +9,13 @@ function clean(value: unknown, limit: number) {
 }
 
 export async function GET(request: Request) {
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = await distributedRateLimit(`api:${ip}:waitlist`, 60, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:waitlist`, 60, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   return NextResponse.json(await getWaitlistStatsSafe(), { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = await distributedRateLimit(`api:${ip}:waitlist`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:waitlist`, 5, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   try {
     const body = await request.json();

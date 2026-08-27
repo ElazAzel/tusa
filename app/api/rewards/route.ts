@@ -1,5 +1,5 @@
 import { auth } from "@/lib/local-auth/server";
-import { distributedRateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { grantEngagementReward, getEngagementStats } from "@/lib/parties";
 
 export const dynamic = "force-dynamic";
@@ -8,8 +8,7 @@ export async function GET(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = await distributedRateLimit(`api:${ip}:rewards`, 60, 60000);
+    const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:rewards`, 60, 60000);
     if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
     const stats = await getEngagementStats(userId);
     return Response.json({ stats });
@@ -20,8 +19,7 @@ export async function POST(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = await distributedRateLimit(`api:${ip}:rewards`, 10, 60000);
+    const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:rewards`, 10, 60000);
     if (!rl.allowed) return Response.json({ error: "Слишком много запросов." }, { status: 429 });
     const body = await request.json().catch(() => ({}));
     if (!body.activity) return Response.json({ error: "activity required" }, { status: 400 });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { distributedRateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { isAdmin } from "@/lib/admin-auth";
 import { getWaitlistStats, updateWaitlistSettings } from "@/lib/waitlist";
 
@@ -7,8 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(request: Request) {
   if (!(await isAdmin("waitlist_write"))) return NextResponse.json({ error: "Нужен вход администратора." }, { status: 401 });
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = await distributedRateLimit(`api:${ip}:admin:waitlist:settings`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:waitlist:settings`, 5, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const capacity = Number(body.capacity);

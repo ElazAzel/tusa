@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { distributedRateLimit } from "@/lib/rate-limit";
+import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { isAdmin } from "@/lib/admin-auth";
 import { PROMO_STATUS, type PromoBenefit, createPromoCode, deletePromoCode, getAdminProductStats, getPromoRedemptions, listPromoCodes, updatePromoCode } from "@/lib/parties";
 
@@ -13,8 +13,7 @@ function denied() { return NextResponse.json({ error: "Нужен вход ад�
 
 export async function GET(request: Request) {
   if (!(await isAdmin("promos_read"))) return denied();
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = await distributedRateLimit(`api:${ip}:admin:promos`, 60, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:promos`, 60, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const [promos, stats, redemptions] = await Promise.all([listPromoCodes(), getAdminProductStats(), getPromoRedemptions()]);
   return NextResponse.json({ promos, stats, redemptions });
@@ -22,8 +21,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!(await isAdmin("promos_write"))) return denied();
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = await distributedRateLimit(`api:${ip}:admin:promos`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:promos`, 5, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const maxRedemptions = body.maxRedemptions === "" || body.maxRedemptions === null ? null : Number(body.maxRedemptions);
@@ -37,8 +35,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   if (!(await isAdmin("promos_write"))) return denied();
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = await distributedRateLimit(`api:${ip}:admin:promos`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:promos`, 5, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   if (typeof body.id !== "string") return NextResponse.json({ error: "Нужен id промокода." }, { status: 400 });
@@ -53,11 +50,10 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   if (!(await isAdmin("promos_write"))) return denied();
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = await distributedRateLimit(`api:${ip}:admin:promos`, 5, 60000);
+  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:admin:promos`, 5, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const deleted = typeof body.id === "string" && await deletePromoCode(body.id);
-  if (!deleted) return NextResponse.json({ error: "Код с применениями нельзя удалить — поставьте на паузу." }, { status: 409 });
+  if (!deleted) return NextResponse.json({ error: "Код с применениями нельзя удалить, поставьте его на паузу." }, { status: 409 });
   return NextResponse.json({ deleted: true });
 }
