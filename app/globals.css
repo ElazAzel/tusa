@@ -612,7 +612,8 @@ a {
   gap: 18px;
   margin-top: 13px;
   padding: 17px 18px;
-  background: var(--pink);
+  background: var(--pink-strong);
+  color: var(--white);
 }
 
 .event-game h3 { max-width: 250px; font-size: 17px; }
@@ -649,7 +650,7 @@ a {
   font-weight: 800;
 }
 
-.sticker-pink { top: 42px; left: 12px; background: var(--pink); color: var(--black); transform: rotate(-8deg); }
+.sticker-pink { top: 42px; left: 12px; background: var(--pink-strong); color: var(--white); transform: rotate(-8deg); }
 .sticker-lime { top: 30px; right: 5px; background: var(--lime); transform: rotate(7deg); }
 .sticker-white { left: 6px; bottom: 52px; background: var(--white); transform: rotate(-5deg); }
 
