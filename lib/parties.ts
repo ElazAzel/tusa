@@ -357,7 +357,7 @@ export function ensurePartySchema() {
   const requiresMigrationGate = process.env.TUSA_STRICT_SCHEMA === "true" || process.env.VERCEL_ENV === "production";
   if (requiresMigrationGate) {
     const [version] = await sql`SELECT version FROM platform_schema_version WHERE singleton = TRUE LIMIT 1` as unknown as { version: number }[];
-    if (!version || Number(version.version) < 12) throw new Error("Database schema is outdated. Run npm run db:migrate before serving traffic.");
+    if (!version || Number(version.version) < 13) throw new Error("Database schema is outdated. Run npm run db:migrate before serving traffic.");
     return;
   }
   const check = await sql`SELECT 1 FROM information_schema.tables WHERE table_name = 'user_profiles' LIMIT 1` as unknown as Record<string, unknown>[];
@@ -519,6 +519,18 @@ export function ensurePartySchema() {
     PRIMARY KEY (blocker_id, blocked_id),
     CHECK (blocker_id <> blocked_id)
   )`;
+  await sql`CREATE TABLE IF NOT EXISTS safety_user_restrictions (
+    user_id TEXT PRIMARY KEY,
+    restriction TEXT NOT NULL CHECK (restriction IN ('warn', 'suspended')),
+    reason TEXT NOT NULL DEFAULT '',
+    expires_at TIMESTAMPTZ,
+    created_by TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await sql`CREATE INDEX IF NOT EXISTS safety_user_restrictions_expiry_idx ON safety_user_restrictions (expires_at)`;
+  await sql`ALTER TABLE moderation_actions DROP CONSTRAINT IF EXISTS moderation_actions_action_check`;
+  await sql`ALTER TABLE moderation_actions ADD CONSTRAINT moderation_actions_action_check CHECK (action IN ('review', 'dismiss', 'remove_content', 'warn', 'suspend', 'restore'))`;
   await sql`CREATE INDEX IF NOT EXISTS party_gallery_party_idx ON party_gallery_photos (party_id, created_at DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS party_shopping_party_idx ON party_shopping_items (party_id, created_at ASC)`;
   await sql`CREATE INDEX IF NOT EXISTS chat_messages_party_idx ON chat_messages (party_id, created_at ASC)`;
@@ -1557,9 +1569,10 @@ export async function addGameScore(sessionId: string, userId: string, score: num
   if (!access || String(access.created_by) !== userId) throw new Error("Only the session creator can submit results");
   if (access.status === "cancelled") throw new Error("Cancelled sessions cannot be scored");
   const safeScore = Math.min(Math.max(Math.trunc(Number(score) || 0), 0), 100000);
-  const mutationId = (metadata?.clientMutationId as string)?.slice(0, 64) ?? null;
+  const mutationId = `score:${sessionId}`;
+  const persistedMetadata = { ...(metadata ?? {}), clientMutationId: mutationId };
   let [row] = await db()`INSERT INTO game_scores (id, session_id, clerk_user_id, score, metadata, client_mutation_id)
-    VALUES (${randomUUID()}, ${sessionId}, ${userId}, ${safeScore}, ${JSON.stringify(metadata ?? {})}::jsonb, ${mutationId})
+    VALUES (${randomUUID()}, ${sessionId}, ${userId}, ${safeScore}, ${JSON.stringify(persistedMetadata)}::jsonb, ${mutationId})
     ON CONFLICT (session_id, client_mutation_id) DO NOTHING
     RETURNING *` as unknown as Record<string, unknown>[];
   const created = Boolean(row);
@@ -1979,8 +1992,12 @@ export async function submitDailyAnswers(challengeId: string, userId: string, an
   const config = (challenge.config ?? {}) as Record<string, unknown>;
   const ids = Array.isArray(config.questionIds) ? config.questionIds.map(String) : dailyQuestionIds(String(challenge.date));
   const score = scoreDailyAnswers(ids, answers);
-  const [row] = await db()`INSERT INTO daily_challenge_scores (id, challenge_id, clerk_user_id, score) VALUES (${randomUUID()}, ${challengeId}, ${userId}, ${score}) ON CONFLICT (challenge_id, clerk_user_id) DO UPDATE SET score = GREATEST(daily_challenge_scores.score, ${score}) RETURNING *` as unknown as Record<string, unknown>[];
-  return row ? { id: String(row.id), challengeId: String(row.challenge_id), userId: String(row.clerk_user_id), score: asNumber(row.score), playedAt: new Date(row.played_at as string | Date).toISOString() } as DailyScore : null;
+  let [row] = await db()`INSERT INTO daily_challenge_scores (id, challenge_id, clerk_user_id, score) VALUES (${randomUUID()}, ${challengeId}, ${userId}, ${score}) ON CONFLICT (challenge_id, clerk_user_id) DO NOTHING RETURNING *` as unknown as Record<string, unknown>[];
+  const created = Boolean(row);
+  if (!row) {
+    [row] = await db()`UPDATE daily_challenge_scores SET score = GREATEST(score, ${score}) WHERE challenge_id = ${challengeId} AND clerk_user_id = ${userId} RETURNING *` as unknown as Record<string, unknown>[];
+  }
+  return row ? { score: { id: String(row.id), challengeId: String(row.challenge_id), userId: String(row.clerk_user_id), score: asNumber(row.score), playedAt: new Date(row.played_at as string | Date).toISOString() } as DailyScore, created } : null;
 }
 export async function getDailyLeaderboard(challengeId: string, limit = 20) {
   await ensurePartySchema();
@@ -2224,13 +2241,32 @@ export async function listSafetyReports(status?: SafetyReport["status"]) {
   return rows.map(rowToSafetyReport);
 }
 
-export async function moderateSafetyReport(reportId: string, moderatorId: string, action: "review" | "dismiss" | "remove_content" | "warn" | "suspend", note: string) {
+export async function listSafetyReportsForUser(userId: string) {
+  await ensurePartySchema();
+  const rows = await db()`SELECT * FROM safety_reports WHERE target_user_id = ${userId} AND status IN ('actioned', 'appealed') ORDER BY updated_at DESC LIMIT 50` as unknown as Record<string, unknown>[];
+  return rows.map(rowToSafetyReport);
+}
+
+export async function moderateSafetyReport(reportId: string, moderatorId: string, action: "review" | "dismiss" | "remove_content" | "warn" | "suspend" | "restore", note: string) {
   await ensurePartySchema();
   const [report] = await db()`SELECT * FROM safety_reports WHERE id = ${reportId}::uuid LIMIT 1` as unknown as Record<string, unknown>[];
   if (!report) throw new Error("Report not found.");
   const status = action === "review" ? "reviewing" : action === "dismiss" ? "dismissed" : "actioned";
   const [updated] = await db()`UPDATE safety_reports SET status = ${status}, assigned_to = ${moderatorId}, resolution = ${note.slice(0, 500)}, updated_at = NOW() WHERE id = ${reportId}::uuid RETURNING *` as unknown as Record<string, unknown>[];
   await db()`INSERT INTO moderation_actions (id, report_id, moderator_id, action, note) VALUES (${randomUUID()}, ${reportId}::uuid, ${moderatorId}, ${action}, ${note.slice(0, 500)})`;
+  const targetUserId = String(report.target_user_id ?? "");
+  if ((action === "warn" || action === "suspend") && targetUserId) {
+    const restriction = action === "suspend" ? "suspended" : "warn";
+    await db()`INSERT INTO safety_user_restrictions (user_id, restriction, reason, expires_at, created_by)
+      VALUES (${targetUserId}, ${restriction}, ${note.slice(0, 500)}, NULL, ${moderatorId})
+      ON CONFLICT (user_id) DO UPDATE SET
+        restriction = CASE WHEN safety_user_restrictions.restriction = 'suspended' AND ${restriction} = 'warn' THEN 'suspended' ELSE EXCLUDED.restriction END,
+        reason = EXCLUDED.reason,
+        expires_at = EXCLUDED.expires_at,
+        created_by = EXCLUDED.created_by,
+        updated_at = NOW()`;
+  }
+  if (action === "restore" && targetUserId) await db()`DELETE FROM safety_user_restrictions WHERE user_id = ${targetUserId}`;
   if (action === "remove_content" && String(report.target_type) === "chat_message") await db()`UPDATE chat_messages SET moderation_status = 'removed' WHERE id = ${String(report.target_id)}::uuid`;
   if (action === "remove_content" && String(report.target_type) === "gallery_photo") await db()`UPDATE party_gallery_photos SET moderation_status = 'removed' WHERE id = ${String(report.target_id)}::uuid`;
   return rowToSafetyReport(updated);

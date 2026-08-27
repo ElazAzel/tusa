@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useClerk } from "@/lib/local-auth/client";
+import { useAuthClient } from "@/lib/local-auth/client";
 import { useLocale } from "@/app/components/LocaleProvider";
 import type { WaitlistApplication, WaitlistStats, WaitlistStatus } from "@/lib/waitlist";
 import type { AdminAccess } from "@/lib/admin-auth";
@@ -25,7 +25,7 @@ export default function AdminDashboard({ access, initialApplications, initialSta
   const [baseline, setBaseline] = useState(String(initialStats.baseline));
   const [capacity, setCapacity] = useState(String(initialStats.capacity));
   const { t, locale } = useLocale();
-  const { signOut } = useClerk();
+  const { signOut } = useAuthClient();
   const can = (permission: AdminAccess["permissions"][number]) => access.permissions.includes(permission);
 
   const labels: Record<WaitlistStatus, string> = { new: t("adminStatusNew"), shortlisted: t("adminStatusShortlisted"), invited: t("adminStatusInvited"), rejected: t("adminStatusRejected") };

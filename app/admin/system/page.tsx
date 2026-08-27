@@ -14,7 +14,6 @@ export const dynamic = "force-dynamic";
 const serviceLabels = {
   database: { ru: "База данных", en: "Database" },
   localAuth: { ru: "Вход", en: "Authentication" },
-  clerk: { ru: "Clerk", en: "Clerk" },
   realtime: { ru: "Realtime", en: "Realtime" },
   rateLimit: { ru: "Rate limit", en: "Rate limit" },
   media: { ru: "Медиа", en: "Media" },
@@ -23,10 +22,10 @@ const serviceLabels = {
   adminMfa: { ru: "MFA админа", en: "Admin MFA" },
 } as const;
 
-function stateLabel(state: RuntimeServiceState | "live" | "development" | "unconfigured", locale: "ru" | "en") {
+function stateLabel(state: RuntimeServiceState, locale: "ru" | "en") {
   const labels = locale === "ru"
-    ? { ready: "готово", fallback: "локальный fallback", missing: "не настроено", live: "live ключи", development: "development ключи", unconfigured: "не настроено" }
-    : { ready: "ready", fallback: "local fallback", missing: "not configured", live: "live keys", development: "development keys", unconfigured: "not configured" };
+    ? { ready: "готово", fallback: "локальный fallback", missing: "не настроено" }
+    : { ready: "ready", fallback: "local fallback", missing: "not configured" };
   return labels[state];
 }
 

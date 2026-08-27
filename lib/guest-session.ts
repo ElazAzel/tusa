@@ -2,6 +2,7 @@ import "server-only";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { auth, currentUser } from "@/lib/local-auth/server";
 import { cookies } from "next/headers";
+import { isUserSuspended } from "@/lib/safety-restrictions";
 
 export const GUEST_COOKIE = "tusa_guest_session";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
@@ -18,7 +19,7 @@ export interface GuestSession {
 
 export type Actor = {
   id: string;
-  kind: "clerk" | "guest";
+  kind: "account" | "guest";
   displayName: string;
   imageUrl: string;
   guest?: GuestSession;
@@ -62,17 +63,20 @@ export async function readGuestSession() {
   return verifyGuestSession(store.get(GUEST_COOKIE)?.value);
 }
 
-export async function resolveActor(): Promise<Actor | null> {
+export async function resolveActor(options: { allowSuspended?: boolean } = {}): Promise<Actor | null> {
+  let accountActor: Actor | null = null;
   try {
     const { userId } = await auth();
     if (userId) {
       let user;
       try { user = await currentUser(); } catch { user = null; }
-      return { id: userId, kind: "clerk", displayName: user?.fullName ?? user?.firstName ?? "TUSA friend", imageUrl: user?.imageUrl ?? "" };
+      accountActor = { id: userId, kind: "account", displayName: user?.fullName ?? user?.firstName ?? "TUSA friend", imageUrl: user?.imageUrl ?? "" };
     }
-  } catch { /* Clerk auth failed — fall through to guest session */ }
+  } catch { /* Account auth failed — fall through to guest session */ }
+  if (accountActor) return !options.allowSuspended && await isUserSuspended(accountActor.id) ? null : accountActor;
   const guest = await readGuestSession();
-  return guest ? { id: guest.id, kind: "guest", displayName: guest.displayName, imageUrl: guest.avatar, guest } : null;
+  if (!guest || !options.allowSuspended && await isUserSuspended(guest.id)) return null;
+  return { id: guest.id, kind: "guest", displayName: guest.displayName, imageUrl: guest.avatar, guest };
 }
 
 export const guestCookieOptions = {

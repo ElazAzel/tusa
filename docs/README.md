@@ -1,9 +1,9 @@
 # TUSA.game documentation index
 
-**Current checkpoint:** 22 July 2026, `main@edee56e`  
+**Current checkpoint:** 16 August 2026, local working checkpoint
 **Product state:** supported public beta; 32 modes are Beta and `certified = 0`  
 **Production:** https://tusa.game  
-**Verified production baseline:** schema v12; database, local auth, realtime, rate limit, media and observability report ready through `/api/health`.
+**Verified production baseline:** last external database check was schema v12; the current code requires migration v13 before deployment. Database, local auth, realtime, rate limit, media and observability are exposed through `/api/health`.
 
 ## Read in this order
 

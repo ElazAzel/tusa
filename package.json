@@ -29,7 +29,6 @@
     "check:canonical": "node scripts/check-canonical.mjs"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.5.17",
     "@neondatabase/serverless": "^1.1.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
@@ -61,6 +60,7 @@
     "typescript": "5.9.3"
   },
   "overrides": {
+    "esbuild": "0.25.12",
     "postcss": "8.5.26",
     "sharp": "0.35.0"
   },

@@ -4,7 +4,7 @@ import { auth, currentUser } from "@/lib/local-auth/server";
 import { redirect } from "next/navigation";
 import type { UserProfile } from "@/lib/parties";
 
-type ClerkUser = Awaited<ReturnType<typeof currentUser>>;
+type AccountUser = Awaited<ReturnType<typeof currentUser>>;
 
 export async function requireAppUser(redirectUrl: string) {
   let userId: string | null = null;
@@ -16,7 +16,7 @@ export async function requireAppUser(redirectUrl: string) {
 
   if (!userId) redirect(`/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`);
 
-  let user: ClerkUser = null;
+  let user: AccountUser = null;
   try {
     user = await currentUser();
   } catch (error) {
