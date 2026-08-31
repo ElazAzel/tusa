@@ -2,6 +2,7 @@
 
 import { createContext, FormEvent, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type ClientUser = { id: string; fullName: string; firstName: string; imageUrl: string; primaryEmailAddress: { emailAddress: string } };
 type AuthState = { isLoaded: boolean; isSignedIn: boolean; user: ClientUser | null; refresh: () => Promise<void> };
@@ -78,7 +79,8 @@ export function useUser() {
 
 export function useAuthClient() {
   const { refresh } = useAuthState();
-  return { signOut: async (options?: { redirectUrl?: string }) => { await fetch("/api/auth/sign-out", { method: "POST" }); await refresh(); window.location.assign(options?.redirectUrl ?? "/"); } };
+  const router = useRouter();
+  return { signOut: async (options?: { redirectUrl?: string }) => { await fetch("/api/auth/sign-out", { method: "POST" }); await refresh(); router.replace(options?.redirectUrl ?? "/"); } };
 }
 
 export function AuthLoading({ children }: { children: ReactNode }) {
@@ -91,6 +93,7 @@ export function AuthLoaded({ children }: { children: ReactNode }) {
 
 function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   const { refresh } = useAuthState();
+  const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -104,7 +107,7 @@ function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
     if (!response.ok) { setError(data.error ?? "Не удалось выполнить вход."); setBusy(false); return; }
     await refresh();
     const target = new URLSearchParams(window.location.search).get("redirect_url") || "/app";
-    window.location.assign(target.startsWith("/") ? target : "/app");
+    router.replace(target.startsWith("/") ? target : "/app");
   };
   const isSignUp = mode === "sign-up";
   return <form className="local-auth-form" onSubmit={submit}>
@@ -116,7 +119,7 @@ function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
     {!isSignUp && <Link className="clerk-link local-auth-forgot" href="/forgot-password">Забыли пароль?</Link>}
     {error && <p className="local-auth-error" role="alert">{error}</p>}
     <button className="clerk-primary" disabled={busy} type="submit">{busy ? "Подождите..." : isSignUp ? "Создать аккаунт" : "Войти"}</button>
-    <a className="clerk-link" href={isSignUp ? "/sign-in" : "/sign-up"}>{isSignUp ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Зарегистрироваться"}</a>
+    <Link className="clerk-link" href={isSignUp ? "/sign-in" : "/sign-up"}>{isSignUp ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Зарегистрироваться"}</Link>
   </form>;
 }
 
@@ -124,6 +127,7 @@ export function SignInForm(props: Record<string, unknown>) { void props; return 
 export function SignUpForm(props: Record<string, unknown>) { void props; return <AuthForm mode="sign-up" />; }
 
 export function PasswordResetForm({ token }: { token?: string }) {
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -139,7 +143,7 @@ export function PasswordResetForm({ token }: { token?: string }) {
     const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) setError(data.error ?? "Не удалось выполнить запрос.");
-    else if (token) window.location.assign("/app");
+    else if (token) router.replace("/app");
     else {
       setNotice("Если аккаунт существует, ссылка для сброса уже отправлена.");
       setDevResetUrl(data.resetUrl ?? "");

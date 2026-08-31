@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLocale } from "@/app/components/LocaleProvider";
 import ProductHeader from "@/app/components/ProductHeader";
 import EventDateTimeFields from "@/app/components/EventDateTimeFields";
@@ -11,6 +12,7 @@ export default function CreatePartyForm() {
   const [adultOnly, setAdultOnly] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const { locale, t } = useLocale();
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/promos/redeem", { cache: "no-store" })
@@ -36,7 +38,7 @@ export default function CreatePartyForm() {
       const response = await fetch("/api/parties", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const result = await response.json().catch(() => null) as { error?: string; party?: { inviteCode?: string } } | null;
       if (!response.ok || !result?.party?.inviteCode) { setError(result?.error || t("createError")); return; }
-      window.location.assign(`/party/${result.party.inviteCode}`);
+      router.push(`/party/${result.party.inviteCode}`);
     } catch { setError(t("createError")); }
     finally { setLoading(false); }
   }

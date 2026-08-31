@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Party, RsvpStatus } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
@@ -17,6 +18,7 @@ export default function JoinPartyCard({ party, inviteCode, isSignedIn }: { party
   const [avatar, setAvatar] = useState<(typeof avatars)[number]>("lime");
   const [error, setError] = useState("");
   const { locale, t } = useLocale();
+  const router = useRouter();
   const c = locale === "ru" ? {
     guestTitle: "Как тебя представить?", guestHint: "Без регистрации. Имя останется только в этой тусе.", name: "Имя или ник", namePlaceholder: "Например, Дана", avatar: "Цвет аватара", failure: "Не удалось войти. Проверь данные и попробуй ещё раз.",
   } : {
@@ -35,7 +37,7 @@ export default function JoinPartyCard({ party, inviteCode, isSignedIn }: { party
         body: JSON.stringify({ rsvp, displayName: displayName.trim(), avatar }),
       });
       const data = await response.json().catch(() => ({}));
-      if (response.ok) window.location.assign(`/party/${inviteCode}`);
+      if (response.ok) router.push(`/party/${inviteCode}`);
       else { setError(data.error || c.failure); setLoading(false); }
     } catch { setError(c.failure); setLoading(false); }
   }
