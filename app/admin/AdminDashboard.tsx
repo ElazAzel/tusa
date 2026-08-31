@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuthClient } from "@/lib/local-auth/client";
 import { useLocale } from "@/app/components/LocaleProvider";
 import type { WaitlistApplication, WaitlistStats, WaitlistStatus } from "@/lib/waitlist";
@@ -26,6 +27,7 @@ export default function AdminDashboard({ access, initialApplications, initialSta
   const [capacity, setCapacity] = useState(String(initialStats.capacity));
   const { t, locale } = useLocale();
   const { signOut } = useAuthClient();
+  const router = useRouter();
   const can = (permission: AdminAccess["permissions"][number]) => access.permissions.includes(permission);
 
   const labels: Record<WaitlistStatus, string> = { new: t("adminStatusNew"), shortlisted: t("adminStatusShortlisted"), invited: t("adminStatusInvited"), rejected: t("adminStatusRejected") };
@@ -85,7 +87,7 @@ export default function AdminDashboard({ access, initialApplications, initialSta
     finally { setBusy(null); }
   }
 
-  async function logout() { if (access.source === "member") { await signOut({ redirectUrl: "/admin/login" }); return; } await fetch("/api/admin/auth", { method: "DELETE" }); window.location.assign("/admin/login"); }
+  async function logout() { if (access.source === "member") { await signOut({ redirectUrl: "/admin/login" }); return; } await fetch("/api/admin/auth", { method: "DELETE" }); router.replace("/admin/login"); }
 
   return <main className="admin-page">
     <header className="admin-header">
