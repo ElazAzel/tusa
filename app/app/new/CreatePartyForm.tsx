@@ -33,7 +33,7 @@ export default function CreatePartyForm() {
       setLoading(false);
       return;
     }
-    if (hasAccess) delete body.promoCode;
+    if (!body.promoCode || typeof body.promoCode !== "string" || !body.promoCode.trim()) delete body.promoCode;
     try {
       const response = await fetch("/api/parties", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const result = await response.json().catch(() => null) as { error?: string; party?: { inviteCode?: string } } | null;
@@ -60,8 +60,7 @@ export default function CreatePartyForm() {
           <label className="brand-select">{t("createFormat")}<select name="category" defaultValue={formatOptions[0]}>{formatOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
           <label className="age-toggle"><input checked={adultOnly} onChange={(event) => setAdultOnly(event.target.checked)} type="checkbox" /><span><b>{t("createAdult")}</b><small>{adultOnly ? t("createAdultOn") : t("createAdultOff")}</small></span></label>
           <label>{t("createDetails")}<textarea name="description" placeholder={t("createDetailsPlace")} maxLength={500} /></label>
-          {hasAccess === false && <label className="promo-input">{t("createPromo")}<input name="promoCode" placeholder="ELAZ" autoCapitalize="characters" maxLength={32} required /><small>{t("createRepeated")}</small></label>}
-          {hasAccess === true && <p className="promo-unlocked"><span className="material-symbols-rounded" aria-hidden="true">lock_open</span>{t("createUnlocked")}</p>}
+          <label className="promo-input">{t("createPromo")}<input name="promoCode" placeholder={locale === "ru" ? "Необязательно" : "Optional"} autoCapitalize="characters" maxLength={32} /><small>{locale === "ru" ? "Промокод даёт бонусы и косметику. Можно оставить пустым." : "Promo code grants bonuses and cosmetics. Optional."}</small></label>
           <button type="submit" disabled={loading}>{loading ? t("createCreating") : t("createCreate")}</button>
           {error && <p className="form-error" role="alert">{error}</p>}
         </form>

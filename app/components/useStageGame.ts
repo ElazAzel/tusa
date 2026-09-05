@@ -77,8 +77,26 @@ export function useStageGame<T extends Record<string, unknown>>(
         reconnectTimer = setTimeout(connect, delay);
       };
     };
+    const handleWakeup = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible" && !disposed) {
+        void syncSnapshot();
+        if (esRef.current?.readyState === EventSource.CLOSED) {
+          clearTimeout(reconnectTimer);
+          connect();
+        }
+      }
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", handleWakeup);
+    if (typeof window !== "undefined") window.addEventListener("online", handleWakeup);
+
     connect();
-    return () => { disposed = true; clearTimeout(reconnectTimer); esRef.current?.close(); };
+    return () => {
+      disposed = true;
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", handleWakeup);
+      if (typeof window !== "undefined") window.removeEventListener("online", handleWakeup);
+      clearTimeout(reconnectTimer);
+      esRef.current?.close();
+    };
   }, [sessionId]);
 
   const setState = useCallback((updater: T | ((prev: T) => T)) => {

@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       adultOnly: body.adultOnly === true || body.adultOnly === "on",
     });
     if (result.kind === "created") { trackAnalytics(userId, "party_created", { partyId: result.party.id, category: body.category }); return NextResponse.json(result, { status: 201 }); }
-    const message = result.kind === "used" ? "Вы уже использовали этот промокод. Напишите администратору в WhatsApp: +7 700 020 47 91." : result.kind === "exhausted" ? "Этот промокод уже использован. Напишите администратору в WhatsApp: +7 700 020 47 91." : result.kind === "no_access" ? "Нужен промокод для создания туcы." : "Промокод не найден или отключён.";
+    const message = result.kind === "used" ? "Вы уже использовали этот промокод." : result.kind === "exhausted" ? "Этот промокод уже использован другими." : "Промокод не найден или отключён.";
     return NextResponse.json({ error: message, reason: result.kind }, { status: 409 });
   } catch {
     return NextResponse.json({ error: "Не удалось создать тусу. Попробуйте ещё раз." }, { status: 500 });

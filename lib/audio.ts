@@ -104,3 +104,27 @@ export function soundNotification() {
     { freq: 1175, dur: 0.12, delay: 0.3 },
   ], "triangle", 0.1);
 }
+
+export function soundCountdown() {
+  playTone(880, 0.08, "square", 0.09);
+}
+
+export function soundFanfare() {
+  playNotes([
+    { freq: 440, dur: 0.1, delay: 0 },
+    { freq: 554, dur: 0.1, delay: 0.1 },
+    { freq: 659, dur: 0.1, delay: 0.2 },
+    { freq: 880, dur: 0.35, delay: 0.3 },
+  ], "triangle", 0.16);
+}
+
+export function unlockAudio() {
+  if (typeof window === "undefined") return;
+  const unlock = () => {
+    getCtx();
+    document.removeEventListener("pointerdown", unlock);
+    document.removeEventListener("keydown", unlock);
+  };
+  document.addEventListener("pointerdown", unlock, { once: true });
+  document.addEventListener("keydown", unlock, { once: true });
+}

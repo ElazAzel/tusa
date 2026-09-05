@@ -30,6 +30,7 @@ const gameRequestSchema = z.object({
   clientMutationId: z.string().min(8).max(64).optional(),
   actionType: z.string().min(1).max(80).regex(/^[a-zA-Z0-9:_-]+$/).optional(),
   payload: z.unknown().optional(),
+  sandbox: z.boolean().optional(),
 }).strict();
 
 function apiError(message: string, status: number, details?: unknown) {
@@ -81,11 +82,28 @@ export async function POST(request: Request) {
       if (current.status !== "lobby") return apiError("Only a lobby can be started.", 409);
       const gameDefinition = getGameById(current.game);
       if (!gameDefinition) return apiError("Game definition was not found.", 400);
-      if (current.participants.length < gameDefinition.minPlayers) return apiError(`At least ${gameDefinition.minPlayers} players are required.`, 400);
-      const initialState = initialServerGameState(current.game, current.participants, current.config);
-      const session = await updateGameSession(body.sessionId, userId, { status: "active", state: initialState ?? undefined, expectedVersion: current.version });
+
+      if (!body.sandbox && current.participants.length < gameDefinition.minPlayers) {
+        return apiError(`At least ${gameDefinition.minPlayers} players are required.`, 400);
+      }
+      const participants = [...current.participants];
+      if (body.sandbox && current.participants.length < gameDefinition.minPlayers) {
+        const needed = gameDefinition.minPlayers - participants.length;
+        const botNames = ["Алекс (бот)", "Дана (бот)", "Макс (бот)", "София (бот)", "Тимур (бот)"];
+        for (let i = 0; i < needed; i++) {
+          participants.push(botNames[i] || `Бот ${i + 1}`);
+        }
+      }
+
+      const initialState = initialServerGameState(current.game, participants, current.config);
+      const session = await updateGameSession(body.sessionId, userId, {
+        status: "active",
+        state: initialState ?? undefined,
+        participants,
+        expectedVersion: current.version,
+      });
       if (!session) return apiError("Session version changed. Refresh and retry.", 409);
-      const responseSession = { ...session, participants: current.participants, createdBy: current.createdBy };
+      const responseSession = { ...session, participants, createdBy: current.createdBy };
       publish(`game:${body.sessionId}`, { type: "session:started", session: publicGameSession(responseSession) });
       publish(`party:${session.partyId}`, { type: "session:updated", session: publicGameSession(responseSession) });
       void recordOperationalEvent({ eventType: "game_start", durationMs: performance.now() - startedAt, dimensions: { game: current.game } }).catch(() => undefined);

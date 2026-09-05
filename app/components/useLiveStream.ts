@@ -114,9 +114,21 @@ export function useLiveStream<T = unknown>(channel: string | null) {
       handoffTimer = setTimeout(switchToSse, 5_000);
     };
 
+    const handleWakeup = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible" && !disposed) {
+        clearTimeout(reconnectTimer);
+        attempts = 0;
+        connectSse();
+      }
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", handleWakeup);
+    if (typeof window !== "undefined") window.addEventListener("online", handleWakeup);
+
     connectAbly();
     return () => {
       disposed = true;
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", handleWakeup);
+      if (typeof window !== "undefined") window.removeEventListener("online", handleWakeup);
       clearTimeout(reconnectTimer);
       clearTimeout(handoffTimer);
       eventSource?.close();

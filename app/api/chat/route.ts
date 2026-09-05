@@ -8,7 +8,7 @@ import { isManagedMediaUrl } from "@/lib/media";
 import { recordPlatformError } from "@/lib/observability";
 
 const messageSchema = z.object({
-  action: z.literal("react").optional(),
+  action: z.enum(["react", "float"]).optional(),
   partyId: z.string().uuid(),
   messageId: z.string().uuid().optional(),
   emoji: z.string().min(1).max(16).optional(),
@@ -57,6 +57,12 @@ export async function POST(request: Request) {
       if (!reactions) return NextResponse.json({ error: "Message not found." }, { status: 404 });
       publish(`chat:${body.partyId}`, { type: "reaction", messageId: body.messageId, reactions, partyId: body.partyId });
       return NextResponse.json({ reactions });
+    }
+
+    if (body.action === "float") {
+      if (!body.emoji) return NextResponse.json({ error: "emoji is required." }, { status: 400 });
+      publish(`party:${body.partyId}`, { type: "reaction:float", emoji: body.emoji, userId: actor.id });
+      return NextResponse.json({ ok: true });
     }
 
     if (body.type === "voice" && (!body.voiceUrl || !isManagedMediaUrl(body.voiceUrl))) return NextResponse.json({ error: "Voice message must use managed storage." }, { status: 400 });

@@ -4991,3 +4991,24 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
   text-decoration: underline;
   text-underline-offset: 4px;
 }
+
+@keyframes floatUpFade {
+  0% { transform: translateY(0) scale(0.6); opacity: 1; }
+  50% { transform: translateY(-70px) scale(1.2); opacity: 0.95; }
+  100% { transform: translateY(-160px) scale(1); opacity: 0; }
+}
+
+.floating-party-reaction {
+  user-select: none;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.active-game-role-toggle .role-toggle-btn {
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.active-game-role-toggle .role-toggle-btn:hover {
+  filter: brightness(0.95);
+}
+

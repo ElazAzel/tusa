@@ -1130,8 +1130,7 @@ export async function createPartyWithPromo(ownerId: string, input: { title: stri
   const profile = await getProfile(ownerId);
   if (!profile) return { kind: "invalid" as const };
   const hasPromoCode = !!input.promoCode?.trim();
-  if (!hasPromoCode && !profile.hasPartyCreation) return { kind: "no_access" as const };
-  if (!hasPromoCode && profile.hasPartyCreation) {
+  if (!hasPromoCode) {
     const partyId = randomUUID();
     const inviteCode = randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase();
     const partySlug = slug(input.title, partyId.replaceAll("-", ""));
@@ -1537,7 +1536,7 @@ export async function getPaymentAssignee(partyId: string) {
   return row ? { paidBy: String(row.paid_by || ""), displayName: String(row.display_name || "") } : { paidBy: "", displayName: "" };
 }
 
-export async function updateGameSession(sessionId: string, userId: string, updates: { status?: string; state?: Record<string, unknown>; expectedVersion?: number }) {
+export async function updateGameSession(sessionId: string, userId: string, updates: { status?: string; state?: Record<string, unknown>; expectedVersion?: number; participants?: string[] }) {
   const partyId = await getSessionPartyId(sessionId);
   if (!partyId) return null;
   await requirePartyMember(partyId, userId);
@@ -1545,20 +1544,23 @@ export async function updateGameSession(sessionId: string, userId: string, updat
   if (!access || String(access.created_by) !== userId) throw new Error("Only the session creator can update game state");
   const status = updates.status;
   const state = updates.state ? JSON.stringify(updates.state) : undefined;
+  const participants = updates.participants ? JSON.stringify(updates.participants) : undefined;
   const rows = updates.expectedVersion !== undefined
     ? await db()`UPDATE game_sessions SET
         ${status ? db()`status = ${status},` : db()``}
         ${state ? db()`state = ${state}::jsonb,` : db()``}
+        ${participants ? db()`participants = ${participants}::jsonb,` : db()``}
         version = version + 1, updated_at = NOW()
         WHERE id = ${sessionId} AND version = ${updates.expectedVersion} RETURNING *` as unknown as Record<string, unknown>[]
     : await db()`UPDATE game_sessions SET
         ${status ? db()`status = ${status},` : db()``}
         ${state ? db()`state = ${state}::jsonb,` : db()``}
+        ${participants ? db()`participants = ${participants}::jsonb,` : db()``}
         version = version + 1, updated_at = NOW()
         WHERE id = ${sessionId} RETURNING *` as unknown as Record<string, unknown>[];
   const [row] = rows;
   if (!row) return null;
-  return { id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, version: Number(row.version), createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession & { version: number };
+  return { id: String(row.id), partyId: String(row.party_id), game: String(row.game), status: String(row.status), config: row.config as Record<string, unknown>, state: row.state as Record<string, unknown>, version: Number(row.version), participants: (row.participants ?? []) as string[], createdAt: new Date(row.created_at as string | Date).toISOString() } as GameSession & { version: number; participants: string[] };
 }
 
 export async function addGameScore(sessionId: string, userId: string, score: number, metadata?: Record<string, unknown>) {
