@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
 import { DAILY_TRIVIA } from "../daily-trivia";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
 
 type GameVariant = "trivia" | "quiz";
 type State = {
@@ -17,12 +18,12 @@ type State = {
   answered: Record<string, boolean>;
   roundPoints?: Record<string, number>;
   players: string[];
-};
+} & DeckState;
 
 const ROUNDS = 5;
 
-function question(round: number, locale: "ru" | "en") {
-  const q = DAILY_TRIVIA[round % DAILY_TRIVIA.length];
+function question(round: number, locale: "ru" | "en", deck: { deckSeed?: string; deckStart?: number }) {
+  const q = deckItem(DAILY_TRIVIA, deckOf(deck), round);
   return { question: q.prompt[locale], options: q.options[locale], correct: q.correct };
 }
 
@@ -32,13 +33,15 @@ export function createTriviaDefinition(id: GameVariant, durationMs: number, fast
   version: 1,
   createInitialState(participants, config, now = Date.now()) {
     const locale = config.locale === "en" ? "en" : "ru";
+    const deck = initialDeck(config, id);
     return {
+      ...deck,
       engine: "server-v1",
       game: id,
       locale,
       phase: "question",
       round: 0,
-      ...question(0, locale),
+      ...question(0, locale, deck),
       deadline: now + durationMs,
       scores: {},
       answered: {},
@@ -72,7 +75,7 @@ export function createTriviaDefinition(id: GameVariant, durationMs: number, fast
       if (state.phase !== "result") return { state, changed: false, error: "Reveal the current answer first." };
       const round = state.round + 1;
       if (round >= ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
-      return { changed: true, state: { ...state, phase: "question", round, ...question(round, state.locale), deadline: ctx.now + durationMs, answered: {} } };
+      return { changed: true, state: { ...state, phase: "question", round, ...question(round, state.locale, state), contentUsed: round + 1, deadline: ctx.now + durationMs, answered: {} } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },

@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
 import { PICK_THREE_SETS } from "../pick-three-content";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
+
+export const PICK_THREE_ROUNDS = 5;
+const namesAt = (deck: { deckSeed?: string; deckStart?: number }, round: number) => [...deckItem(PICK_THREE_SETS, deckOf(deck), round)];
 
 type State = {
   engine: "server-v1";
@@ -11,7 +15,7 @@ type State = {
   names: string[];
   votes: Record<string, [number, number, number]>;
   players: string[];
-};
+} & DeckState;
 
 const assignmentSchema = z.object({ assignment: z.array(z.number().int().min(0).max(2)).length(3).refine((value) => new Set(value).size === 3, "Each action must be used once.") }).strict();
 
@@ -20,7 +24,8 @@ export default defineGame<State>({
   version: 1,
   createInitialState(participants, config) {
     const locale = config.locale === "en" ? "en" : "ru";
-    return { engine: "server-v1", game: "kissMarry", locale, phase: "vote", round: 0, names: [...PICK_THREE_SETS[0]], votes: {}, players: participants };
+    const deck = initialDeck(config, "kissMarry");
+    return { ...deck, engine: "server-v1", game: "kissMarry", locale, phase: "vote", round: 0, names: namesAt(deck, 0), votes: {}, players: participants };
   },
   commandSchemas: { vote: assignmentSchema, reveal: z.object({}).strict(), next: z.object({}).strict() },
   reducer(state, actionType, payload, ctx) {
@@ -40,8 +45,8 @@ export default defineGame<State>({
       if (ctx.actorId !== ctx.creatorId) return { state, changed: false, error: "Only the stage can advance the game." };
       if (state.phase !== "reveal") return { state, changed: false, error: "Reveal the results first." };
       const round = state.round + 1;
-      if (round >= PICK_THREE_SETS.length) return { changed: true, state: { ...state, phase: "finished" } };
-      return { changed: true, state: { ...state, phase: "vote", round, names: [...PICK_THREE_SETS[round]], votes: {}, players: ctx.participants } };
+      if (round >= PICK_THREE_ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
+      return { changed: true, state: { ...state, phase: "vote", round, names: namesAt(state, round), contentUsed: round + 1, votes: {}, players: ctx.participants } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },

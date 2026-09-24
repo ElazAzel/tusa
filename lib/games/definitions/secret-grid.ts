@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
+import { deckIndex, deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
+import { ALIAS_WORDS_EN } from "../content/alias-en";
+import { ALIAS_WORDS_RU } from "../content/alias-ru";
 
 type Color = "a" | "b" | "neutral" | "assassin";
 type State = {
@@ -20,21 +23,22 @@ type State = {
   scores: { a: number; b: number };
   winner: "a" | "b" | "";
   players: string[];
-};
+} & DeckState;
 
-const words = {
-  en: ["APPLE", "BEACH", "CANDLE", "DRAGON", "EAGLE", "FROST", "GARDEN", "HORIZON", "ISLAND", "JUNGLE", "KITCHEN", "LANTERN", "MIRROR", "NEBULA", "OCEAN", "PALM", "QUARTZ", "RIVER", "SHADOW", "TOWER", "UNITY", "VALLEY", "WINTER", "XENON"],
-  ru: ["ЯБЛОКО", "ПЛЯЖ", "СВЕЧА", "ДРАКОН", "ОРЁЛ", "МОРОЗ", "САД", "ГОРИЗОНТ", "ОСТРОВ", "ДЖУНГЛИ", "КУХНЯ", "ФОНАРЬ", "ЗЕРКАЛО", "ТУМАННОСТЬ", "ОКЕАН", "ПАЛЬМА", "КВАРЦ", "РЕКА", "ТЕНЬ", "БАШНЯ", "ЕДИНСТВО", "ДОЛИНА", "ЗИМА", "КСЕНОН"],
-} as const;
+const singleWords = (pool: readonly string[]) => pool.filter((word) => /^[\p{L}-]{3,12}$/u.test(word)).map((word) => word.toLocaleUpperCase());
+const words = { en: singleWords(ALIAS_WORDS_EN), ru: singleWords(ALIAS_WORDS_RU) };
+const BOARD_SIZE = 16;
 
 const colorDeck: Color[] = ["a", "a", "a", "a", "a", "a", "b", "b", "b", "b", "b", "b", "neutral", "neutral", "neutral", "assassin"];
 
-function rotate<T>(items: readonly T[], offset: number) {
-  return Array.from({ length: items.length }, (_, index) => items[(index + offset) % items.length]);
-}
-
-function board(locale: "ru" | "en", round: number) {
-  return { board: rotate(words[locale], round * 5).slice(0, 16), colors: rotate(colorDeck, round * 3) };
+function board(locale: "ru" | "en", round: number, deckSource: { deckSeed?: string; deckStart?: number }) {
+  const deck = deckOf(deckSource);
+  const colorOrder = { deckSeed: `${deck.deckSeed}:colors:${deck.deckStart}:${round}`, deckStart: 0 };
+  return {
+    board: Array.from({ length: BOARD_SIZE }, (_, index) => deckItem(words[locale], deck, round * BOARD_SIZE + index)),
+    colors: Array.from({ length: BOARD_SIZE }, (_, index) => colorDeck[deckIndex(BOARD_SIZE, colorOrder, index)]),
+    contentUsed: (round + 1) * BOARD_SIZE,
+  };
 }
 
 function remaining(state: State, team: "a" | "b") {
@@ -51,8 +55,9 @@ export default defineGame<State>({
   version: 1,
   createInitialState(participants, config) {
     const locale = config.locale === "en" ? "en" : "ru";
-    const grid = board(locale, 0);
-    return { engine: "server-v1", game: "codenames", locale, phase: "assign", round: 0, ...grid, revealed: Array(16).fill(false), activeTeam: "a", spymasterA: null, spymasterB: null, clue: "", clueNumber: 0, guessesRemaining: 0, scores: { a: 0, b: 0 }, winner: "", players: participants };
+    const deck = initialDeck(config, "codenames");
+    const grid = board(locale, 0, deck);
+    return { ...deck, engine: "server-v1", game: "codenames", locale, phase: "assign", round: 0, ...grid, revealed: Array(16).fill(false), activeTeam: "a", spymasterA: null, spymasterB: null, clue: "", clueNumber: 0, guessesRemaining: 0, scores: { a: 0, b: 0 }, winner: "", players: participants };
   },
   commandSchemas: {
     setSpymaster: z.object({ tm: z.enum(["a", "b"]) }).strict(),
@@ -96,7 +101,7 @@ export default defineGame<State>({
     if (actionType === "next") {
       if (ctx.actorId !== ctx.creatorId || state.phase !== "finished") return { state, changed: false, error: "Only the stage can start a rematch." };
       const round = state.round + 1;
-      const grid = board(state.locale, round);
+      const grid = board(state.locale, round, state);
       return { changed: true, state: { ...state, round, ...grid, phase: "clue", revealed: Array(16).fill(false), activeTeam: state.activeTeam === "a" ? "b" : "a", clue: "", clueNumber: 0, guessesRemaining: 0, winner: "", players: ctx.participants } };
     }
     return { state, changed: false, error: "Unsupported server game command." };

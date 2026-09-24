@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
 import { SPECTRUM_PAIRS } from "../spectrum-content";
+import { deckIndex, deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
+
+export const SPECTRUM_ROUNDS = 6;
 
 type State = {
   engine: "server-v1";
@@ -16,29 +19,32 @@ type State = {
   roundScore: number;
   teamScore: number;
   players: string[];
-};
+} & DeckState;
 
-function targetFor(round: number, now: number) {
-  return ((Math.abs(now) + round * 3) % 10) + 1;
+function targetFor(round: number, deck: { deckSeed?: string; deckStart?: number }) {
+  const source = deckOf(deck);
+  return deckIndex(10, { deckSeed: `${source.deckSeed}:target:${source.deckStart}:${round}`, deckStart: 0 }, 0) + 1;
 }
 
-function pairFor(round: number, locale: "ru" | "en") {
-  return [...SPECTRUM_PAIRS[locale][round % SPECTRUM_PAIRS[locale].length]];
+function pairFor(round: number, locale: "ru" | "en", deck: { deckSeed?: string; deckStart?: number }) {
+  return [...deckItem(SPECTRUM_PAIRS[locale], deckOf(deck), round)];
 }
 
 export default defineGame<State>({
   id: "wavelength",
   version: 1,
-  createInitialState(participants, config, now = Date.now()) {
+  createInitialState(participants, config) {
     const locale = config.locale === "en" ? "en" : "ru";
+    const deck = initialDeck(config, "wavelength");
     return {
+      ...deck,
       engine: "server-v1",
       game: "wavelength",
       locale,
       phase: "clue",
       round: 0,
-      pair: pairFor(0, locale),
-      target: targetFor(0, now),
+      pair: pairFor(0, locale, deck),
+      target: targetFor(0, deck),
       clue: "",
       guesses: {},
       average: null,
@@ -76,15 +82,16 @@ export default defineGame<State>({
     if (actionType === "next") {
       if (ctx.actorId !== ctx.creatorId || state.phase !== "reveal") return { state, changed: false, error: "Only the stage can advance after reveal." };
       const round = state.round + 1;
-      if (round >= SPECTRUM_PAIRS[state.locale].length) return { changed: true, state: { ...state, phase: "finished" } };
+      if (round >= SPECTRUM_ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
       return {
         changed: true,
         state: {
           ...state,
           phase: "clue",
           round,
-          pair: pairFor(round, state.locale),
-          target: targetFor(round, ctx.now),
+          pair: pairFor(round, state.locale, state),
+          target: targetFor(round, state),
+          contentUsed: round + 1,
           clue: "",
           guesses: {},
           average: null,

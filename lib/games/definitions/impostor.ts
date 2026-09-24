@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
-import { IMPOSTOR_WORDS } from "../impostor-content";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
+import { ALIAS_WORDS_EN } from "../content/alias-en";
+import { ALIAS_WORDS_RU } from "../content/alias-ru";
+
+const WORDS = { ru: ALIAS_WORDS_RU, en: ALIAS_WORDS_EN };
+const wordAt = (locale: "ru" | "en", deck: { deckSeed?: string; deckStart?: number }, round: number) => deckItem(WORDS[locale], deckOf(deck), round);
 
 type State = {
   engine: "server-v1";
@@ -17,7 +22,7 @@ type State = {
   outcome: string;
   scores: Record<string, number>;
   players: string[];
-};
+} & DeckState;
 
 const MAX_ROUNDS = 5;
 
@@ -26,13 +31,15 @@ export default defineGame<State>({
   version: 1,
   createInitialState(participants, config, now = Date.now()) {
     const locale = config.locale === "en" ? "en" : "ru";
+    const deck = initialDeck(config, "impostor");
     return {
+      ...deck,
       engine: "server-v1",
       game: "impostor",
       locale,
       phase: "clue",
       round: 0,
-      word: IMPOSTOR_WORDS[locale][0],
+      word: wordAt(locale, deck, 0),
       impostorId: participants[Math.abs(now) % Math.max(1, participants.length)] ?? "",
       clues: {},
       votes: {},
@@ -67,7 +74,11 @@ export default defineGame<State>({
       if (ctx.actorId !== state.impostorId) return { state, changed: false, error: "Only the impostor can guess the word." };
       const guess = (payload as { word: string }).word.trim();
       const correct = guess.toLocaleLowerCase(state.locale) === state.word.toLocaleLowerCase(state.locale);
-      if (!correct) return { changed: true, state: { ...state, guess } };
+      if (!correct) {
+        const scores = { ...state.scores };
+        ctx.participants.filter((id) => id !== state.impostorId).forEach((id) => { scores[id] = (scores[id] ?? 0) + 1; });
+        return { changed: true, state: { ...state, phase: "reveal", guess, accusedId: state.impostorId, outcome: "crew", scores } };
+      }
       return { changed: true, state: { ...state, phase: "reveal", guess, outcome: "impostor", scores: { ...state.scores, [state.impostorId]: (state.scores[state.impostorId] ?? 0) + 3 } } };
     }
     if (actionType === "vote") {
@@ -93,7 +104,7 @@ export default defineGame<State>({
       if (ctx.actorId !== ctx.creatorId || state.phase !== "reveal") return { state, changed: false, error: "Only the stage can start the next round." };
       const round = state.round + 1;
       if (round >= MAX_ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
-      return { changed: true, state: { ...state, phase: "clue", round, word: IMPOSTOR_WORDS[state.locale][round % IMPOSTOR_WORDS[state.locale].length], impostorId: ctx.participants[(Math.abs(ctx.now) + round) % Math.max(1, ctx.participants.length)] ?? "", clues: {}, votes: {}, guess: "", accusedId: "", outcome: "" } };
+      return { changed: true, state: { ...state, phase: "clue", round, word: wordAt(state.locale, state, round), contentUsed: round + 1, impostorId: ctx.participants[(Math.abs(ctx.now) + round) % Math.max(1, ctx.participants.length)] ?? "", clues: {}, votes: {}, guess: "", accusedId: "", outcome: "" } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },

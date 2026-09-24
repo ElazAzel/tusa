@@ -54,4 +54,25 @@ export function deckItem<T>(pool: readonly T[], deck: ContentDeck, position: num
   return pool[deckIndex(pool.length, deck, position)];
 }
 
+const CONTENT_FAMILIES: ReadonlyArray<readonly string[]> = [
+  ["trivia", "quiz", "brainBurst"],
+  ["alias", "headsup", "impostor"],
+  ["charades", "crocodil"],
+  ["guessSong", "musicQuiz"],
+];
+
+export function contentFamily(game: string): readonly string[] {
+  return CONTENT_FAMILIES.find((family) => family.includes(game)) ?? [game];
+}
+
 export const DECK_STATE_KEYS = ["deckSeed", "deckStart"] as const;
+
+export type DeckState = { deckSeed: string; deckStart: number; contentUsed: number };
+
+export function deckOf(state: { deckSeed?: string; deckStart?: number }): ContentDeck {
+  return { deckSeed: state.deckSeed || "default", deckStart: Number.isInteger(state.deckStart) ? Number(state.deckStart) : 0 };
+}
+
+export function initialDeck(config: Record<string, unknown>, game: string): DeckState {
+  return { ...readDeck(config, game), contentUsed: 1 };
+}

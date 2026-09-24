@@ -2338,9 +2338,9 @@ export async function deleteExpiredGalleryRows(mediaUrls: string[]) {
   return rows.length;
 }
 
-export async function getContentConsumed(partyId: string, game: string, excludeSessionId: string) {
+export async function getContentConsumed(partyId: string, games: readonly string[], excludeSessionId: string) {
   await ensurePartySchema();
   const [row] = await db()`SELECT COALESCE(SUM(CASE WHEN (state->>'contentUsed') ~ '^[0-9]+$' THEN (state->>'contentUsed')::int ELSE 0 END), 0)::int AS used
-    FROM game_sessions WHERE party_id = ${partyId} AND game = ${game} AND id <> ${excludeSessionId}` as unknown as { used: number }[];
+    FROM game_sessions WHERE party_id = ${partyId} AND game = ANY(${[...games]}::text[]) AND id <> ${excludeSessionId}` as unknown as { used: number }[];
   return Number(row?.used ?? 0);
 }

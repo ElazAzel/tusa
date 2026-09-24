@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
 import { FAKE_FACT_QUESTIONS } from "../fake-fact-content";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
+
+export const FAKE_FACT_ROUNDS = 6;
+const questionAt = (deck: { deckSeed?: string; deckStart?: number }, round: number) => deckItem(FAKE_FACT_QUESTIONS, deckOf(deck), round);
 
 type State = {
   engine: "server-v1";
@@ -8,6 +12,7 @@ type State = {
   locale: "ru" | "en";
   phase: "answer" | "vote" | "reveal" | "finished";
   round: number;
+  question: string;
   truth: string;
   submissions: Record<string, string>;
   choices: Array<{ id: string; text: string }>;
@@ -16,20 +21,23 @@ type State = {
   votes: Record<string, string>;
   scores: Record<string, number>;
   players: string[];
-};
+} & DeckState;
 
 export default defineGame<State>({
   id: "fibbage",
   version: 1,
   createInitialState(participants, config) {
     const locale = config.locale === "en" ? "en" : "ru";
-    const q = FAKE_FACT_QUESTIONS[0][locale];
+    const deck = initialDeck(config, "fibbage");
+    const q = questionAt(deck, 0)[locale];
     return {
+      ...deck,
       engine: "server-v1",
       game: "fibbage",
       locale,
       phase: "answer",
       round: 0,
+      question: q.question,
       truth: q.truth,
       submissions: {},
       choices: [],
@@ -90,9 +98,9 @@ export default defineGame<State>({
     if (actionType === "next") {
       if (ctx.actorId !== ctx.creatorId || state.phase !== "reveal") return { state, changed: false, error: "Only the stage can advance after reveal." };
       const round = state.round + 1;
-      if (round >= FAKE_FACT_QUESTIONS.length) return { changed: true, state: { ...state, phase: "finished" } };
-      const q = FAKE_FACT_QUESTIONS[round][state.locale];
-      return { changed: true, state: { ...state, phase: "answer", round, truth: q.truth, submissions: {}, choices: [], choiceOwners: {}, truthChoiceId: "", votes: {} } };
+      if (round >= FAKE_FACT_ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
+      const q = questionAt(state, round)[state.locale];
+      return { changed: true, state: { ...state, phase: "answer", round, question: q.question, truth: q.truth, contentUsed: round + 1, submissions: {}, choices: [], choiceOwners: {}, truthChoiceId: "", votes: {} } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },

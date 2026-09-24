@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
 import { PUNCHLINE_PROMPTS } from "../punchline-content";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
+
+export const PUNCHLINE_ROUNDS = 6;
+const promptAt = (locale: "ru" | "en", deck: { deckSeed?: string; deckStart?: number }, round: number) => deckItem(PUNCHLINE_PROMPTS[locale], deckOf(deck), round);
 
 type State = {
   engine: "server-v1";
@@ -13,20 +17,22 @@ type State = {
   votes: Record<string, string>;
   scores: Record<string, number>;
   players: string[];
-};
+} & DeckState;
 
 export default defineGame<State>({
   id: "quiplash",
   version: 1,
   createInitialState(participants, config) {
     const locale = config.locale === "en" ? "en" : "ru";
+    const deck = initialDeck(config, "quiplash");
     return {
+      ...deck,
       engine: "server-v1",
       game: "quiplash",
       locale,
       phase: "answer",
       round: 0,
-      prompt: PUNCHLINE_PROMPTS[locale][0],
+      prompt: promptAt(locale, deck, 0),
       submissions: {},
       votes: {},
       scores: {},
@@ -68,8 +74,8 @@ export default defineGame<State>({
     if (actionType === "next") {
       if (ctx.actorId !== ctx.creatorId || state.phase !== "reveal") return { state, changed: false, error: "Only the stage can advance after reveal." };
       const round = state.round + 1;
-      if (round >= PUNCHLINE_PROMPTS[state.locale].length) return { changed: true, state: { ...state, phase: "finished" } };
-      return { changed: true, state: { ...state, phase: "answer", round, prompt: PUNCHLINE_PROMPTS[state.locale][round], submissions: {}, votes: {} } };
+      if (round >= PUNCHLINE_ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
+      return { changed: true, state: { ...state, phase: "answer", round, prompt: promptAt(state.locale, state, round), contentUsed: round + 1, submissions: {}, votes: {} } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },

@@ -5160,3 +5160,8 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 .chat-input-wrap .chat-emoji-btn:focus-visible { transform: translateY(-50%); }
 .local-auth-password button:hover,
 .local-auth-password button:active { transform: translateY(-50%); }
+
+.bunker-card { display: grid; gap: 8px; margin: 12px 0; text-align: left; }
+.bunker-card > div { border: 3px solid var(--black); background: var(--white, #fff); box-shadow: 4px 4px 0 var(--black); padding: 8px 12px; }
+.bunker-card dt { font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--black); }
+.bunker-card dd { margin: 2px 0 0; font-weight: 700; color: var(--black); }

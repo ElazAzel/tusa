@@ -5,6 +5,7 @@ import { isBotId } from "./bot-names";
 export { botDisplayName, isBotId, sandboxBotIds } from "./bot-names";
 
 const PASSIVE_COMMANDS = new Set(["join", "draw"]);
+const RISKY_COMMANDS = new Set(["impostor:guess", "spyfall:spyGuess"]);
 const MAX_AUTOPILOT_PASSES = 40;
 
 function record(value: unknown): Record<string, unknown> {
@@ -22,6 +23,8 @@ export function botCandidatePayloads(botId: string, state: Record<string, unknow
   const word = `${letter}${letter ? "" : "бот"}${"абвгдежзик"[botNumber % 10]}${"ромтлнкс"[botNumber % 8]}${botNumber}`;
   const revealed = Array.isArray(state.revealed) ? state.revealed as unknown[] : [];
   const unrevealed = revealed.map((value, idx) => value ? -1 : idx).filter((idx) => idx >= 0);
+  const choiceOwners = record(state.choiceOwners);
+  const choices = (Array.isArray(state.choices) ? state.choices as unknown[] : []).map((choice) => String(record(choice).id ?? "")).filter((id) => id && choiceOwners[id] !== botId);
   const payloads: Record<string, unknown>[] = [
     { index: botNumber % 2 },
     { index: 0 },
@@ -39,6 +42,7 @@ export function botCandidatePayloads(botId: string, state: Record<string, unknow
     { wd: `слово${botNumber}`, nm: 1 },
     ...unrevealed.slice(0, 3).map((idx) => ({ idx })),
     ...targets.map((target) => ({ target })),
+    ...choices.slice(0, 3).map((target) => ({ target })),
     ...submissions.slice(0, 3).map((winner) => ({ winner })),
   ];
   for (const card of hand.slice(0, 10)) {
@@ -57,7 +61,7 @@ export function runBotAutopilot(input: { game: string; state: Record<string, unk
   const bots = input.participants.filter(isBotId);
   const actions: { botId: string; actionType: string }[] = [];
   if (!bots.length) return { state: input.state, changed: false, actions };
-  const commands = commandTypesFor(input.game).sort((a, b) => Number(PASSIVE_COMMANDS.has(a)) - Number(PASSIVE_COMMANDS.has(b)));
+  const commands = commandTypesFor(input.game).filter((type) => !RISKY_COMMANDS.has(`${input.game}:${type}`)).sort((a, b) => Number(PASSIVE_COMMANDS.has(a)) - Number(PASSIVE_COMMANDS.has(b)));
   let state = input.state;
   for (let pass = 0; pass < MAX_AUTOPILOT_PASSES; pass += 1) {
     const actedBefore = actions.length;

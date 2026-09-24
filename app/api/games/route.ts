@@ -13,6 +13,7 @@ import { publish } from "@/lib/live";
 import { resolveActor } from "@/lib/guest-session";
 import { deriveScore } from "@/lib/games/sdk";
 import { parseGameCommand } from "@/lib/games/commands";
+import { contentFamily } from "@/lib/games/content-deck";
 import { applyServerGameCommand, initialServerGameState, isServerGameState } from "@/lib/games/engine";
 import { sanitizeSdkState } from "@/lib/games/sdk";
 import { isBotId, runBotAutopilot, sandboxBotIds } from "@/lib/games/bots";
@@ -94,8 +95,9 @@ export async function POST(request: Request) {
       }
       const participants = [...current.participants];
       if (body.sandbox && participants.length < gameDefinition.minPlayers) participants.push(...sandboxBotIds(gameDefinition.minPlayers - participants.length));
-      const deckStart = await getContentConsumed(current.partyId, current.game, current.id);
-      const createdState = initialServerGameState(current.game, participants, { ...current.config, deckSeed: contentDeckSeed(current.partyId, current.game), deckStart });
+      const family = contentFamily(current.game);
+      const deckStart = await getContentConsumed(current.partyId, family, current.id);
+      const createdState = initialServerGameState(current.game, participants, { ...current.config, deckSeed: contentDeckSeed(current.partyId, family[0]), deckStart });
       const initialState = createdState ? runBotAutopilot({ game: current.game, state: createdState, participants, creatorId: userId }).state : null;
       const session = await updateGameSession(body.sessionId, userId, {
         status: "active",

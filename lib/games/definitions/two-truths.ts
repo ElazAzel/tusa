@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
 import { TWO_TRUTHS_ROUNDS } from "../two-truths-content";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
+
+export const TWO_TRUTHS_ROUND_COUNT = 5;
+const roundAt = (deck: { deckSeed?: string; deckStart?: number }, round: number) => deckItem(TWO_TRUTHS_ROUNDS, deckOf(deck), round);
 
 type State = {
   engine: "server-v1";
@@ -12,15 +16,17 @@ type State = {
   lie: number;
   votes: Record<string, number>;
   players: string[];
-};
+} & DeckState;
 
 export default defineGame<State>({
   id: "twoTruths",
   version: 1,
   createInitialState(participants, config) {
     const locale = config.locale === "en" ? "en" : "ru";
-    const content = TWO_TRUTHS_ROUNDS[0];
+    const deck = initialDeck(config, "twoTruths");
+    const content = roundAt(deck, 0);
     return {
+      ...deck,
       engine: "server-v1",
       game: "twoTruths",
       locale,
@@ -52,9 +58,9 @@ export default defineGame<State>({
       if (ctx.actorId !== ctx.creatorId) return { state, changed: false, error: "Only the stage can advance the game." };
       if (state.phase !== "reveal") return { state, changed: false, error: "Reveal the lie first." };
       const round = state.round + 1;
-      if (round >= TWO_TRUTHS_ROUNDS.length) return { changed: true, state: { ...state, phase: "finished" } };
-      const content = TWO_TRUTHS_ROUNDS[round];
-      return { changed: true, state: { ...state, phase: "vote", round, statements: content[state.locale], lie: content.lie, votes: {} } };
+      if (round >= TWO_TRUTHS_ROUND_COUNT) return { changed: true, state: { ...state, phase: "finished" } };
+      const content = roundAt(state, round);
+      return { changed: true, state: { ...state, phase: "vote", round, statements: [...content[state.locale]], lie: content.lie, contentUsed: round + 1, votes: {} } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },
