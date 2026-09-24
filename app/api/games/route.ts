@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import {
   addGameAction, addGameScore, createGameSession, getActiveGameSessions, getGameScores, getGameActionByMutationId,
   getGameSessionById, getPendingGameActions, joinGameSession,
   leaveGameSession, requirePartyMember, updateGameSession, trackAnalytics, grantEngagementReward,
-  addPassXp, trackQuestProgress, saveHighlight,
+  addPassXp, trackQuestProgress, saveHighlight, getContentConsumed,
 } from "@/lib/parties";
 import { getGameById, isGameId } from "@/lib/games/manifest";
 import { publish } from "@/lib/live";
@@ -33,6 +33,11 @@ const gameRequestSchema = z.object({
   payload: z.unknown().optional(),
   sandbox: z.boolean().optional(),
 }).strict();
+
+function contentDeckSeed(partyId: string, game: string) {
+  const secret = process.env.LOCAL_AUTH_SECRET || process.env.GUEST_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || "tusa-local-content-deck";
+  return createHmac("sha256", secret).update(`content-deck:${partyId}:${game}`).digest("base64url");
+}
 
 function apiError(message: string, status: number, details?: unknown) {
   return NextResponse.json({ error: message, ...(details ? { details } : {}) }, { status });
@@ -89,7 +94,8 @@ export async function POST(request: Request) {
       }
       const participants = [...current.participants];
       if (body.sandbox && participants.length < gameDefinition.minPlayers) participants.push(...sandboxBotIds(gameDefinition.minPlayers - participants.length));
-      const createdState = initialServerGameState(current.game, participants, current.config);
+      const deckStart = await getContentConsumed(current.partyId, current.game, current.id);
+      const createdState = initialServerGameState(current.game, participants, { ...current.config, deckSeed: contentDeckSeed(current.partyId, current.game), deckStart });
       const initialState = createdState ? runBotAutopilot({ game: current.game, state: createdState, participants, creatorId: userId }).state : null;
       const session = await updateGameSession(body.sessionId, userId, {
         status: "active",
@@ -274,6 +280,8 @@ function sanitizeControllerState(game: string, rawState: Record<string, unknown>
   const publicView = userId === PUBLIC_VIEWER;
   const sdkViewer = !publicView && userId === creatorId && STAGE_DEVICE_GAMES.has(game) ? "__stage__" : userId;
   const state = sanitizeSdkState(game, structuredClone(rawState), sdkViewer);
+  delete state.deckSeed;
+  delete state.deckStart;
   const phase = String(state.phase ?? "");
   if ((game === "trivia" || game === "quiz" || game === "brainBurst") && phase === "question") { state.correct = -1; delete state.roundPoints; }
   if (game === "twoTruths" && phase === "vote") state.lie = -1;

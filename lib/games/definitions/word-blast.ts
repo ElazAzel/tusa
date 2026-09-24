@@ -1,10 +1,14 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
+import { deckItem, readDeck } from "../content-deck";
+import { ALIAS_WORDS_EN } from "../content/alias-en";
+import { ALIAS_WORDS_RU } from "../content/alias-ru";
 
-const words = {
-  en: ["Karaoke", "Road trip", "Playlist", "Volcano", "Beshbarmak", "Disco ball"],
-  ru: ["Караоке", "Поездка", "Плейлист", "Вулкан", "Бешбармак", "Диско-шар"],
-};
+const words = { en: ALIAS_WORDS_EN, ru: ALIAS_WORDS_RU };
+
+function wordAt(state: Pick<State, "locale" | "deckSeed" | "deckStart">, position: number) {
+  return deckItem(words[state.locale], { deckSeed: state.deckSeed, deckStart: state.deckStart }, position);
+}
 
 type State = {
   engine: "server-v1";
@@ -17,6 +21,9 @@ type State = {
   deadline: number;
   score: number;
   players: string[];
+  deckSeed: string;
+  deckStart: number;
+  contentUsed: number;
 };
 
 export default defineGame<State>({
@@ -24,17 +31,20 @@ export default defineGame<State>({
   version: 1,
   createInitialState(players, config) {
     const locale = config.locale === "en" ? "en" : "ru";
+    const deck = readDeck(config, "alias");
     return {
       engine: "server-v1",
       game: "alias",
       locale,
       phase: "lobby",
       round: 0,
-      word: words[locale][0],
+      word: wordAt({ locale, ...deck }, 0),
       wordIndex: 0,
       deadline: 0,
       score: 0,
       players,
+      ...deck,
+      contentUsed: 1,
     };
   },
   commandSchemas: {
@@ -47,17 +57,20 @@ export default defineGame<State>({
     if (action === "start") {
       if (context.actorId !== context.creatorId) return { state, changed: false, error: "Only the stage can start." };
       if (state.phase !== "lobby" && state.phase !== "finished") return { state, changed: false };
-      return { changed: true, state: { ...state, phase: "play", deadline: context.now + 60_000 } };
+      const wordIndex = state.phase === "finished" ? state.wordIndex + 1 : state.wordIndex;
+      return { changed: true, state: { ...state, phase: "play", round: state.phase === "finished" ? state.round + 1 : state.round, wordIndex, word: wordAt(state, wordIndex), contentUsed: wordIndex + 1, deadline: context.now + 60_000 } };
     }
     if (action === "correct" || action === "skip") {
       if (context.actorId !== context.creatorId || state.phase !== "play") return { state, changed: false, error: "Only the stage can control the round." };
-      const wordIndex = (state.wordIndex + 1) % words[state.locale].length;
+      if (context.now > state.deadline + 2_000) return { state, changed: false, error: "The round is over." };
+      const wordIndex = state.wordIndex + 1;
       return {
         changed: true,
         state: {
           ...state,
           wordIndex,
-          word: words[state.locale][wordIndex],
+          word: wordAt(state, wordIndex),
+          contentUsed: wordIndex + 1,
           score: action === "correct" ? state.score + 1 : state.score,
         },
       };
@@ -69,7 +82,9 @@ export default defineGame<State>({
     return { state, changed: false, error: "Unsupported server game command." };
   },
   sanitizeForViewer(state, viewer) {
-    return viewer === "__stage__" ? state : { ...state, word: "" };
+    const { deckSeed: _seed, deckStart: _start, ...visible } = state;
+    void _seed; void _start;
+    return (viewer === "__stage__" ? visible : { ...visible, word: "" }) as State;
   },
   deriveScore: (state) => state.score,
 });
