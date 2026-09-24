@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
+import { localizePartyCategory } from "@/lib/i18n";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -107,6 +108,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   const chatStreamRef = useRef<HTMLDivElement>(null);
   const chatAtBottomRef = useRef(true);
   const gameRecoveryRef = useRef(false);
+  const gameSessionRef = useRef<string | null>(null);
   const processedPartyEventsRef = useRef(0);
 
   const anyModalOpen = Boolean(moreOpen || roomPickerGame || gameResults || editing || qrModalOpen);
@@ -156,6 +158,9 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/join/${party.inviteCode}` : "";
   const filteredMembers = rsvpFilter === "all" ? members : members.filter((m) => m.rsvpStatus === rsvpFilter);
   const activeSession = activeSessions.find((s) => s.id === gameSession);
+  useEffect(() => { gameSessionRef.current = gameSession; }, [gameSession]);
+  const invitingSession = gameSession ? undefined : activeSessions.find((s) => (s.status === "lobby" || s.status === "active") && s.createdBy !== actorId && isGameId(s.game));
+  const invitingGame = invitingSession ? gameCatalogue.find((g) => g.id === invitingSession.game) : undefined;
   const gameRooms = roomPickerGame ? activeSessions.filter((session) => session.game === roomPickerGame) : [];
   const gameRole = useGameRole(activeSession?.participants ?? [], actorId, activeSession?.status, preferredRole, activeSession?.createdBy);
 
@@ -330,6 +335,12 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       if (ev.type === "session:updated" && ev.session) {
         const s = ev.session as GameSession & { participants: string[] };
         setActiveSessions((prev) => prev.map((p) => p.id === s.id ? s : p));
+        if (s.status === "active" && !gameSessionRef.current && s.participants?.includes(actorId) && isGameId(s.game)) {
+          gameSessionRef.current = s.id;
+          setGameSession(s.id);
+          setSelectedGame(s.game as GameId);
+          setTab("games");
+        }
       }
       if (ev.type === "session:completed" && ev.sessionId) {
         setActiveSessions((prev) => prev.filter((p) => p.id !== ev.sessionId));
@@ -681,7 +692,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       <nav className="demo-nav" aria-label={t("roomSpace")}>
         {shellNav.map((item) => <button aria-label={item.label} aria-current={(item.id === tab || (item.id === "more" && moreOpen)) ? "page" : undefined} className={(item.id === tab || (item.id === "more" && moreOpen)) ? "active" : ""} key={item.id} onClick={() => openShellSection(item.id)} type="button"><span className="material-symbols-rounded" aria-hidden="true">{item.icon}</span><span>{item.label}</span>{item.id === "chat" && unreadMessages > 0 && <i>{unreadMessages}</i>}</button>)}
       </nav>
-      <Link className="live-party-back" href="/app"><span className="material-symbols-rounded">arrow_back</span>{t("backToParties")}</Link>
+      <Link className="live-party-back" href="/app"><span className="material-symbols-rounded">arrow_back</span>{String(t("backToParties")).replace(/^←\s*/, "")}</Link>
     </aside>
 
     <section className="demo-workspace live-party-workspace">
@@ -696,6 +707,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
 
       <div className="demo-content live-party-content" key={tab}>
         {error && <p className="form-error" role="alert">{error}</p>}
+        {invitingSession && invitingGame && <div className="game-invite-banner" role="status"><span className="material-symbols-rounded" aria-hidden="true">{invitingGame.icon}</span><p><b>{invitingSession.status === "active" ? t("gameInviteLive") : t("gameInviteLobby")}</b> {t(invitingGame.titleKey)}</p><button className="demo-action demo-action--lime" onClick={() => { setTab("games"); joinSession(invitingSession.id, invitingSession.game); }} type="button">{t("gameInviteJoin")}</button></div>}
         {tab === "space" && <section className="demo-hero-card live-party-hero">
           <div>
             <span className="demo-kicker">{party.adultOnly ? t("roomAdult") : t("roomFamily")}</span>
@@ -882,7 +894,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       </div>
     </nav>
     {shellNotice && <div className="demo-toast" role="status"><span className="material-symbols-rounded">check_circle</span>{shellNotice}</div>}
-    {editing && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(false); }}><section aria-modal="true" className="demo-modal" role="dialog"><span className="demo-kicker">{t("eventHubSettingsTitle")}</span><h2>{party.title}</h2><form onSubmit={saveEdit}><label>{t("createName")}<input name="title" defaultValue={party.title} required /></label><EventDateTimeFields dateLabel={t("createDate")} timeLabel={t("createTime")} dateDefault={eventDateInputValue(party.date)} timeDefault={party.time} /><label>{t("createVenue")}<input name="venue" defaultValue={party.venue} required /></label><label>{t("createFormat")}<span className="brand-select"><select name="category" defaultValue={party.category}><option>House Party</option><option>After-work</option><option>Trip</option><option>Birthday</option><option>Game night</option></select></span></label><label>{t("createDetails")}<textarea name="description" defaultValue={party.description} /></label><button type="submit">{t("profileSave")}</button></form></section></div>}
+    {editing && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(false); }}><section aria-modal="true" className="demo-modal" role="dialog"><span className="demo-kicker">{t("eventHubSettingsTitle")}</span><h2>{party.title}</h2><form onSubmit={saveEdit}><label>{t("createName")}<input name="title" defaultValue={party.title} required /></label><EventDateTimeFields dateLabel={t("createDate")} timeLabel={t("createTime")} dateDefault={eventDateInputValue(party.date)} timeDefault={party.time} /><label>{t("createVenue")}<input name="venue" defaultValue={party.venue} required /></label><label>{t("createFormat")}<span className="brand-select"><select name="category" defaultValue={localizePartyCategory(party.category, locale)}>{[...new Set([localizePartyCategory(party.category, locale), t("createFormatHouse"), "After-work", t("createFormatTrip"), t("createFormatBirthday"), t("createFormatGame")].filter(Boolean))].map((option) => <option key={option}>{option}</option>)}</select></span></label><label>{t("createDetails")}<textarea name="description" defaultValue={party.description} /></label><button type="submit">{t("profileSave")}</button></form></section></div>}
     {qrModalOpen && (
       <div className="demo-modal-backdrop qr-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setQrModalOpen(false); }}>
         <section aria-labelledby="qr-modal-title" aria-modal="true" className="demo-modal qr-modal" role="dialog">

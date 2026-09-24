@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 import type { KoinsTransaction, PartyBet } from "@/lib/parties";
 
+const REWARD_LABELS = { photo: "rewardsPhoto", chat: "rewardsChat", game_play: "rewardsGamePlay", game_win: "rewardsGameWin", streak: "rewardsStreak", friend_add: "rewardsFriendAdd" } as const;
 type RewardStats = Record<string, { count: number; total: number; daily: number; amount: number }>;
 
 const REWARD_KEYS = ["photo", "chat", "game_play", "game_win", "streak", "friend_add"] as const;
@@ -96,9 +97,9 @@ export default function Koins({ partyId, actorId, isOwner = false, refreshKey = 
         const remaining = stat ? stat.daily - stat.count : 0;
         return <div className="reward-card" key={key}>
           <span className="material-symbols-rounded reward-icon">{key === "photo" ? "photo_camera" : key === "chat" ? "chat" : key === "game_play" ? "sports_esports" : key === "game_win" ? "emoji_events" : key === "streak" ? "local_fire_department" : "person_add"}</span>
-          <strong>{t(`rewards${key.charAt(0).toUpperCase() + key.slice(1).replace("_", "")}` as never)}</strong>
+          <strong>{t(REWARD_LABELS[key])}</strong>
           <span className="reward-amount">+{stat?.amount ?? 0} KOINS</span>
-          <span className="reward-stat">{stat?.count ?? 0}{t("rewardsEarned")} · {remaining > 0 ? `${remaining}${t("rewardsDaily")}` : t("rewardsLimit")}</span>
+          <span className="reward-stat">{stat?.count ?? 0} {t("rewardsEarned")} · {!stat || remaining > 0 ? t("rewardsLeft").replace("{n}", String(stat ? remaining : "…")) : t("rewardsLimit")}</span>
         </div>;
       })}
     </div>

@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
+import { localizePartyCategory } from "@/lib/i18n";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Party, UserProfile } from "@/lib/parties";
@@ -87,7 +88,7 @@ export default function UserDashboard({ profile, parties, emailVerified }: { pro
       </div>
       {parties.length ? <div className="user-party-grid" ref={cardsRef}>
         {parties.map((party, index) => <article className="user-party-card" key={party.id} style={{ animationDelay: `${index * 80}ms` }}>
-          <span className="party-category">{party.category}</span>
+          <span className="party-category">{localizePartyCategory(party.category, locale)}</span>
           <h3>{party.title}</h3>
           <p><Icon name="calendar_month" /> {formatEventDate(party.date, locale)} · {party.time}</p>
           <p><Icon name="location_on" /> {party.venue}</p>

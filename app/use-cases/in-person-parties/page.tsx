@@ -23,7 +23,7 @@ export default async function InPersonPartiesPage() {
     <main className="legal-page">
       <div className="legal-container">
         <Link href="/" className="legal-back">
-          {t("backToParties")}
+          {t("notFoundHome")}
         </Link>
 
         <h1>Party Games for In-Person Gatherings</h1>

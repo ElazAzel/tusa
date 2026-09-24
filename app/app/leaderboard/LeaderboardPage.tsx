@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
+import ProductHeader from "@/app/components/ProductHeader";
 import type { UserProfile } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
 
@@ -12,14 +13,11 @@ type LeaderEntry = { userId: string; displayName: string; imageUrl: string; xp: 
 export default function LeaderboardPage({ profile, leaders }: { profile: UserProfile; leaders: LeaderEntry[] }) {
   const { t } = useLocale();
   return <main className="user-app-page">
-    <header className="user-app-header">
-      <Link href="/app" className="user-app-brand">TUSA<span>.game</span></Link>
-      <nav>
+    <ProductHeader className="user-app-header" showLocale={false}>
         <Link href="/app">{t("dashMy")}</Link>
         <Link href="/app/friends">{t("friendsTitle")}</Link>
         <Link href="/app/profile">{t("profile")}</Link>
-      </nav>
-    </header>
+    </ProductHeader>
     <div className="leaderboard-page">
       <h1><Icon name="leaderboard" />{t("leaderboardTitle")}</h1>
       <div className="leaderboard-list">

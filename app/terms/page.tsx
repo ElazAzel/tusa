@@ -14,5 +14,5 @@ export default async function TermsPage() {
   const requestHeaders = await headers();
   const locale = normalizeLocale(store.get("tusa_locale")?.value ?? (await requestHeaders).get("accept-language"));
   const t = (key: string) => copy(locale, key as never);
-  return <main className="legal-page"><div className="legal-container"><Link href="/" className="legal-back">{t("backToParties")}</Link><h1>{t("termsTitle")}</h1><section><h2>{t("termsUse")}</h2><p>{t("termsUseText")}</p></section><section><h2>{t("termsContent")}</h2><p>{t("termsContentText")}</p></section><section><h2>{t("termsLiability")}</h2><p>{t("termsLiabilityText")}</p></section><section><h2>{t("termsChanges")}</h2><p>{t("termsChangesText")}</p></section></div></main>;
+  return <main className="legal-page"><div className="legal-container"><Link href="/" className="legal-back">{t("notFoundHome")}</Link><h1>{t("termsTitle")}</h1><section><h2>{t("termsUse")}</h2><p>{t("termsUseText")}</p></section><section><h2>{t("termsContent")}</h2><p>{t("termsContentText")}</p></section><section><h2>{t("termsLiability")}</h2><p>{t("termsLiabilityText")}</p></section><section><h2>{t("termsChanges")}</h2><p>{t("termsChangesText")}</p></section></div></main>;
 }

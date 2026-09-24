@@ -17,7 +17,7 @@ export default function ProductHeader({ backHref, backLabel, children, className
       <Link className="product-header__brand" href="/app" aria-label="TUSA.game"><BrandLogo priority /></Link>
       {children ? <nav className="product-header__nav" aria-label="Product navigation">{children}</nav> : <span className="product-header__spacer" />}
       <div className="product-header__actions">
-        {backHref && <Link className="product-header__back" href={backHref}><span aria-hidden="true">←</span>{backLabel}</Link>}
+        {backHref && <Link className="product-header__back" href={backHref}><span aria-hidden="true">←</span>{backLabel?.replace(/^←\s*/, "")}</Link>}
         {showLocale && <LocaleToggle />}
       </div>
     </header>

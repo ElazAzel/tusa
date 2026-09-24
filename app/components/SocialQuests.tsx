@@ -40,18 +40,16 @@ export default function SocialQuests({ partyId }: { partyId: string }) {
       {!error && quests.length === 0 && <div className="party-feature-empty"><span className="material-symbols-rounded">task_alt</span><strong>{locale === "ru" ? "Задания появятся после следующего действия в тусе" : "Quests will appear after your next party action"}</strong></div>}
       {quests.map((q) => {
         const done = q.progress >= q.target;
-        return <div key={q.id} style={{ background: "var(--dark)", borderRadius: 8, padding: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <span className="material-symbols-rounded" style={{ color: "var(--lime)" }}>{q.icon}</span>
-            <div><p style={{ fontWeight: 700 }}>{labels[q.titleKey] || q.titleKey}</p><p style={{ color: "var(--gray)", fontSize: 12 }}>{labels[q.descKey] || q.descKey}</p></div>
+        return <div className="quest-card" key={q.id}>
+          <div className="quest-head">
+            <span className="material-symbols-rounded" aria-hidden="true">{q.icon}</span>
+            <div><p className="quest-title">{labels[q.titleKey] || q.titleKey}</p><p className="quest-desc">{labels[q.descKey] || q.descKey}</p></div>
           </div>
-          <div style={{ height: 8, borderRadius: 4, background: "var(--gray)", overflow: "hidden", marginBottom: 6 }}>
-            <div style={{ height: "100%", width: `${Math.min(100, (q.progress / q.target) * 100)}%`, background: done ? "var(--lime)" : "var(--pink)", borderRadius: 4 }} />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ color: "var(--gray)", fontSize: 12 }}>{q.progress}/{q.target} · {q.rewardKoins} KOINS +{q.rewardXp} XP</span>
-            {done && !q.claimed && <button className="demo-action demo-action--lime" onClick={() => claim(q.id)} type="button" style={{ padding: "4px 12px", fontSize: 12 }}>{t("questClaim")}</button>}
-            {q.claimed && <span style={{ color: "var(--lime)", fontSize: 12, fontWeight: 700 }}>{t("questClaimed")}</span>}
+          <div className="quest-progress"><span className={done ? "is-done" : ""} style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
+          <div className="quest-foot">
+            <span>{q.progress}/{q.target} · +{q.rewardKoins} KOINS · +{q.rewardXp} XP</span>
+            {done && !q.claimed && <button className="demo-action demo-action--lime" onClick={() => claim(q.id)} type="button">{t("questClaim")}</button>}
+            {q.claimed && <b>{t("questClaimed")}</b>}
           </div>
         </div>;
       })}

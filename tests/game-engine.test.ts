@@ -471,3 +471,15 @@ test("Impostor keeps the word private and resolves clues and votes on the server
   assert.equal(reveal.state.outcome, "crew");
   assert.equal((reveal.state.scores as Record<string, number>).host, 1);
 });
+
+test("Mafia, Werewolf and Bunker ignore a second start while a game is running", () => {
+  const party = ["host", "a", "b", "c", "d"];
+  const ctx = { actorId: "host", creatorId: "host", participants: party, now: 5_000 };
+  for (const game of ["mafia", "werewolf", "bunker"]) {
+    const started = applyServerGameCommand(game, initialServerGameState(game, party, { locale: "ru" }, 1_000)!, "start", {}, ctx)!;
+    assert.equal(started.changed, true, game);
+    const again = applyServerGameCommand(game, started.state, "start", {}, { ...ctx, now: 9_000 })!;
+    assert.equal(again.changed, false, game);
+    assert.deepEqual(again.state.roles ?? again.state.cards, started.state.roles ?? started.state.cards, game);
+  }
+});

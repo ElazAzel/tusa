@@ -10,8 +10,14 @@ import { soundTap, soundSuccess } from "@/lib/audio";
 import CosmeticsCustomizer from "./CosmeticsCustomizer";
 import SafetyAppeals from "./SafetyAppeals";
 
-const badgeFamilies = ["Организатор", "Игрок", "Хроникёр", "Казначей", "Душа компании", "Пунктуальный", "Командный", "Исследователь", "Мемолог", "Голос вечера"];
-const badgeCatalogue = Array.from({ length: 60 }, (_, index) => ({ id: `badge_${index + 1}`, name: `${badgeFamilies[index % badgeFamilies.length]} \u00b7 ${Math.floor(index / badgeFamilies.length) + 1}`, threshold: (index + 1) * 120 }));
+const badgeFamilies = {
+  ru: ["Организатор", "Игрок", "Хроникёр", "Казначей", "Душа компании", "Пунктуальный", "Командный", "Исследователь", "Мемолог", "Голос вечера"],
+  en: ["Organizer", "Player", "Chronicler", "Treasurer", "Life of the party", "Punctual", "Team player", "Explorer", "Meme lord", "Voice of the night"],
+};
+const BADGE_LEVELS = ["I", "II", "III", "IV", "V", "VI"];
+const badgeCatalogue = Array.from({ length: 60 }, (_, index) => ({ id: `badge_${index + 1}`, family: index % badgeFamilies.ru.length, level: BADGE_LEVELS[Math.floor(index / badgeFamilies.ru.length)], threshold: (index + 1) * 120 }));
+const FRAME_LABELS = { ru: { none: "Без рамки", lime: "Лайм", pink: "Розовая", blue: "Синяя", neon: "Неон" }, en: { none: "None", lime: "Lime", pink: "Pink", blue: "Blue", neon: "Neon" } } as const;
+const LEAGUE_NAMES: Record<string, { ru: string; en: string }> = { "Neon Legend": { ru: "Неоновая легенда", en: "Neon Legend" }, "Platinum Crew": { ru: "Платиновая банда", en: "Platinum Crew" }, "Gold Vibe": { ru: "Золотой вайб", en: "Gold Vibe" }, "Silver Squad": { ru: "Серебряный отряд", en: "Silver Squad" }, "Fresh Lime": { ru: "Свежий лайм", en: "Fresh Lime" } };
 
 const benefitIcons: Record<string, string> = { beta_access: "vpn_key", profile_cover: "wallpaper", avatar_frame: "frame_person", chat_effect: "auto_awesome", chat_background: "format_color_fill", name_color: "palette", badge: "verified", xp_multiplier: "trending_up", party_creation: "add_box" };
 const benefitLabels: Record<string, { ru: string; en: string }> = { beta_access: { ru: "Бета-доступ", en: "Beta access" }, profile_cover: { ru: "Обложка", en: "Cover" }, avatar_frame: { ru: "Рамка профиля", en: "Avatar frame" }, chat_effect: { ru: "Эффект чата", en: "Chat effect" }, chat_background: { ru: "Фон чата", en: "Chat background" }, name_color: { ru: "Цвет имени", en: "Name color" }, badge: { ru: "Ачивка", en: "Badge" }, xp_multiplier: { ru: "XP-множитель", en: "XP multiplier" }, party_creation: { ru: "Создание тус", en: "Party creation" } };
@@ -164,7 +170,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
               { icon: "local_fire_department", val: 0, label: t("profileStreak") },
               { icon: "event_available", val: attendance, label: t("profileEvents") },
               { icon: "sports_esports", val: gameStats.gamesPlayed, label: t("profileGames") },
-              { icon: "emoji_events", val: gameStats.totalScore, label: "Score" },
+              { icon: "emoji_events", val: gameStats.totalScore, label: locale === "ru" ? "Очки" : "Score" },
             ].map((s) => (
               <article key={s.label} className="stat-card" onClick={() => haptic()}>
                 <Icon name={s.icon} />
@@ -179,7 +185,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
             <section className="league-card">
               <div>
                 <span>{t("profileLeague")}</span>
-                <h3>{league.name}</h3>
+                <h3>{LEAGUE_NAMES[league.name]?.[locale] ?? league.name}</h3>
                 <p>{t("profileNextLevel")}{Math.max(0, league.next - profile.xp)} {t("profileNextXp")}</p>
               </div>
               <Icon name={league.icon} />
@@ -213,7 +219,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
                       }}
                     >
                       <span className="frame-ring" style={{ borderColor: fs.border }} />
-                      <span className="frame-label">{fs.label}</span>
+                      <span className="frame-label">{FRAME_LABELS[locale][frame]}</span>
                       {locked && <Icon name="lock" />}
                       {frameSaving === frame && <Icon name="progress_activity" />}
                     </button>
@@ -237,13 +243,13 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
                   <span className="material-symbols-rounded">
                     {unlockedBadgeIds.has(badge.id) ? "emoji_events" : "lock"}
                   </span>
-                  <strong>{badge.name}</strong>
+                  <strong>{badgeFamilies[locale][badge.family]} {badge.level}</strong>
                 </article>
               ))}
             </div>
             {badgeCatalogue.length > 10 && (
               <button className="admin-text-button" onClick={() => { haptic(); setShowAllBadges(!showAllBadges); }}>
-                {showAllBadges ? "Свернуть" : `Показать все (${badgeCatalogue.length})`}
+                {showAllBadges ? t("profileCollapse") : `${t("profileShowAll")} (${badgeCatalogue.length})`}
               </button>
             )}
           </section>
@@ -278,7 +284,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
           {/* ── Profile editor form ── */}
           <section className="profile-editor-card">
             <form onSubmit={submit}>
-              <label className="avatar-upload"><span className={`profile-avatar frame-${profile.cosmetics.avatarFrame}`} style={{ width: 82, height: 82, fontSize: 24 }}>{avatarUrl ? <img className="profile-avatar-image" src={avatarUrl} alt="" /> : profile.displayName.slice(0, 2).toUpperCase()}</span><input accept="image/*" aria-label="Загрузить аватар" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAvatar(file); }} type="file" /><b>Загрузить аватар</b></label>{avatarError && <p className="form-error">{avatarError}</p>}
+              <label className="avatar-upload"><span className={`profile-avatar frame-${profile.cosmetics.avatarFrame}`} style={{ width: 82, height: 82, fontSize: 24 }}>{avatarUrl ? <img className="profile-avatar-image" src={avatarUrl} alt="" /> : profile.displayName.slice(0, 2).toUpperCase()}</span><input accept="image/*" aria-label={locale === "ru" ? "Загрузить аватар" : "Upload avatar"} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAvatar(file); }} type="file" /><b>{locale === "ru" ? "Загрузить аватар" : "Upload avatar"}</b></label>{avatarError && <p className="form-error">{avatarError}</p>}
               <h1>{t("profileTitle")}</h1>
 
               <label>{t("profileName")}
@@ -308,7 +314,7 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
                       {profile.displayName}
                     </span>
                     <span className="cosmetics-quick-items">
-                      {profile.cosmetics.cover} · {profile.cosmetics.avatarFrame} · {profile.cosmetics.chatEffect} · {profile.cosmetics.chatBackground}
+                      {locale === "ru" ? "Обложка, рамка, эффект и фон чата" : "Cover, frame, chat effect and background"}
                     </span>
                   </div>
                 </div>
@@ -342,22 +348,23 @@ export default function ProfileEditor({ profile, parties }: { profile: UserProfi
       {/* ── Mobile bottom nav ── */}
       <nav className="mobile-bottom-nav">
         <Link href="/app" onClick={() => haptic()}>
-          <Icon name="home" /><span>Home</span>
+          <Icon name="home" /><span>{locale === "ru" ? "Главная" : "Home"}</span>
         </Link>
         <Link href="/app/friends" onClick={() => haptic()}>
-          <Icon name="group" /><span>Friends</span>
+          <Icon name="group" /><span>{locale === "ru" ? "Друзья" : "Friends"}</span>
         </Link>
         <Link href="/app/leaderboard" onClick={() => haptic()}>
-          <Icon name="leaderboard" /><span>Top</span>
+          <Icon name="leaderboard" /><span>{locale === "ru" ? "Топ" : "Top"}</span>
         </Link>
         <Link href="/app/profile" className="active" onClick={() => haptic()}>
-          <Icon name="person" /><span>Profile</span>
+          <Icon name="person" /><span>{locale === "ru" ? "Профиль" : "Profile"}</span>
         </Link>
       </nav>
 
       {showCustomizer && (
         <CosmeticsCustomizer
           profileCosmetics={profile.cosmetics}
+          displayName={profile.displayName}
           onSave={handleCosmeticsSave}
           onClose={() => setShowCustomizer(false)}
         />

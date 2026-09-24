@@ -23,7 +23,7 @@ export default async function OnlinePartiesPage() {
     <main className="legal-page">
       <div className="legal-container">
         <Link href="/" className="legal-back">
-          {t("backToParties")}
+          {t("notFoundHome")}
         </Link>
 
         <h1>Online Party Games — Play with Friends Instantly</h1>

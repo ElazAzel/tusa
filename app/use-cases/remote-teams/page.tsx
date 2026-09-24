@@ -24,7 +24,7 @@ export default async function RemoteTeamsPage() {
     <main className="legal-page">
       <div className="legal-container">
         <Link href="/" className="legal-back">
-          {t("backToParties")}
+          {t("notFoundHome")}
         </Link>
 
         <h1>Remote Team Building Games — Icebreakers for Virtual Teams</h1>

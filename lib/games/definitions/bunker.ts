@@ -32,6 +32,7 @@ export default defineGame<State>({
   reducer(state, action, payload, ctx) {
     if (action === "start") {
       if (ctx.actorId !== ctx.creatorId) return { state, changed:false, error:"Only the stage can start." };
+      if (state.phase !== "lobby" && state.phase !== "finished") return { state, changed:false, error:"The game is already running." };
       if (ctx.participants.length < 5) return { state, changed:false, error:"At least five players are required." };
       const dealt = dealCards(state, ctx.participants);
       return { changed:true, state:{ ...state, ...dealt, contentUsed:ctx.participants.length, phase:"argue", players:[...ctx.participants], votes:{}, survivors:[], deadline:ctx.now + 90_000, round:1 } };
