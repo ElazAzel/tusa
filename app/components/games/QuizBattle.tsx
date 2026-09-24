@@ -44,7 +44,7 @@ export default function QuizBattle({ sessionId, onSave, role }: { partyId: strin
   function answer(index: number) { if (chosen !== null || state.phase !== "question" || seconds <= 0) return; setChosen(index); sendAction("answer", { index }); }
 
   return <div className="party-game-board game-board-enter quiz-battle-board">
-    <div className="trivia-head"><span className="game-step">{copy.title} · {copy.round} {state.round + 1}/5</span><strong className={seconds <= 4 ? "is-ending" : ""}>{seconds}s</strong></div>
+    <div className="trivia-head"><span className="game-step">{copy.title} · {copy.round} {state.round + 1}/5</span><strong className={seconds <= 4 ? "is-ending" : ""}>{seconds}{locale === "ru" ? " с" : "s"}</strong></div>
     <h3>{state.question}</h3>
     {state.phase === "question" && <div className="quiz-options">{state.options.map((option, index) => <button key={option} className={chosen === index ? "selected" : ""} disabled={chosen !== null || seconds <= 0} onClick={() => answer(index)} type="button"><b>{String.fromCharCode(65 + index)}</b><span>{option}</span></button>)}</div>}
     {chosen !== null && state.phase === "question" && <p className="controller-answered">{copy.accepted}</p>}

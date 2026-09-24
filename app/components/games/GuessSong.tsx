@@ -81,7 +81,7 @@ export default function GuessSong({ sessionId, onSave, role, mode = "guessSong" 
   }, [guess, seconds, sendAction, sent, state.phase]);
 
   return <section className="party-game-board game-board-enter trivia-board" aria-label={copy.title}>
-    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/5</span><strong className={seconds <= 5 ? "is-ending" : ""}>{seconds}s</strong></div>
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/5</span><strong className={seconds <= 5 ? "is-ending" : ""}>{seconds}{locale === "ru" ? " с" : "s"}</strong></div>
     <h3>{copy.title}</h3>
     {(state.phase === "clue" || state.phase === "guess") && <div className="trivia-result"><p>{copy.clue}</p><p><b>{state.artist}</b> · {state.year}</p>{state.phase === "guess" && <p>{state.fact}</p>}</div>}
     {state.phase === "guess" && <div className="game-text-entry"><label htmlFor={`${mode}-answer`}>{copy.answer}</label><input id={`${mode}-answer`} value={guess} onChange={(event) => setGuess(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submit(); }} disabled={sent || seconds <= 0} maxLength={120} /><button className="demo-action demo-action--lime" onClick={submit} disabled={sent || !guess.trim() || seconds <= 0} type="button">{sent ? copy.waiting : copy.send}</button></div>}

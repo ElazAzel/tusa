@@ -5224,3 +5224,13 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 @media (prefers-reduced-motion: reduce) { .game-invite-banner { animation: none; } }
 @media (max-width: 600px) { .game-invite-banner { flex-wrap: wrap; } .game-invite-banner .demo-action { width: 100%; } }
 .active-game-head > div > span { color: #55555c; }
+.controller-answered, .party-game-board .controller-answered { color: var(--black); }
+.secret-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.secret-card { min-width: 0; overflow-wrap: anywhere; hyphens: auto; letter-spacing: .02em; }
+@media (max-width: 600px) { .secret-card { min-height: 52px; padding: 6px 4px; font-size: 10px; letter-spacing: 0; } }
+.quiz-options button { display: flex; align-items: center; gap: 10px; text-align: left; }
+.quiz-options button > b { display: grid; place-items: center; flex: 0 0 30px; height: 30px; border: 2px solid var(--black); border-radius: 8px; background: var(--lime); color: var(--black); font-size: 13px; }
+.party-game-board button:has(> b:first-child + span) { display: flex; align-items: center; gap: 10px; text-align: left; }
+.party-game-board button:has(> b:first-child + span) > b { display: grid; place-items: center; flex: 0 0 30px; height: 30px; border: 2px solid var(--black); border-radius: 8px; background: var(--lime); color: var(--black); font-size: 13px; }
+.drawing-guesses span { color: var(--black); border: 2px solid var(--black); }
+@media (max-width: 600px) { .secret-grid { gap: 5px; } .secret-card { padding: 5px 2px; font-size: clamp(8px, 2.4vw, 10px); overflow-wrap: normal; word-break: normal; } }

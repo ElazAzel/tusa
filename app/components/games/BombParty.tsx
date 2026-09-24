@@ -47,7 +47,7 @@ export default function BombParty({ sessionId, onSave, role }: { partyId: string
   }
 
   return <div className="party-game-board game-board-enter word-bomb-board">
-    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/10</span><strong className={seconds <= 5 ? "is-ending" : ""}>{seconds}s</strong></div>
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/10</span><strong className={seconds <= 5 ? "is-ending" : ""}>{seconds}{locale === "ru" ? " с" : "s"}</strong></div>
     <h3>{copy.title}</h3><p className="tt-prompt">{copy.hint}</p><div className="bp-letter">{state.letter}</div>
     <div className="bp-info"><span>{alive.length} {copy.alive}</span><span>{Object.keys(state.submissions).length} {copy.answered}</span></div>
     {state.phase === "play" && <div className="bs-input-group"><input autoComplete="off" className="bs-input" disabled={submitted} aria-label={copy.placeholder} maxLength={40} onChange={(event) => setWord(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submit(); }} placeholder={`${copy.placeholder} ${state.letter}…`} value={word} /><button className="demo-action demo-action--lime" disabled={submitted || !word.trim()} onClick={submit} type="button">{submitted ? copy.accepted : copy.submit}</button></div>}

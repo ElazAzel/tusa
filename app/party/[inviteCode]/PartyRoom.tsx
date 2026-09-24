@@ -614,7 +614,11 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
                   <span className="material-symbols-rounded" aria-hidden="true">videogame_asset</span>
                   <span>{t("roleController")}</span>
                 </button>
-                <button aria-pressed={componentRole === "stage"} className="role-toggle-btn" onClick={() => setPreferredRole("stage")} title={t("roleStageHint")} type="button">
+                <button aria-pressed={componentRole === "stage" && preferredRole !== "stage"} className="role-toggle-btn" onClick={() => setPreferredRole(null)} title={t("roleOwnHint")} type="button">
+                  <span className="material-symbols-rounded" aria-hidden="true">person</span>
+                  <span>{t("roleOwn")}</span>
+                </button>
+                <button aria-pressed={componentRole === "stage" && preferredRole === "stage"} className="role-toggle-btn" onClick={() => setPreferredRole("stage")} title={t("roleStageHint")} type="button">
                   <span className="material-symbols-rounded" aria-hidden="true">tv</span>
                   <span>{t("roleStage")}</span>
                 </button>

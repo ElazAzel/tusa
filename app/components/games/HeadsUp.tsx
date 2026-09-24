@@ -77,7 +77,7 @@ export default function HeadsUp({ sessionId, onSave, role }: { partyId: string; 
   const activeLabel = state.activePlayer ? playerName(state.activePlayer) : "stage";
 
   return <div className="party-game-board game-board-enter charades-board">
-    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/5</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}s</strong></div>
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/5</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}{locale === "ru" ? " с" : "s"}</strong></div>
     <h3>{copy.title}</h3>
     <p>{copy.active}: <b>{activeLabel}</b></p>
     {state.phase === "play" && <>
