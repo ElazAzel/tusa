@@ -3,6 +3,7 @@ import { sseHeaders, generateEvents, isRealtimeTransportAvailable } from "@/lib/
 import { getGameSessionById, requirePartyMember } from "@/lib/parties";
 import { resolveActor } from "@/lib/guest-session";
 
+const MEMBERSHIP_RECHECK_MS = 60_000;
 const channelPattern = /^(party|chat|game):([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
 
 export async function GET(request: Request) {
@@ -23,15 +24,19 @@ export async function GET(request: Request) {
   const match = channel.match(channelPattern);
   if (!match) return new Response("Invalid channel", { status: 400 });
 
-  try {
-    const [, scope, id] = match;
+  const [, scope, id] = match;
+  const authorize = async () => {
     if (scope === "game") {
       const session = await getGameSessionById(id);
-      if (!session) return new Response("Not Found", { status: 404 });
+      if (!session) return "missing" as const;
       await requirePartyMember(session.partyId, userId);
     } else {
       await requirePartyMember(id, userId);
     }
+    return "ok" as const;
+  };
+  try {
+    if (await authorize() === "missing") return new Response("Not Found", { status: 404 });
   } catch {
     return new Response("Forbidden", { status: 403 });
   }
@@ -40,7 +45,13 @@ export async function GET(request: Request) {
 
   const stream = new ReadableStream({
     async start(controller) {
+      let authorizedAt = Date.now();
       for await (const event of generateEvents(channel, lastEventId)) {
+        if (Date.now() - authorizedAt > MEMBERSHIP_RECHECK_MS) {
+          const stillAllowed = await authorize().then((result) => result === "ok", () => false);
+          if (!stillAllowed) break;
+          authorizedAt = Date.now();
+        }
         try { controller.enqueue(new TextEncoder().encode(event)); } catch { break; }
       }
       try { controller.close(); } catch { /* client disconnected */ }

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import * as Ably from "ably";
+import { after } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { hasAblyConfiguration, hasDatabaseTransport, realtimeTransportAvailable } from "@/lib/runtime-status";
 
@@ -32,7 +33,7 @@ export async function createRealtimeTokenRequest(clientId: string, channel: stri
   return ably.auth.createTokenRequest({
     clientId,
     capability: JSON.stringify({ [channel]: ["subscribe", "presence"] }),
-    ttl: 60 * 60 * 1000,
+    ttl: 15 * 60 * 1000,
   });
 }
 
@@ -53,6 +54,14 @@ function eventEnvelope(channel: string, data: unknown) {
 
 const MAX_PAYLOAD_BYTES = 64_000;
 
+function keepAlive(task: Promise<unknown>) {
+  try {
+    after(task);
+  } catch {
+    void task;
+  }
+}
+
 export function publish(channel: string, data: unknown) {
   const event = eventEnvelope(channel, data);
   const serialized = JSON.stringify(event);
@@ -62,16 +71,16 @@ export function publish(channel: string, data: unknown) {
   }
   const ably = getRestClient();
   if (ably) {
-    void ably.channels.get(channel).publish("tusa:event", event).catch((error) => {
+    keepAlive(ably.channels.get(channel).publish("tusa:event", event).catch((error) => {
       console.error("[realtime] Ably publish failed", { channel, error: error instanceof Error ? error.message : String(error) });
-    });
+    }));
     return;
   }
   const sql = getEventDatabase();
   if (sql) {
-    void sql`INSERT INTO live_events (id, channel, payload) VALUES (${String(event.eventId)}::uuid, ${channel}, ${JSON.stringify(event)}::jsonb)`.catch((error) => {
+    keepAlive(Promise.resolve(sql`INSERT INTO live_events (id, channel, payload) VALUES (${String(event.eventId)}::uuid, ${channel}, ${JSON.stringify(event)}::jsonb)`).then(() => undefined, (error: unknown) => {
       console.error("[realtime] database publish failed", { channel, error: error instanceof Error ? error.message : String(error) });
-    });
+    }));
     return;
   }
   const listeners = localChannels.get(channel);

@@ -7,17 +7,15 @@ export function useGameRole(
   userId: string | undefined,
   status: string = "lobby",
   preferredRole?: "stage" | "controller" | null,
+  creatorId?: string,
 ): GameRole {
-  if (preferredRole) {
-    if (status === "active" && userId && !participants.includes(userId) && preferredRole === "controller") {
-      return "spectator";
-    }
-    return preferredRole;
-  }
-  if (!userId) return "stage";
-  const isMobile = typeof window !== "undefined" && (window.innerWidth < 768 || ("ontouchstart" in window));
-  if (isMobile) return "controller";
-  if (participants[0] === userId) return "stage";
-  if (participants.includes(userId)) return "controller";
-  return status === "active" ? "spectator" : "stage";
+  if (!userId || !participants.length) return "stage";
+  const hostId = creatorId || participants[0];
+  const isHost = hostId === userId;
+  const isParticipant = participants.includes(userId);
+  if (preferredRole === "stage" && isHost) return "stage";
+  if (preferredRole === "controller" && (isParticipant || status !== "active")) return "controller";
+  if (isHost) return "stage";
+  if (isParticipant) return "controller";
+  return status === "active" ? "spectator" : "controller";
 }

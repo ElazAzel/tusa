@@ -15,6 +15,7 @@ import { deriveScore } from "@/lib/games/sdk";
 import { parseGameCommand } from "@/lib/games/commands";
 import { applyServerGameCommand, initialServerGameState, isServerGameState } from "@/lib/games/engine";
 import { sanitizeSdkState } from "@/lib/games/sdk";
+import { isBotId, runBotAutopilot, sandboxBotIds } from "@/lib/games/bots";
 import { recordPlatformError } from "@/lib/observability";
 import { recordOperationalEvent } from "@/lib/operations";
 
@@ -87,15 +88,9 @@ export async function POST(request: Request) {
         return apiError(`At least ${gameDefinition.minPlayers} players are required.`, 400);
       }
       const participants = [...current.participants];
-      if (body.sandbox && current.participants.length < gameDefinition.minPlayers) {
-        const needed = gameDefinition.minPlayers - participants.length;
-        const botNames = ["Алекс (бот)", "Дана (бот)", "Макс (бот)", "София (бот)", "Тимур (бот)"];
-        for (let i = 0; i < needed; i++) {
-          participants.push(botNames[i] || `Бот ${i + 1}`);
-        }
-      }
-
-      const initialState = initialServerGameState(current.game, participants, current.config);
+      if (body.sandbox && participants.length < gameDefinition.minPlayers) participants.push(...sandboxBotIds(gameDefinition.minPlayers - participants.length));
+      const createdState = initialServerGameState(current.game, participants, current.config);
+      const initialState = createdState ? runBotAutopilot({ game: current.game, state: createdState, participants, creatorId: userId }).state : null;
       const session = await updateGameSession(body.sessionId, userId, {
         status: "active",
         state: initialState ?? undefined,
@@ -146,14 +141,17 @@ export async function POST(request: Request) {
       const score = await addGameScore(body.sessionId, userId, verifiedScore, metadata);
       const scores = await getGameScores(body.sessionId);
       publish(`game:${body.sessionId}`, { type: "score:added", sessionId: body.sessionId, score, scores });
+      const sandboxRun = current.participants.some(isBotId);
       if (score.created) {
         void trackAnalytics(userId, "game_played", { sessionId: body.sessionId, game: current.game, score: score.score });
-        void grantEngagementReward(userId, "game_play", current.partyId).catch(() => undefined);
-        if (score.score > 0) void grantEngagementReward(userId, "game_win", current.partyId).catch(() => undefined);
-        void addPassXp(userId, Math.min(score.score, 50)).catch(() => undefined);
-        void trackQuestProgress("playgames", current.partyId, userId).catch(() => undefined);
-        if (score.score > 0) void trackQuestProgress("winrounds", current.partyId, userId).catch(() => undefined);
-        void saveHighlight({ partyId: current.partyId, sessionId: body.sessionId, userId, type: "score", data: { game: current.game, score: score.score } }).catch(() => undefined);
+        if (!sandboxRun) {
+          void grantEngagementReward(userId, "game_play", current.partyId).catch(() => undefined);
+          if (score.score > 0) void grantEngagementReward(userId, "game_win", current.partyId).catch(() => undefined);
+          void addPassXp(userId, Math.min(score.score, 50)).catch(() => undefined);
+          void trackQuestProgress("playgames", current.partyId, userId).catch(() => undefined);
+          if (score.score > 0) void trackQuestProgress("winrounds", current.partyId, userId).catch(() => undefined);
+          void saveHighlight({ partyId: current.partyId, sessionId: body.sessionId, userId, type: "score", data: { game: current.game, score: score.score } }).catch(() => undefined);
+        }
       }
       return NextResponse.json({ score, scores });
     }
@@ -176,7 +174,8 @@ export async function POST(request: Request) {
           if (!reduced) break;
           if (reduced.error) return apiError(reduced.error, 409);
           if (!reduced.changed) return NextResponse.json({ ok: true, commandId, duplicate: true, session: sanitizeControllerSession(snapshot, userId) });
-          const updated = await updateGameSession(body.sessionId, creatorId, { state: reduced.state, expectedVersion: snapshot.version });
+          const nextState = runBotAutopilot({ game: snapshot.game, state: reduced.state, participants: snapshot.participants, creatorId }).state;
+          const updated = await updateGameSession(body.sessionId, creatorId, { state: nextState, expectedVersion: snapshot.version });
           if (updated) {
             const gameAction = await addGameAction(body.sessionId, userId, actionType, command.payload, commandId);
             const responseSession = { ...updated, participants: snapshot.participants, createdBy: snapshot.createdBy };

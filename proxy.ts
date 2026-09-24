@@ -35,7 +35,7 @@ function proxy(request: NextRequest) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=(self), payment=()",
+    "camera=(), microphone=(self), geolocation=(self), payment=()",
   );
 
   return response;

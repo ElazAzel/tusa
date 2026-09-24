@@ -91,6 +91,11 @@ export function useLiveStream<T = unknown>(channel: string | null) {
         authCallback: async (_params, callback) => {
           try {
             const response = await fetch(`/api/realtime/token?channel=${encodeURIComponent(channel)}`, { cache: "no-store" });
+            if (response.status === 503) {
+              callback("Realtime provider is not configured.", null);
+              switchToSse();
+              return;
+            }
             if (!response.ok) throw new Error(`Realtime token request failed (${response.status}).`);
             callback(null, await response.json() as Ably.TokenRequest);
           } catch (error) {
@@ -115,11 +120,16 @@ export function useLiveStream<T = unknown>(channel: string | null) {
     };
 
     const handleWakeup = () => {
-      if (typeof document !== "undefined" && document.visibilityState === "visible" && !disposed) {
+      if (disposed || (typeof document !== "undefined" && document.visibilityState !== "visible")) return;
+      if (usingSse) {
+        if (eventSource && eventSource.readyState !== EventSource.CLOSED) return;
         clearTimeout(reconnectTimer);
         attempts = 0;
         connectSse();
+        return;
       }
+      const state = realtime?.connection.state;
+      if (state === "disconnected" || state === "suspended" || state === "closed") realtime?.connection.connect();
     };
     if (typeof document !== "undefined") document.addEventListener("visibilitychange", handleWakeup);
     if (typeof window !== "undefined") window.addEventListener("online", handleWakeup);
@@ -135,6 +145,7 @@ export function useLiveStream<T = unknown>(channel: string | null) {
       realtime?.close();
       setConnected(false);
       setTransport("offline");
+      setEvents([]);
     };
   }, [channel, addEvent]);
 

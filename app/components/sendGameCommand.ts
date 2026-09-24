@@ -20,7 +20,7 @@ export async function sendGameCommand(sessionId: string, actionType: string, pay
       const data = await response.json().catch(() => ({})) as { error?: string };
       if (response.ok) {
         notify("tusa:game-command-success");
-        return data as { ok: true; commandId: string };
+        return data as { ok: true; commandId: string; session?: unknown };
       }
       const message = typeof data.error === "string" ? data.error : `Game command rejected (${response.status})`;
       if (response.status < 500 && response.status !== 409 && response.status !== 429) {

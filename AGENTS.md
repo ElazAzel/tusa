@@ -1,6 +1,6 @@
 # TUSA.game — AI Context & Orchestration Hub
 
-> Updated 16.08.2026 · Supported pilot 8.8/10 · Next.js 16 · React 19 · TypeScript · verified local accounts + HMAC guests · Neon Postgres · first-party observability · SSE/Ably/Neon fallback · 50+ route handlers · 32 Beta modes · certified = 0
+> Updated 24.09.2026 · Supported pilot 8.8/10 · Next.js 16 · React 19 · TypeScript · verified local accounts + HMAC guests · Neon Postgres · first-party observability · SSE/Ably/Neon fallback · 50+ route handlers · 32 Beta modes · certified = 0
 
 > Current source of truth: `docs/IMPLEMENTATION_STATUS_2026-07-19.md`. Documentation precedence and shipped/gap/target/pre-implementation semantics: `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md`.
 
@@ -12,7 +12,7 @@
 npm install          # dependencies
 npm run dev          # dev server (localhost:3000)
 npm run build        # production build
-npm test             # 65 unit/contract/platform tests (must pass before commit)
+npm test             # 70 unit/contract/platform tests (must pass before commit)
 npm run lint         # 0 errors required
 npm run rag:build    # rebuild RAG index after changes
 ```
@@ -131,6 +131,12 @@ Every multiplayer game has two views:
 - **Stage** (host): `useStageGame<T>()` — receives `playerActions`, manages shared state, restores from DB on mount
 - **Controller** (player): `useControllerGame<T>()` — `sendAction(type, payload)`, restores from DB on mount
 
+Both hooks subscribe through `useGameChannel` → `useLiveStream` (Ably first, SSE fallback), apply the session returned by each command immediately and resync the snapshot on reconnect or tab wake-up. Do not open raw `EventSource` connections in game code.
+
+Role selection (`useGameRole`): the session creator is the stage by default and may switch to controller; other participants are controllers; non-participants spectate an active round. Only the creator can take the stage view.
+
+Sandbox runs: `start` with `sandbox: true` fills missing seats with `bot_N` participants (`lib/games/bot-names.ts`). After every accepted command the server runs `runBotAutopilot` (`lib/games/bots.ts`), which makes each bot play one schema-valid move per pass through the normal reducer. Sandbox runs grant no Koins, XP, quests or highlights. `tests/sandbox-bots.test.ts` proves every catalogue game keeps moving with one human host and bots.
+
 Component signature:
 ```tsx
 export default function Game({ partyId, sessionId, onSave, role }:
@@ -149,7 +155,7 @@ export default function Game({ partyId, sessionId, onSave, role }:
 ### Testing
 
 ```bash
-npm test             # 65 tests: game engine, contracts, routes and security
+npm test             # 70 tests: game engine, sandbox bots, contracts, routes and security
 npm run test:e2e     # Playwright E2E (requires install)
 ```
 
@@ -247,5 +253,5 @@ Load a skill with `opencode use-skill <name>` (or equivalent in your AI tool). E
 - **Auth**: local email/password accounts + signed sessions + HMAC guest sessions; no external account provider is required at runtime
 - **Realtime**: Ably (production) / SSE in-memory fallback
 - **Rate limiting**: Upstash Redis (production) / in-memory fallback
-- **Deployment**: Vercel; 46 route handler files at the 19.07.2026 baseline
+- **Deployment**: Vercel; 60 route handler files at the 24.09.2026 checkpoint
 - **CI**: GitHub Actions (typecheck → lint → test → certification gate → build → audit → e2e)

@@ -1134,9 +1134,12 @@ export async function createPartyWithPromo(ownerId: string, input: { title: stri
     const partyId = randomUUID();
     const inviteCode = randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase();
     const partySlug = slug(input.title, partyId.replaceAll("-", ""));
-    const [partyRow] = await sql`INSERT INTO parties (id, owner_id, title, slug, invite_code, date, time, venue, category, description, adult_only)
-      VALUES (${partyId}, ${ownerId}, ${input.title.slice(0, 100)}, ${partySlug}, ${inviteCode}, ${input.date}, ${input.time}, ${input.venue.slice(0, 120)}, ${input.category.slice(0, 80)}, ${input.description.slice(0, 500)}, ${input.adultOnly}) RETURNING *` as unknown as Record<string, unknown>[];
-    await sql`INSERT INTO party_members (party_id, clerk_user_id, role) VALUES (${partyId}, ${ownerId}, 'owner')`;
+    const [partyRows] = await sql.transaction([
+      sql`INSERT INTO parties (id, owner_id, title, slug, invite_code, date, time, venue, category, description, adult_only)
+        VALUES (${partyId}, ${ownerId}, ${input.title.slice(0, 100)}, ${partySlug}, ${inviteCode}, ${input.date.slice(0, 40)}, ${input.time.slice(0, 20)}, ${input.venue.slice(0, 120)}, ${input.category.slice(0, 80)}, ${input.description.slice(0, 500)}, ${input.adultOnly}) RETURNING *`,
+      sql`INSERT INTO party_members (party_id, clerk_user_id, role) VALUES (${partyId}, ${ownerId}, 'owner')`,
+    ]) as unknown as Record<string, unknown>[][];
+    const [partyRow] = partyRows;
     return { kind: "created" as const, party: partyFromRow({ ...partyRow, owner_name: profile.displayName ?? "Организатор", owner_image_url: profile.imageUrl ?? "", member_count: 1, role: "owner" }) };
   }
   const code = input.promoCode?.trim().toUpperCase() ?? "";
@@ -1156,10 +1159,13 @@ export async function createPartyWithPromo(ownerId: string, input: { title: stri
   if (!updated[0]) return { kind: "exhausted" as const };
 
   try {
-    const [partyRow] = await sql`INSERT INTO parties (id, owner_id, title, slug, invite_code, date, time, venue, category, description, adult_only)
-      VALUES (${partyId}, ${ownerId}, ${input.title.slice(0, 100)}, ${partySlug}, ${inviteCode}, ${input.date}, ${input.time}, ${input.venue.slice(0, 120)}, ${input.category.slice(0, 80)}, ${input.description.slice(0, 500)}, ${input.adultOnly}) RETURNING *` as unknown as Record<string, unknown>[];
-    await sql`INSERT INTO party_members (party_id, clerk_user_id, role) VALUES (${partyId}, ${ownerId}, 'owner')`;
-    await sql`INSERT INTO promo_redemptions (id, promo_code_id, clerk_user_id, party_id) VALUES (${randomUUID()}, ${promo.id}, ${ownerId}, ${partyId})`;
+    const [partyRows] = await sql.transaction([
+      sql`INSERT INTO parties (id, owner_id, title, slug, invite_code, date, time, venue, category, description, adult_only)
+        VALUES (${partyId}, ${ownerId}, ${input.title.slice(0, 100)}, ${partySlug}, ${inviteCode}, ${input.date.slice(0, 40)}, ${input.time.slice(0, 20)}, ${input.venue.slice(0, 120)}, ${input.category.slice(0, 80)}, ${input.description.slice(0, 500)}, ${input.adultOnly}) RETURNING *`,
+      sql`INSERT INTO party_members (party_id, clerk_user_id, role) VALUES (${partyId}, ${ownerId}, 'owner')`,
+      sql`INSERT INTO promo_redemptions (id, promo_code_id, clerk_user_id, party_id) VALUES (${randomUUID()}, ${promo.id}, ${ownerId}, ${partyId})`,
+    ]) as unknown as Record<string, unknown>[][];
+    const [partyRow] = partyRows;
     const profile = await getProfile(ownerId);
     const rewardedProfile = profile && promo.benefits.length ? (() => { const cosmetics = mergedCosmetics(profile.cosmetics, promo.benefits); return { cosmetics, xp: profile.xp + 50 }; })() : null;
     if (rewardedProfile) await sql`UPDATE user_profiles SET cosmetics = ${JSON.stringify(rewardedProfile.cosmetics)}::jsonb, xp = ${rewardedProfile.xp}, updated_at = NOW() WHERE clerk_user_id = ${ownerId}`;
@@ -1505,11 +1511,8 @@ export async function joinGameSession(sessionId: string, userId: string) {
   const [existing] = await db()`SELECT participants, party_id FROM game_sessions WHERE id = ${sessionId}` as unknown as { participants: string[]; party_id: string }[];
   if (!existing) return null;
   await requirePartyMember(String(existing.party_id), userId);
-  const current = Array.isArray(existing.participants) ? existing.participants : [];
-  if (!current.includes(userId)) {
-    current.push(userId);
-    await db()`UPDATE game_sessions SET participants = ${JSON.stringify(current)}::jsonb, updated_at = NOW() WHERE id = ${sessionId}`;
-  }
+  await db()`UPDATE game_sessions SET participants = participants || jsonb_build_array(${userId}::text), version = version + 1, updated_at = NOW()
+    WHERE id = ${sessionId} AND NOT (participants ? ${userId}::text)`;
   return getGameSessionById(sessionId);
 }
 
@@ -1518,8 +1521,8 @@ export async function leaveGameSession(sessionId: string, userId: string) {
   const [existing] = await db()`SELECT participants, party_id FROM game_sessions WHERE id = ${sessionId}` as unknown as { participants: string[]; party_id: string }[];
   if (!existing) return null;
   await requirePartyMember(String(existing.party_id), userId);
-  const current = (Array.isArray(existing.participants) ? existing.participants : []).filter((id) => id !== userId);
-  await db()`UPDATE game_sessions SET participants = ${JSON.stringify(current)}::jsonb, updated_at = NOW() WHERE id = ${sessionId}`;
+  await db()`UPDATE game_sessions SET participants = participants - ${userId}::text, version = version + 1, updated_at = NOW()
+    WHERE id = ${sessionId} AND participants ? ${userId}::text`;
   return getGameSessionById(sessionId);
 }
 

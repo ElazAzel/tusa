@@ -2,87 +2,59 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { sendGameCommand } from "./sendGameCommand";
+import { useGameChannel } from "./useGameChannel";
+
+type Snapshot<T> = { viewerId?: string; session?: { state?: Partial<T>; participants?: string[]; version?: number } };
 
 export function useControllerGame<T extends Record<string, unknown>>(
   sessionId: string | null,
   initialState: T,
 ) {
   const [state, setState] = useState<T>(initialState);
-  const esRef = useRef<EventSource | null>(null);
   const initialStateRef = useRef(initialState);
-  const [connected, setConnected] = useState(true);
+  const [snapshotOk, setSnapshotOk] = useState(true);
   const versionRef = useRef(0);
+  const viewerIdRef = useRef<string | undefined>(undefined);
+
+  const applySnapshot = useCallback((data: Snapshot<T>) => {
+    const snap = data.session?.state;
+    const version = data.session?.version ?? 0;
+    if (data.viewerId) viewerIdRef.current = data.viewerId;
+    if (snap && Object.keys(snap).length > 0 && (!version || version >= versionRef.current)) {
+      if (version) versionRef.current = version;
+      setState((prev) => {
+        const merged = { ...prev, ...snap } as T;
+        if (viewerIdRef.current) (merged as Record<string, unknown>).viewerId = viewerIdRef.current;
+        const participants = data.session?.participants ?? [];
+        if (participants.length && Array.isArray(merged.players)) (merged as Record<string, unknown>).players = participants;
+        return merged;
+      });
+    }
+    setSnapshotOk(true);
+  }, []);
+
+  const syncSnapshot = useCallback(() => {
+    if (!sessionId) return;
+    void fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => setSnapshotOk(false));
+  }, [sessionId, applySnapshot]);
 
   useEffect(() => {
+    versionRef.current = 0;
     if (!sessionId) { setState(initialStateRef.current); return; }
+    syncSnapshot();
+  }, [sessionId, syncSnapshot]);
 
-    let disposed = false;
-    let attempts = 0;
-    const applySnapshot = (data: { viewerId?: string; session?: { state?: Partial<T>; participants?: string[]; version?: number } }) => {
-        const snap = data.session?.state;
-        if (snap && Object.keys(snap).length > 0) {
-          if (data.session?.version) versionRef.current = data.session.version;
-          setState((prev) => {
-            const merged = { ...prev, ...snap } as T;
-            if (data.viewerId) (merged as Record<string, unknown>).viewerId = data.viewerId;
-            const participants = data.session?.participants ?? [];
-            if (participants.length && Array.isArray(merged.players)) (merged as Record<string, unknown>).players = participants;
-            return merged;
-          });
-        }
-        setConnected(true);
-    };
-    const syncSnapshot = () => fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => setConnected(false));
-    void syncSnapshot();
-
-    let reconnectTimer: ReturnType<typeof setTimeout>;
-    const connect = () => {
-      if (disposed) return;
-      const es = new EventSource(`/api/live?channel=${encodeURIComponent(`game:${sessionId}`)}`);
-      esRef.current = es;
-      es.onopen = () => { attempts = 0; setConnected(true); void syncSnapshot(); };
-      es.onmessage = (msg) => {
-        try {
-          const event = JSON.parse(msg.data) as { type: string; state?: Partial<T>; version?: number };
-          if (event.type === "state:updated" && (!event.version || event.version > versionRef.current)) {
-            void syncSnapshot();
-          }
-        } catch { /* ping */ }
-      };
-      es.onerror = () => {
-        setConnected(false);
-        es.close();
-        attempts += 1;
-        const delay = Math.min(30_000, 1_000 * 2 ** Math.min(attempts, 5)) + Math.floor(Math.random() * 500);
-        reconnectTimer = setTimeout(connect, delay);
-      };
-    };
-    const handleWakeup = () => {
-      if (typeof document !== "undefined" && document.visibilityState === "visible" && !disposed) {
-        void syncSnapshot();
-        if (esRef.current?.readyState === EventSource.CLOSED) {
-          clearTimeout(reconnectTimer);
-          connect();
-        }
-      }
-    };
-    if (typeof document !== "undefined") document.addEventListener("visibilitychange", handleWakeup);
-    if (typeof window !== "undefined") window.addEventListener("online", handleWakeup);
-
-    connect();
-    return () => {
-      disposed = true;
-      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", handleWakeup);
-      if (typeof window !== "undefined") window.removeEventListener("online", handleWakeup);
-      clearTimeout(reconnectTimer);
-      esRef.current?.close();
-    };
-  }, [sessionId]);
+  const live = useGameChannel(sessionId, (event) => {
+    if (event.type === "state:updated" && (!event.version || event.version > versionRef.current)) syncSnapshot();
+    if (event.type === "session:started" || event.type === "session:completed") syncSnapshot();
+  }, syncSnapshot);
 
   const sendAction = useCallback((actionType: string, payload?: unknown) => {
     if (!sessionId) return;
-    void sendGameCommand(sessionId, actionType, payload).catch(() => undefined);
-  }, [sessionId]);
+    void sendGameCommand(sessionId, actionType, payload)
+      .then((data) => { if (data && "session" in data && data.session) applySnapshot({ session: data.session as Snapshot<T>["session"] }); })
+      .catch(() => undefined);
+  }, [sessionId, applySnapshot]);
 
-  return { state, sendAction, connected };
+  return { state, sendAction, connected: live.connected && snapshotOk };
 }

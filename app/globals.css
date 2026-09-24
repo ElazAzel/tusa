@@ -4999,16 +4999,134 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 }
 
 .floating-party-reaction {
+  position: fixed;
+  bottom: 100px;
+  z-index: 90;
+  font-size: 36px;
+  pointer-events: none;
   user-select: none;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+  animation: floatUpFade 2s ease-out forwards;
+}
+
+.active-game-role-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 3px solid var(--black);
+  border-radius: 10px;
+  background: var(--cream);
+  box-shadow: 3px 3px 0 var(--black);
 }
 
 .active-game-role-toggle .role-toggle-btn {
-  border-radius: 4px;
-  transition: all 0.15s ease;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--black);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.active-game-role-toggle .role-toggle-btn[aria-pressed="true"] {
+  background: var(--lime);
+  color: var(--black);
 }
 
 .active-game-role-toggle .role-toggle-btn:hover {
-  filter: brightness(0.95);
+  transform: translate(-1px, -1px);
+}
+
+.active-game-role-toggle .material-symbols-rounded { font-size: 18px; }
+
+.game-lobby-actions {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px auto 0;
+}
+
+.game-lobby-actions .demo-action { width: 100%; min-height: 48px; justify-content: center; }
+.game-lobby-start { font-size: 1.1rem; }
+
+.game-lobby-need {
+  margin: 0;
+  padding: 10px 14px;
+  border: 3px solid var(--black);
+  border-radius: 10px;
+  background: var(--lime-soft);
+  color: var(--black);
+  font-weight: 800;
+  text-align: center;
+}
+
+.game-lobby-hint { color: var(--muted); font-size: 12px; font-weight: 700; }
+.game-lobby-wait { margin-top: 16px; text-align: center; }
+
+.party-live-reactions-dock {
+  position: fixed;
+  right: 16px;
+  bottom: 75px;
+  z-index: 40;
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 3px solid var(--black);
+  border-radius: 30px;
+  background: var(--white);
+  box-shadow: 3px 3px 0 var(--black);
+}
+
+.party-live-reactions-dock button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.party-live-reactions-dock button:active { transform: scale(0.9); }
+
+.qr-modal { padding: 24px; }
+.qr-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.qr-modal-head h2 { margin: 0; font-size: 1.4rem; font-weight: 900; }
+.qr-modal .qr-modal-image { display: block; width: min(100%, 260px); }
+.qr-modal-placeholder { height: 240px; display: grid; place-items: center; }
+.qr-modal-code {
+  margin-bottom: 16px;
+  padding: 8px;
+  border: 3px solid var(--black);
+  background: var(--lime);
+  color: var(--black);
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+}
+.qr-modal-hint { margin: 0 0 16px; font-size: 0.95rem; }
+.qr-modal-actions { display: flex; gap: 8px; }
+.qr-modal-actions .demo-action { flex: 1; justify-content: center; margin-inline: 0; }
+
+@media (max-width: 600px) {
+  .active-game-role-toggle .role-toggle-btn span:not(.material-symbols-rounded) { display: none; }
+  .party-live-reactions-dock { right: 50%; transform: translateX(50%); bottom: 84px; }
+  .qr-modal-actions { flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-party-reaction { animation-duration: 0.01ms; }
 }
 

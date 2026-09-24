@@ -12,6 +12,8 @@ import LocaleToggle from "@/app/components/LocaleToggle";
 import BrandLogo from "@/app/components/BrandLogo";
 import { useLiveStream } from "@/app/components/useLiveStream";
 import { useGameRole } from "@/app/components/useGameRole";
+import { botDisplayName, isBotId } from "@/lib/games/bot-names";
+const LIVE_REACTIONS = ["🔥", "😂", "👏", "❤️", "😱"] as const;
 const AliasGame = dynamic(() => import("@/app/components/games/AliasGame"));
 const MafiaGame = dynamic(() => import("@/app/components/games/MafiaGame"));
 const TruthOrDare = dynamic(() => import("@/app/components/games/TruthOrDare"));
@@ -59,7 +61,7 @@ import EmojiPicker from "@/app/components/chat/EmojiPicker";
 import { tusaStickers } from "@/app/components/chat/stickers";
 import { eventDateInputValue, formatEventDate } from "@/lib/event-format";
 import EventDateTimeFields from "@/app/components/EventDateTimeFields";
-import { soundChat, soundFanfare, soundWin, soundTap, unlockAudio } from "@/lib/audio";
+import { soundChat, soundFanfare, soundTap, unlockAudio } from "@/lib/audio";
 import ReportContentButton from "@/app/components/ReportContentButton";
 
 import { GAME_MANIFEST, formatPlayerRange, isGameId, type GameId } from "@/lib/games/manifest";
@@ -102,6 +104,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   const chatStreamRef = useRef<HTMLDivElement>(null);
   const chatAtBottomRef = useRef(true);
   const gameRecoveryRef = useRef(false);
+  const processedPartyEventsRef = useRef(0);
 
   const anyModalOpen = Boolean(moreOpen || roomPickerGame || gameResults || editing || qrModalOpen);
 
@@ -147,7 +150,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   const filteredMembers = rsvpFilter === "all" ? members : members.filter((m) => m.rsvpStatus === rsvpFilter);
   const activeSession = activeSessions.find((s) => s.id === gameSession);
   const gameRooms = roomPickerGame ? activeSessions.filter((session) => session.game === roomPickerGame) : [];
-  const gameRole = useGameRole(activeSession?.participants ?? [], actorId, activeSession?.status, preferredRole);
+  const gameRole = useGameRole(activeSession?.participants ?? [], actorId, activeSession?.status, preferredRole, activeSession?.createdBy);
 
   const liveChat = useLiveStream<Record<string, unknown>>(`chat:${party.id}`);
   const liveParty = useLiveStream<Record<string, unknown>>(`party:${party.id}`);
@@ -253,7 +256,8 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       form.set("partyId", party.id);
       form.set("kind", "voice");
       form.set("consent", "true");
-      form.set("file", new File([blob], `voice-${Date.now()}.webm`, { type: blob.type || "audio/webm" }));
+      const voiceType = (blob.type || "audio/webm").split(";")[0];
+      form.set("file", new File([blob], `voice-${Date.now()}.${voiceType === "audio/mp4" ? "m4a" : voiceType === "audio/ogg" ? "ogg" : "webm"}`, { type: voiceType }));
       const response = await fetch("/api/media", { method: "POST", body: form });
       const upload = await response.json().catch(() => ({}));
       if (!response.ok || !upload.media?.url) throw new Error(upload.error || "Upload failed");
@@ -306,7 +310,10 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   }, [liveParty.connectionEpoch, party.id]);
 
   useEffect(() => {
-    liveParty.events.forEach((ev) => {
+    if (liveParty.events.length < processedPartyEventsRef.current) processedPartyEventsRef.current = 0;
+    const fresh = liveParty.events.slice(processedPartyEventsRef.current);
+    processedPartyEventsRef.current = liveParty.events.length;
+    fresh.forEach((ev) => {
       if (ev.type === "session:created" && ev.session) {
         const s = ev.session as GameSession & { participants: string[] };
         setActiveSessions((prev) => [s, ...prev.filter((p) => p.id !== s.id)]);
@@ -318,14 +325,14 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       if (ev.type === "session:completed" && ev.sessionId) {
         setActiveSessions((prev) => prev.filter((p) => p.id !== ev.sessionId));
       }
-      if (ev.type === "reaction:float" && typeof ev.emoji === "string") {
+      if (ev.type === "reaction:float" && typeof ev.emoji === "string" && ev.userId !== actorId) {
         const id = crypto.randomUUID();
         const x = typeof ev.x === "number" ? ev.x : 20 + Math.random() * 60;
         setFloatingReactions((prev) => [...prev.slice(-15), { id, emoji: ev.emoji as string, x }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== id)), 2200);
       }
     });
-  }, [liveParty.events]);
+  }, [liveParty.events, actorId]);
 
   function sendLiveReaction(emoji: string) {
     soundTap();
@@ -438,6 +445,21 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
     catch { setError(t("createError")); }
   }
 
+  function openQrModal() {
+    void generateQr();
+    setQrModalOpen(true);
+  }
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => undefined);
+    else document.exitFullscreen().catch(() => undefined);
+  }
+
+  function participantName(id: string) {
+    if (isBotId(id)) return botDisplayName(id);
+    return members.find((member) => member.clerkUserId === id)?.displayName || id.slice(-8);
+  }
+
   function renderGame() {
     const game = gameCatalogue.find((g) => g.id === selectedGame);
     const minPlayers = game?.minPlayers ?? 2;
@@ -445,93 +467,61 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
     const hasEnoughPlayers = currentCount >= minPlayers;
 
     if (activeSession?.status === "lobby") {
+      const missing = Math.max(0, minPlayers - currentCount);
+      const isCreator = activeSession.createdBy === actorId;
       return (
         <section className="party-room-panel game-lobby">
           <div className="active-game-head">
             <button onClick={backToCatalogue} type="button">
-              <span className="material-symbols-rounded">arrow_back</span>
+              <span className="material-symbols-rounded" aria-hidden="true">arrow_back</span>
               {t("gamesBack")}
             </button>
             <div>
-              <span>{locale === "ru" ? "Лобби игры" : "Game Lobby"}</span>
+              <span>{t("lobbyTitle")}</span>
               <h2>{game ? t(game.titleKey) : ""}</h2>
             </div>
-            <button
-              className="demo-icon-button"
-              onClick={() => { void generateQr(); setQrModalOpen(true); }}
-              type="button"
-              title={locale === "ru" ? "Показать QR-код" : "Show QR Code"}
-            >
-              <span className="material-symbols-rounded">qr_code_2</span>
+            <button aria-label={t("lobbyQr")} className="demo-icon-button" onClick={openQrModal} title={t("lobbyQr")} type="button">
+              <span className="material-symbols-rounded" aria-hidden="true">qr_code_2</span>
             </button>
           </div>
-
           <div className="game-lobby-count">
             <strong>{currentCount}</strong>
-            <span>
-              {locale === "ru"
-                ? `из ${minPlayers}+ игроков подключились`
-                : `of ${minPlayers}+ players joined`}
-            </span>
+            <span>{t("lobbyJoined").replace("{min}", String(minPlayers))}</span>
           </div>
-
           <div className="game-lobby-players">
             {activeSession.participants.map((id, index) => (
               <span key={id}>
                 <i>{index + 1}</i>
-                {id === actorId ? (locale === "ru" ? "Ты" : "You") : id.slice(-8)}
+                {id === actorId ? t("lobbyYou") : participantName(id)}
               </span>
             ))}
           </div>
-
-          {activeSession.createdBy === actorId ? (
-            <div className="game-lobby-actions" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", maxWidth: "420px", margin: "16px auto 0" }}>
+          {isCreator ? (
+            <div className="game-lobby-actions">
               {hasEnoughPlayers ? (
-                <button
-                  className="demo-action demo-action--lime"
-                  onClick={() => startGameSession(false)}
-                  type="button"
-                  style={{ width: "100%", padding: "14px 20px", fontSize: "1.1rem", justifyContent: "center" }}
-                >
-                  <span className="material-symbols-rounded">play_arrow</span>
-                  {locale === "ru" ? "Начать игру" : "Start game"}
+                <button className="demo-action demo-action--lime game-lobby-start" onClick={() => startGameSession(false)} type="button">
+                  <span className="material-symbols-rounded" aria-hidden="true">play_arrow</span>
+                  {t("lobbyStart")}
                 </button>
               ) : (
                 <>
-                  <div style={{ padding: "10px 14px", background: "rgba(0,0,0,0.06)", border: "2px solid #000", fontWeight: 700, textAlign: "center", borderRadius: "8px" }}>
-                    {locale === "ru"
-                      ? `Ждём ещё ${minPlayers - currentCount} чел. для живой игры`
-                      : `Waiting for ${minPlayers - currentCount} more players`}
-                  </div>
-                  <button
-                    className="demo-action demo-action--pink"
-                    onClick={() => startGameSession(true)}
-                    type="button"
-                    style={{ width: "100%", padding: "12px 18px", justifyContent: "center" }}
-                  >
-                    <span className="material-symbols-rounded">smart_toy</span>
-                    {locale === "ru" ? "Тестовый запуск с ботами" : "Test run with bots"}
+                  <p className="game-lobby-need">{t("lobbyNeedMore").replace("{count}", String(missing))}</p>
+                  <button className="demo-action demo-action--pink" onClick={() => startGameSession(true)} type="button">
+                    <span className="material-symbols-rounded" aria-hidden="true">smart_toy</span>
+                    {t("lobbyBots")}
                   </button>
+                  <small className="game-lobby-hint">{t("lobbyBotsHint")}</small>
                 </>
               )}
-              <button
-                className="demo-action demo-action--cream"
-                onClick={() => { void generateQr(); setQrModalOpen(true); }}
-                type="button"
-                style={{ width: "100%", justifyContent: "center" }}
-              >
-                <span className="material-symbols-rounded">qr_code_2</span>
-                {locale === "ru" ? "Показать QR-код для друзей" : "Show QR Code for friends"}
+              <button className="demo-action demo-action--cream" onClick={openQrModal} type="button">
+                <span className="material-symbols-rounded" aria-hidden="true">qr_code_2</span>
+                {t("lobbyQr")}
               </button>
             </div>
           ) : (
-            <div style={{ textAlign: "center", marginTop: "16px" }}>
-              <p className="controller-answered">
-                {hasEnoughPlayers
-                  ? (locale === "ru" ? "Ждём, когда организатор запустит игру" : "Waiting for the host to start")
-                  : (locale === "ru" ? `Ждём ещё ${minPlayers - currentCount} игроков` : `Waiting for ${minPlayers - currentCount} more players`)}
-              </p>
-            </div>
+            <p className="controller-answered game-lobby-wait">
+              {hasEnoughPlayers ? t("lobbyWaitHost") : t("lobbyWaitMore").replace("{count}", String(missing))}
+            </p>
           )}
         </section>
       );
@@ -572,139 +562,49 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       selectedGame === "cardsChaos" ? <CardsOfChaosGame {...props} /> :
       selectedGame === "musicQuiz" ? <MusicQuizGame {...props} /> : null;
 
+    const isSessionHost = activeSession?.createdBy === actorId;
     return (
       <section className={`party-room-panel ${gameRole === "spectator" ? "is-spectating" : ""}`}>
         <div className="active-game-head">
           <button onClick={backToCatalogue} type="button">
-            <span className="material-symbols-rounded">arrow_back</span> {t("gamesBack")}
+            <span className="material-symbols-rounded" aria-hidden="true">arrow_back</span> {t("gamesBack")}
           </button>
           <div>
             <span>{t("gamesMode")}</span>
             <h2>{game ? t(game.titleKey) : ""}</h2>
           </div>
-
-          <div className="active-game-role-toggle" style={{ display: "inline-flex", gap: "4px", background: "#f0f0eb", border: "2px solid #000", padding: "2px", borderRadius: "6px" }}>
-            <button
-              style={{
-                background: componentRole === "controller" ? "var(--lime, #c9ff05)" : "transparent",
-                border: "none",
-                fontWeight: 800,
-                padding: "4px 8px",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "3px",
-                fontSize: "12px",
-                color: "#000",
-              }}
-              onClick={() => setPreferredRole("controller")}
-              type="button"
-              title={locale === "ru" ? "Режим пульта игрока" : "Controller view"}
-            >
-              <span className="material-symbols-rounded" style={{ fontSize: "16px" }}>videogame_asset</span>
-              <span>{locale === "ru" ? "Пульт" : "Play"}</span>
-            </button>
-            <button
-              style={{
-                background: componentRole === "stage" ? "var(--lime, #c9ff05)" : "transparent",
-                border: "none",
-                fontWeight: 800,
-                padding: "4px 8px",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "3px",
-                fontSize: "12px",
-                color: "#000",
-              }}
-              onClick={() => setPreferredRole("stage")}
-              type="button"
-              title={locale === "ru" ? "Режим общего экрана для ТВ" : "Stage TV view"}
-            >
-              <span className="material-symbols-rounded" style={{ fontSize: "16px" }}>tv</span>
-              <span>{locale === "ru" ? "Экран ТВ" : "Stage"}</span>
-            </button>
-            <button
-              style={{
-                background: "transparent",
-                border: "none",
-                padding: "4px 6px",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-              }}
-              onClick={() => {
-                if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
-                else document.exitFullscreen().catch(() => {});
-              }}
-              type="button"
-              title={locale === "ru" ? "Во весь экран" : "Fullscreen"}
-            >
-              <span className="material-symbols-rounded" style={{ fontSize: "18px" }}>fullscreen</span>
+          <div className="active-game-role-toggle" role="group" aria-label={t("roleSwitch")}>
+            {isSessionHost && (
+              <>
+                <button aria-pressed={componentRole === "controller"} className="role-toggle-btn" onClick={() => setPreferredRole("controller")} title={t("roleControllerHint")} type="button">
+                  <span className="material-symbols-rounded" aria-hidden="true">videogame_asset</span>
+                  <span>{t("roleController")}</span>
+                </button>
+                <button aria-pressed={componentRole === "stage"} className="role-toggle-btn" onClick={() => setPreferredRole("stage")} title={t("roleStageHint")} type="button">
+                  <span className="material-symbols-rounded" aria-hidden="true">tv</span>
+                  <span>{t("roleStage")}</span>
+                </button>
+              </>
+            )}
+            <button aria-label={t("fullscreen")} className="role-toggle-btn" onClick={toggleFullscreen} title={t("fullscreen")} type="button">
+              <span className="material-symbols-rounded" aria-hidden="true">fullscreen</span>
             </button>
           </div>
         </div>
-
         {gameRole === "spectator" && (
           <div className="spectator-banner">
-            <span className="material-symbols-rounded">visibility</span>
+            <span className="material-symbols-rounded" aria-hidden="true">visibility</span>
             <strong>{t("spectating")}</strong>
           </div>
         )}
-
         <div className="spectator-board">{board}</div>
-
-        <div
-          className="party-live-reactions-dock"
-          style={{
-            position: "fixed",
-            bottom: "75px",
-            right: "16px",
-            display: "flex",
-            gap: "6px",
-            background: "#fff",
-            border: "3px solid #000",
-            boxShadow: "3px 3px 0 #000",
-            padding: "4px 8px",
-            borderRadius: "30px",
-            zIndex: 40,
-          }}
-        >
-          {["🔥", "😂", "👏", "❤️", "😱"].map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => sendLiveReaction(emoji)}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: "20px",
-                cursor: "pointer",
-                padding: "2px",
-                lineHeight: 1,
-              }}
-            >
-              {emoji}
-            </button>
+        <div className="party-live-reactions-dock" role="group" aria-label={t("liveReactions")}>
+          {LIVE_REACTIONS.map((emoji) => (
+            <button aria-label={t("reactionSend").replace("{emoji}", emoji)} key={emoji} onClick={() => sendLiveReaction(emoji)} type="button">{emoji}</button>
           ))}
         </div>
-
         {floatingReactions.map((item) => (
-          <div
-            key={item.id}
-            className="floating-party-reaction"
-            style={{
-              position: "fixed",
-              bottom: "100px",
-              left: `${item.x}%`,
-              fontSize: "36px",
-              pointerEvents: "none",
-              zIndex: 9999,
-              animation: "floatUpFade 2s ease-out forwards",
-            }}
-          >
-            {item.emoji}
-          </div>
+          <div aria-hidden="true" className="floating-party-reaction" key={item.id} style={{ left: `${item.x}%` }}>{item.emoji}</div>
         ))}
       </section>
     );
@@ -963,36 +863,24 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
     {editing && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(false); }}><section aria-modal="true" className="demo-modal" role="dialog"><span className="demo-kicker">{t("eventHubSettingsTitle")}</span><h2>{party.title}</h2><form onSubmit={saveEdit}><label>{t("createName")}<input name="title" defaultValue={party.title} required /></label><EventDateTimeFields dateLabel={t("createDate")} timeLabel={t("createTime")} dateDefault={eventDateInputValue(party.date)} timeDefault={party.time} /><label>{t("createVenue")}<input name="venue" defaultValue={party.venue} required /></label><label>{t("createFormat")}<span className="brand-select"><select name="category" defaultValue={party.category}><option>House Party</option><option>After-work</option><option>Trip</option><option>Birthday</option><option>Game night</option></select></span></label><label>{t("createDetails")}<textarea name="description" defaultValue={party.description} /></label><button type="submit">{t("profileSave")}</button></form></section></div>}
     {qrModalOpen && (
       <div className="demo-modal-backdrop qr-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setQrModalOpen(false); }}>
-        <section aria-modal="true" className="demo-modal qr-modal" role="dialog" style={{ maxWidth: "420px", textAlign: "center", padding: "24px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <h2 style={{ fontSize: "1.4rem", margin: 0, fontWeight: 900 }}>{locale === "ru" ? "Вход в тусу" : "Join Party"}</h2>
-            <button className="demo-icon-button" onClick={() => setQrModalOpen(false)} type="button">
-              <span className="material-symbols-rounded">close</span>
+        <section aria-labelledby="qr-modal-title" aria-modal="true" className="demo-modal qr-modal" role="dialog">
+          <div className="qr-modal-head">
+            <h2 id="qr-modal-title">{t("qrTitle")}</h2>
+            <button aria-label={t("gameRoomsClose")} className="demo-icon-button" onClick={() => setQrModalOpen(false)} type="button">
+              <span className="material-symbols-rounded" aria-hidden="true">close</span>
             </button>
           </div>
-          {qrUrl ? (
-            <img src={qrUrl} alt="QR Code" style={{ width: "240px", height: "240px", margin: "0 auto 16px", border: "3px solid #000", borderRadius: "8px", display: "block" }} />
-          ) : (
-            <div style={{ height: "240px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span>{locale === "ru" ? "Генерация QR..." : "Generating QR..."}</span>
-            </div>
-          )}
-          <div style={{ background: "var(--lime, #c9ff05)", border: "3px solid #000", padding: "8px", fontWeight: 900, fontSize: "1.6rem", letterSpacing: "3px", marginBottom: "16px" }}>
-            {party.inviteCode}
-          </div>
-          <p style={{ margin: "0 0 16px", color: "#333", fontSize: "0.95rem" }}>
-            {locale === "ru"
-              ? "Отсканируй камерой смартфона — вход за 1 секунду без скачивания"
-              : "Scan with your phone camera — 1-second join without downloads"}
-          </p>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button className="demo-action" onClick={() => void copyPartyInvite()} type="button" style={{ flex: 1, justifyContent: "center" }}>
-              <span className="material-symbols-rounded">content_copy</span>
-              {locale === "ru" ? "Копировать ссылку" : "Copy link"}
+          {qrUrl ? <img alt={t("qrAlt")} className="qr-modal-image" src={qrUrl} /> : <div className="qr-modal-placeholder" role="status">{t("qrGenerating")}</div>}
+          <div className="qr-modal-code">{party.inviteCode}</div>
+          <p className="qr-modal-hint">{t("qrHint")}</p>
+          <div className="qr-modal-actions">
+            <button className="demo-action" onClick={() => void copyPartyInvite()} type="button">
+              <span className="material-symbols-rounded" aria-hidden="true">content_copy</span>
+              {t("qrCopy")}
             </button>
-            <button className="demo-action demo-action--lime" onClick={() => void sharePartyInvite()} type="button" style={{ flex: 1, justifyContent: "center" }}>
-              <span className="material-symbols-rounded">ios_share</span>
-              {locale === "ru" ? "Поделиться" : "Share"}
+            <button className="demo-action demo-action--lime" onClick={() => void sharePartyInvite()} type="button">
+              <span className="material-symbols-rounded" aria-hidden="true">ios_share</span>
+              {t("qrShare")}
             </button>
           </div>
         </section>

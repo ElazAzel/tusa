@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/app/components/LocaleProvider";
 import ProductHeader from "@/app/components/ProductHeader";
@@ -10,16 +10,8 @@ export default function CreatePartyForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [adultOnly, setAdultOnly] = useState(true);
-  const [hasAccess, setHasAccess] = useState(false);
   const { locale, t } = useLocale();
   const router = useRouter();
-
-  useEffect(() => {
-    fetch("/api/promos/redeem", { cache: "no-store" })
-      .then(async (response) => response.ok ? response.json() : null)
-      .then((data) => setHasAccess(Boolean(data?.redemptions?.some((redemption: { benefits?: { type: string }[] }) => redemption.benefits?.some((benefit) => benefit.type === "party_creation")))))
-      .catch(() => setHasAccess(false));
-  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

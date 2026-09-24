@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { parseGameCommand as sdkParse } from "./sdk";
+import { getAvailableCommandTypes, parseGameCommand as sdkParse } from "./sdk";
 
 const empty = z.object({}).strict();
 const index = z.object({ index: z.number().int().min(0).max(200) }).strict();
@@ -60,3 +60,7 @@ export function parseGameCommand(gameId: string, actionType: string, payload: un
 }
 
 export const COMMAND_GAMES = Object.freeze(Object.keys(COMMANDS));
+
+export function commandTypesFor(gameId: string): string[] {
+  return [...new Set([...getAvailableCommandTypes(gameId), ...Object.keys(COMMANDS[gameId] ?? {})])];
+}
