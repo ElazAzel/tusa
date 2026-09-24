@@ -17,7 +17,7 @@ export default function Wheel({ sessionId, onSave, role }: { partyId: string; se
   const sendAction = stageRole ? stage.sendAction : controller.sendAction;
   const [text, setText] = useState("");
   const completed = useRef(false);
-  const copy = locale === "ru" ? { title: "Колесо выбора", placeholder: "Добавить вариант", add: "Добавить", spin: "Крутить", next: "Ещё раз", finish: "Завершить", result: "Выпало", options: "вариантов" } : { title: "Choice Wheel", placeholder: "Add an option", add: "Add", spin: "Spin", next: "Spin again", finish: "Finish", result: "It chose", options: "options" };
+  const copy = locale === "ru" ? { title: "Колесо Судьбы", placeholder: "Добавить вариант", add: "Добавить", spin: "Крутить", next: "Ещё раз", finish: "Завершить", result: "Выпало", options: "вариантов" } : { title: "Wheel of Fate", placeholder: "Add an option", add: "Add", spin: "Spin", next: "Spin again", finish: "Finish", result: "It chose", options: "options" };
   const segment = state.options.length ? 360 / state.options.length : 360;
   const palette = ["var(--lime)", "#ffb3d4", "#c7b8ff", "var(--cream)", "#ffc857", "#6ee7b7", "#a78bfa", "#fb7185"];
   const add = () => { if (!text.trim()) return; sendAction("addOption", { text: text.trim() }); setText(""); };

@@ -411,7 +411,8 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
     if (!scores || typeof scores !== "object" || Array.isArray(scores)) return fallback;
     const entries = Object.entries(scores as Record<string, unknown>).filter(([id, value]) => typeof value === "number" && (participants.includes(id) || isBotId(id)));
     if (!entries.length) return fallback;
-    const ids = new Set([...participants, ...entries.map(([id]) => id)]);
+    const statePlayers = Array.isArray(state?.players) ? (state.players as unknown[]).filter((id): id is string => typeof id === "string") : [];
+    const ids = new Set([...participants, ...statePlayers, ...entries.map(([id]) => id)]);
     return [...ids].map((id) => ({ id, sessionId: gameSession ?? "", userId: id, displayName: participantName(id), score: Number((scores as Record<string, unknown>)[id] ?? 0), metadata: {}, created: false }))
       .sort((left, right) => right.score - left.score);
   }

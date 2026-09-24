@@ -39,7 +39,7 @@ export default function QuizBattle({ sessionId, onSave, role }: { partyId: strin
   }, [complete, isHost, onSave, state.phase]);
 
   const sorted = useMemo(() => Object.entries(state.scores).sort(([, a], [, b]) => b - a), [state.scores]);
-  const copy = locale === "ru" ? { title: "Квиз-баттл", round: "Вопрос", correct: "Верный ответ", accepted: "Ответ зафиксирован", next: "Следующий вопрос", finish: "Финиш", points: "балл." } : { title: "Quiz Battle", round: "Question", correct: "Correct answer", accepted: "Answer locked", next: "Next question", finish: "Finish", points: "pts" };
+  const copy = locale === "ru" ? { title: "Битва квизов", round: "Вопрос", correct: "Верный ответ", accepted: "Ответ зафиксирован", next: "Следующий вопрос", finish: "Финиш", points: "балл." } : { title: "Quiz Battle", round: "Question", correct: "Correct answer", accepted: "Answer locked", next: "Next question", finish: "Finish", points: "pts" };
 
   function answer(index: number) { if (chosen !== null || state.phase !== "question" || seconds <= 0) return; setChosen(index); sendAction("answer", { index }); }
 

@@ -21,7 +21,7 @@ export default function BrainBurst({ sessionId, onSave, role }: { partyId: strin
   const [now, setNow] = useState(0);
   const revealRequested = useRef(-1);
   const completed = useRef(false);
-  const copy = locale === "ru" ? { title: "Мозговой штурм", round: "Раунд", waiting: "Готовим вопрос…", accepted: "Ответ принят", correct: "Правильный ответ", points: "очк.", next: "Дальше", finish: "Завершить" } : { title: "Brain Burst", round: "Round", waiting: "Preparing the question…", accepted: "Answer accepted", correct: "Correct answer", points: "pts", next: "Next", finish: "Finish" };
+  const copy = locale === "ru" ? { title: "Блиц-квиз", round: "Раунд", waiting: "Готовим вопрос…", accepted: "Ответ принят", correct: "Правильный ответ", points: "очк.", next: "Дальше", finish: "Завершить" } : { title: "Brain Burst", round: "Round", waiting: "Preparing the question…", accepted: "Answer accepted", correct: "Correct answer", points: "pts", next: "Next", finish: "Finish" };
 
   useEffect(() => { setChosen(null); revealRequested.current = -1; }, [state.round]);
   useEffect(() => {

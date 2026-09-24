@@ -50,8 +50,8 @@ export default function HeadsUp({ sessionId, onSave, role }: { partyId: string; 
   const isActive = me === state.activePlayer;
   const canScore = state.phase === "play" && !isActive && Boolean(state.word);
   const copy = locale === "ru"
-    ? { title: "Forehead Guess", round: "Раунд", active: "Угадывает", hidden: "Держи телефон у лба. Слово видят остальные.", word: "Слово для подсказок", explain: "Объясняйте без однокоренных слов и без показа экрана.", correct: "Угадал", skip: "Пас", turn: "За ход", total: "Всего", skipped: "Пасов", next: "Следующий игрок", finish: "Завершить" }
-    : { title: "Forehead Guess", round: "Round", active: "Guessing", hidden: "Hold the phone to your forehead. Everyone else sees the word.", word: "Word to explain", explain: "Give clues without saying the root word or showing the screen.", correct: "Correct", skip: "Pass", turn: "This turn", total: "Total", skipped: "Passes", next: "Next player", finish: "Finish" };
+    ? { title: "Слово на лбу", round: "Раунд", active: "Угадывает", hidden: "Держи телефон у лба. Слово видят остальные.", word: "Слово для подсказок", explain: "Объясняйте без однокоренных слов и без показа экрана.", correct: "Угадал", skip: "Пас", turn: "За ход", total: "Всего", skipped: "Пасов", next: "Следующий игрок", finish: "Завершить" }
+    : { title: "Heads Up", round: "Round", active: "Guessing", hidden: "Hold the phone to your forehead. Everyone else sees the word.", word: "Word to explain", explain: "Give clues without saying the root word or showing the screen.", correct: "Correct", skip: "Pass", turn: "This turn", total: "Total", skipped: "Passes", next: "Next player", finish: "Finish" };
 
   useEffect(() => {
     if (state.phase !== "play") return;

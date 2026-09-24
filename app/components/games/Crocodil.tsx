@@ -50,8 +50,8 @@ export default function Crocodil({ sessionId, onSave, role }: { partyId: string;
   const me = state.viewerId ?? "";
   const isActive = me === state.activePlayer;
   const copy = locale === "ru"
-    ? { title: "Mime Riot", round: "Раунд", active: "Показывает", team: "Команда", teamA: "Команда A", teamB: "Команда B", yourWord: "Твоё задание", watch: "Смотри жесты активного игрока. Подсказывать словами нельзя.", correct: "Угадали", pass: "Пас", turn: "За ход", score: "Счёт", next: "Следующий ход", finish: "Завершить" }
-    : { title: "Mime Riot", round: "Round", active: "Acting", team: "Team", teamA: "Team A", teamB: "Team B", yourWord: "Your prompt", watch: "Watch the active player's gestures. No spoken hints.", correct: "Correct", pass: "Pass", turn: "This turn", score: "Score", next: "Next turn", finish: "Finish" };
+    ? { title: "Крокодил", round: "Раунд", active: "Показывает", team: "Команда", teamA: "Команда A", teamB: "Команда B", yourWord: "Твоё задание", watch: "Смотри жесты активного игрока. Подсказывать словами нельзя.", correct: "Угадали", pass: "Пас", turn: "За ход", score: "Счёт", next: "Следующий ход", finish: "Завершить" }
+    : { title: "Crocodil", round: "Round", active: "Acting", team: "Team", teamA: "Team A", teamB: "Team B", yourWord: "Your prompt", watch: "Watch the active player's gestures. No spoken hints.", correct: "Correct", pass: "Pass", turn: "This turn", score: "Score", next: "Next turn", finish: "Finish" };
 
   useEffect(() => {
     if (state.phase !== "play") return;

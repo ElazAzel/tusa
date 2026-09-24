@@ -18,7 +18,7 @@ export default function BlankSlate({ sessionId, onSave, role }: { partyId: strin
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const completed = useRef(false);
-  const copy = locale === "ru" ? { title: "Одно слово", round: "Раунд", hint: "Напиши первую ассоциацию. Совпадения принесут очки группе.", placeholder: "Твоё слово…", submit: "Отправить", accepted: "Ответ сохранён", reveal: "Открыть ответы", matches: "Совпавших ответов", none: "В этом раунде совпадений нет", next: "Следующий раунд", finish: "Завершить" } : { title: "Same Word", round: "Round", hint: "Write your first association. Matching answers score for the group.", placeholder: "Your word…", submit: "Submit", accepted: "Answer saved", reveal: "Reveal answers", matches: "Matching answers", none: "No matches this round", next: "Next round", finish: "Finish" };
+  const copy = locale === "ru" ? { title: "Одно слово", round: "Раунд", hint: "Напиши первую ассоциацию. Совпадения принесут очки группе.", placeholder: "Твоё слово…", submit: "Отправить", accepted: "Ответ сохранён", reveal: "Открыть ответы", matches: "Совпавших ответов", none: "В этом раунде совпадений нет", next: "Следующий раунд", finish: "Завершить" } : { title: "Blank Slate", round: "Round", hint: "Write your first association. Matching answers score for the group.", placeholder: "Your word…", submit: "Submit", accepted: "Answer saved", reveal: "Reveal answers", matches: "Matching answers", none: "No matches this round", next: "Next round", finish: "Finish" };
 
   useEffect(() => { setAnswer(""); setSubmitted(false); }, [state.round]);
   useEffect(() => {
