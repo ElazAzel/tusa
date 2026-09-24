@@ -5223,3 +5223,4 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
 @keyframes game-invite-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .game-invite-banner { animation: none; } }
 @media (max-width: 600px) { .game-invite-banner { flex-wrap: wrap; } .game-invite-banner .demo-action { width: 100%; } }
+.active-game-head > div > span { color: #55555c; }

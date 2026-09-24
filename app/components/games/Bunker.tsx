@@ -28,7 +28,7 @@ export default function Bunker({ sessionId, onSave, role }: { partyId:string; se
   const cardRows: Array<[keyof Card, string]> = [["profession", ru?"Профессия":"Profession"], ["health", ru?"Здоровье":"Health"], ["hobby", ru?"Хобби":"Hobby"], ["baggage", ru?"Багаж":"Baggage"], ["secret", ru?"Секрет":"Secret"]];
   const votes = Object.values(state.votes).reduce<Record<string,number>>((all, id) => ({ ...all, [id]:(all[id] ?? 0)+1 }), {});
   return <section className="party-game-board game-board-enter bunker-board">
-    <span className="game-step">BUNKER · {state.round}</span>
+    <span className="game-step">{ru ? "БУНКЕР" : "BUNKER"} · {state.round}</span>
     {state.phase === "lobby" && <><h3>{ru?"Кто попадёт в бункер?":"Who gets into the bunker?"}</h3><p>{ru?"Нужно минимум 5 игроков. Сейчас":"At least 5 players are needed. Now"}: {state.players.length}</p>{stageRole && <button className="demo-action demo-action--lime" onClick={() => send("start")} type="button">{ru?"Начать":"Start"}</button>}</>}
     {state.scenario && state.phase !== "lobby" && <p className="tt-prompt"><b>{ru?"Катастрофа":"Disaster"}:</b> {state.scenario}</p>}
     {state.phase === "argue" && <>{card ? <dl className="bunker-card">{cardRows.map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{card[key]}</dd></div>)}</dl> : <strong className="game-word-pop">{state.traits[me] ?? (ru?"Твоя карта скрыта до старта":"Your card stays hidden until the start")}</strong>}<p>{ru?"Защити своё место. Время":"Defend your seat. Time"}: {seconds} {ru?"сек.":"s"}</p>{stageRole && <button className="demo-action demo-action--pink" onClick={() => send("openVote")} type="button">{ru?"Открыть голосование":"Open voting"}</button>}</>}
