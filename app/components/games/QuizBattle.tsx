@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePlayerName } from "@/app/components/PlayerNames";
 import { useStageGame } from "@/app/components/useStageGame";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
@@ -9,6 +10,7 @@ type QuizState = { engine: string; game: string; round: number; phase: "question
 const initial = (): QuizState => ({ engine: "server-v1", game: "quiz", round: 0, phase: "question", question: "", options: [], correct: -1, deadline: 0, scores: {}, answered: {}, players: [] });
 
 export default function QuizBattle({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+  const playerName = usePlayerName();
   const { locale } = useLocale();
   const isHost = role === "stage";
   const stage = useStageGame<QuizState>(isHost ? sessionId ?? null : null, initial);
@@ -46,7 +48,7 @@ export default function QuizBattle({ sessionId, onSave, role }: { partyId: strin
     <h3>{state.question}</h3>
     {state.phase === "question" && <div className="quiz-options">{state.options.map((option, index) => <button key={option} className={chosen === index ? "selected" : ""} disabled={chosen !== null || seconds <= 0} onClick={() => answer(index)} type="button"><b>{String.fromCharCode(65 + index)}</b><span>{option}</span></button>)}</div>}
     {chosen !== null && state.phase === "question" && <p className="controller-answered">{copy.accepted}</p>}
-    {state.phase === "result" && <div className="trivia-result"><p><b>{copy.correct}:</b> {state.options[state.correct]}</p><div className="trivia-scores">{sorted.map(([userId, score], rank) => <p key={userId}><span>#{rank + 1} {userId.slice(-8)}</span><strong>{score} {copy.points}</strong></p>)}</div>{isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 4 ? copy.finish : copy.next}</button>}</div>}
+    {state.phase === "result" && <div className="trivia-result"><p><b>{copy.correct}:</b> {state.options[state.correct]}</p><div className="trivia-scores">{sorted.map(([userId, score], rank) => <p key={userId}><span>#{rank + 1} {playerName(userId)}</span><strong>{score} {copy.points}</strong></p>)}</div>{isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 4 ? copy.finish : copy.next}</button>}</div>}
     {sessionId && <span className="multiplayer-badge">LIVE</span>}
   </div>;
 }

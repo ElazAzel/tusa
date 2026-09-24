@@ -236,8 +236,9 @@ export async function GET(request: NextRequest) {
         getGameScores(sessionId),
         session.createdBy === userId ? getPendingGameActions(sessionId) : Promise.resolve([]),
       ]);
-      const safeSession = sanitizeControllerSession(session, userId);
-      return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant, viewerId: userId });
+      const publicView = request.nextUrl.searchParams.get("view") === "public" && session.createdBy === userId;
+      const safeSession = sanitizeControllerSession(session, userId, publicView);
+      return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant, viewerId: publicView ? "" : userId, publicView });
     }
 
     if (partyId) {
@@ -261,14 +262,20 @@ function publicGameSession(session: SessionView) {
   return Object.fromEntries(Object.entries(session).filter(([key]) => key !== "state"));
 }
 
-function sanitizeControllerSession(session: SessionView, userId: string) {
-  return { ...session, state: sanitizeControllerState(session.game, session.state, userId, session.createdBy) };
+const STAGE_DEVICE_GAMES = new Set(["alias"]);
+
+function sanitizeControllerSession(session: SessionView, userId: string, publicView = false) {
+  return { ...session, state: sanitizeControllerState(session.game, session.state, publicView ? PUBLIC_VIEWER : userId, session.createdBy) };
 }
 
+const PUBLIC_VIEWER = "__public__";
+
 function sanitizeControllerState(game: string, rawState: Record<string, unknown>, userId: string, creatorId = "") {
-  const state = sanitizeSdkState(game, structuredClone(rawState), userId === creatorId ? "__stage__" : userId);
+  const publicView = userId === PUBLIC_VIEWER;
+  const sdkViewer = !publicView && userId === creatorId && STAGE_DEVICE_GAMES.has(game) ? "__stage__" : userId;
+  const state = sanitizeSdkState(game, structuredClone(rawState), sdkViewer);
   const phase = String(state.phase ?? "");
-  if ((game === "trivia" || game === "quiz" || game === "brainBurst") && phase === "question") state.correct = -1;
+  if ((game === "trivia" || game === "quiz" || game === "brainBurst") && phase === "question") { state.correct = -1; delete state.roundPoints; }
   if (game === "twoTruths" && phase === "vote") state.lie = -1;
   if (game === "blankSlate" && phase === "write") {
     const submissions = (state.submissions ?? {}) as Record<string, string>;
@@ -334,7 +341,9 @@ function sanitizeControllerState(game: string, rawState: Record<string, unknown>
     if (phase === "play") state.submissions = {};
   }
   if (game === "crocodil" && phase === "play" && state.activePlayer !== userId) state.word = "";
-  if (game === "headsup" && phase === "play" && (!userId || state.activePlayer === userId)) state.word = "";
+  if (game === "headsup" && phase === "play" && (!userId || publicView || state.activePlayer === userId)) state.word = "";
+  if (publicView && game === "impostor" && phase !== "reveal") state.word = "";
+  if (publicView && game === "spyfall" && phase !== "reveal") state.location = "";
   if (game === "charades" && phase === "play" && state.activePlayer !== userId) state.word = "";
   return state;
 }

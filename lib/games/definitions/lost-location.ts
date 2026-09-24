@@ -75,7 +75,7 @@ export default defineGame<State>({
       if (ctx.actorId !== ctx.creatorId || state.phase !== "reveal") return { state, changed: false, error: "Only the stage can start the next round." };
       const round = state.round + 1;
       if (round >= 5) return { changed: true, state: { ...state, phase: "finished" } };
-      return { changed: true, state: { ...state, phase: "qa", round, location: locationFor(round, state.locale), spyId: ctx.participants[round % ctx.participants.length] ?? "", turnIndex: round % Math.max(1, ctx.participants.length), votes: {}, spyGuess: "", accusedId: "", outcome: "", players: ctx.participants } };
+      return { changed: true, state: { ...state, phase: "qa", round, location: locationFor(round, state.locale), spyId: ctx.participants[(Math.abs(ctx.now) + round) % Math.max(1, ctx.participants.length)] ?? "", turnIndex: round % Math.max(1, ctx.participants.length), votes: {}, spyGuess: "", accusedId: "", outcome: "", players: ctx.participants } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },

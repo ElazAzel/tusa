@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePlayerName } from "@/app/components/PlayerNames";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { useStageGame } from "@/app/components/useStageGame";
@@ -36,6 +37,7 @@ const emptyState = (): GameState => ({
 });
 
 export default function Crocodil({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+  const playerName = usePlayerName();
   const { locale } = useLocale();
   const isHost = role === "stage";
   const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, emptyState);
@@ -73,7 +75,7 @@ export default function Crocodil({ sessionId, onSave, role }: { partyId: string;
   }, [isHost, onSave, stage, state.phase, state.scores.A, state.scores.B]);
 
   const activeLabel = state.activeTeam === "A" ? copy.teamA : copy.teamB;
-  const activeShort = state.activePlayer ? state.activePlayer.slice(-8) : "stage";
+  const activeShort = state.activePlayer ? playerName(state.activePlayer) : "stage";
 
   return <div className="party-game-board game-board-enter charades-board">
     <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/6</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}s</strong></div>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 
 export default function Gratitude({ partyId, actorId, members }: { partyId: string; actorId: string; members: Array<{ id: string; displayName: string; imageUrl?: string }> }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [tips, setTips] = useState<Array<{ id: string; fromUser: string; fromName: string; toUser: string; toName: string; amount: number; message: string; createdAt: string }>>([]);
   const [toUser, setToUser] = useState("");
   const [amount, setAmount] = useState(5);
@@ -31,10 +31,10 @@ export default function Gratitude({ partyId, actorId, members }: { partyId: stri
     const res = await fetch("/api/gratitude", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ partyId, toUser: selectedUser, amount, message }) });
     const data = await res.json().catch(() => ({}));
     if (res.ok) { setSent(true); setMessage(""); setTimeout(() => setSent(false), 2000); load(); }
-    else setError(data.error || "Transfer failed.");
-  }, [partyId, selectedUser, amount, message, load]);
+    else setError(data.error || (locale === "ru" ? "Не удалось отправить KOINS." : "Transfer failed."));
+  }, [partyId, selectedUser, amount, message, load, locale]);
 
-  if (loading) return <div className="party-game-board"><p style={{ color: "var(--gray)" }}>Loading...</p></div>;
+  if (loading) return <div className="party-game-board"><p style={{ color: "var(--gray)" }}>{locale === "ru" ? "Загружаем..." : "Loading..."}</p></div>;
 
   return <div className="party-feature-surface game-board-enter">
     <span className="game-step">{t("gratitudeTitle")}</span>

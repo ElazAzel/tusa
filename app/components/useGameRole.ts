@@ -9,7 +9,8 @@ export function useGameRole(
   preferredRole?: "stage" | "controller" | null,
   creatorId?: string,
 ): GameRole {
-  if (!userId || !participants.length) return "stage";
+  if (!userId) return "controller";
+  if (!participants.length) return creatorId && creatorId === userId ? "stage" : "controller";
   const hostId = creatorId || participants[0];
   const isHost = hostId === userId;
   const isParticipant = participants.includes(userId);

@@ -14,6 +14,7 @@ type State = {
   deadline: number;
   scores: Record<string, number>;
   answered: Record<string, boolean>;
+  roundPoints?: Record<string, number>;
   players: string[];
 };
 
@@ -58,7 +59,7 @@ export default defineGame<State>({
         state: {
           ...state,
           answered: { ...state.answered, [ctx.actorId]: true },
-          scores: points ? { ...state.scores, [ctx.actorId]: (state.scores[ctx.actorId] ?? 0) + points } : state.scores,
+          roundPoints: points ? { ...(state.roundPoints ?? {}), [ctx.actorId]: points } : (state.roundPoints ?? {}),
         },
       };
     }
@@ -67,7 +68,7 @@ export default defineGame<State>({
       if (state.phase !== "question") return { state, changed: false };
       const everyoneAnswered = ctx.participants.length > 0 && ctx.participants.every((id) => state.answered[id]);
       if (ctx.now < state.deadline && !everyoneAnswered) return { state, changed: false, error: "The round is still active." };
-      return { changed: true, state: { ...state, phase: "result" } };
+      return { changed: true, state: { ...state, phase: "result", scores: mergeRoundPoints(state.scores, state.roundPoints), roundPoints: {} } };
     }
     if (actionType === "next") {
       if (ctx.actorId !== ctx.creatorId) return { state, changed: false, error: "Only the stage can advance the game." };
@@ -79,6 +80,12 @@ export default defineGame<State>({
     return { state, changed: false, error: "Unsupported server game command." };
   },
   deriveScore(state) {
-    return Math.max(0, ...Object.values(state.scores));
+    return Math.max(0, ...Object.values(mergeRoundPoints(state.scores, state.roundPoints)));
   },
 });
+
+function mergeRoundPoints(scores: Record<string, number>, roundPoints: Record<string, number> = {}) {
+  const merged = { ...scores };
+  for (const [playerId, points] of Object.entries(roundPoints)) merged[playerId] = (merged[playerId] ?? 0) + points;
+  return merged;
+}

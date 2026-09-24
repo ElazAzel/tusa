@@ -12,7 +12,7 @@
 npm install          # dependencies
 npm run dev          # dev server (localhost:3000)
 npm run build        # production build
-npm test             # 70 unit/contract/platform tests (must pass before commit)
+npm test             # 75 unit/contract/platform tests (must pass before commit)
 npm run lint         # 0 errors required
 npm run rag:build    # rebuild RAG index after changes
 ```
@@ -133,7 +133,7 @@ Every multiplayer game has two views:
 
 Both hooks subscribe through `useGameChannel` → `useLiveStream` (Ably first, SSE fallback), apply the session returned by each command immediately and resync the snapshot on reconnect or tab wake-up. Do not open raw `EventSource` connections in game code.
 
-Role selection (`useGameRole`): the session creator is the stage by default and may switch to controller; other participants are controllers; non-participants spectate an active round. Only the creator can take the stage view.
+Role selection (`useGameRole`): the session creator is the stage by default and may switch to controller; other participants are controllers; non-participants spectate an active round. Only the creator can take the stage view. The creator is also a player: `GET /api/games` returns the creator's personal snapshot (own role, own word) unless the host picks the TV screen, which requests `view=public` and hides every player secret. Only Alias keeps the stage-device view for the explainer.
 
 Sandbox runs: `start` with `sandbox: true` fills missing seats with `bot_N` participants (`lib/games/bot-names.ts`). After every accepted command the server runs `runBotAutopilot` (`lib/games/bots.ts`), which makes each bot play one schema-valid move per pass through the normal reducer. Sandbox runs grant no Koins, XP, quests or highlights. `tests/sandbox-bots.test.ts` proves every catalogue game keeps moving with one human host and bots.
 
@@ -155,7 +155,7 @@ export default function Game({ partyId, sessionId, onSave, role }:
 ### Testing
 
 ```bash
-npm test             # 70 tests: game engine, sandbox bots, contracts, routes and security
+npm test             # 75 tests: game engine, lifecycle, sandbox bots, contracts, routes and security
 npm run test:e2e     # Playwright E2E (requires install)
 ```
 

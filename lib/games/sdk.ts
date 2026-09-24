@@ -134,5 +134,6 @@ export function isSdkManaged(gameId: string): boolean {
 
 export function sanitizeSdkState(gameId: string, state: Record<string, unknown>, viewerId: string): Record<string, unknown> {
   const sanitize = DEFINITIONS.get(gameId)?.sanitizeForViewer;
-  return sanitize ? sanitize(state, viewerId) : state;
+  if (!sanitize || !state || typeof state.engine !== "string") return state;
+  return sanitize(state, viewerId);
 }

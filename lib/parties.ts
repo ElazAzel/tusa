@@ -854,7 +854,7 @@ export async function joinBet(userId: string, betId: string, option: string, sta
       RETURNING clerk_user_id
     ), joined AS (
       UPDATE party_bets bet
-      SET entries = bet.entries || jsonb_build_array(jsonb_build_object('userId', ${userId}, 'option', ${option}, 'stake', ${stake})), updated_at = NOW()
+      SET entries = bet.entries || jsonb_build_array(jsonb_build_object('userId', ${userId}::text, 'option', ${option}::text, 'stake', ${stake}::int)), updated_at = NOW()
       WHERE bet.id = ${betId} AND bet.status = 'open' AND EXISTS (SELECT 1 FROM debit)
         AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(bet.entries) entry WHERE entry->>'userId' = ${userId})
       RETURNING bet.*
@@ -864,7 +864,7 @@ export async function joinBet(userId: string, betId: string, option: string, sta
       RETURNING clerk_user_id
     ), ledger AS (
       INSERT INTO koins_transactions (id, clerk_user_id, party_id, amount, label)
-      SELECT gen_random_uuid(), ${userId}, joined.party_id, ${-stake}, 'Bet: ' || joined.text || ' · ' || ${option} FROM joined
+      SELECT gen_random_uuid(), ${userId}, joined.party_id, ${-stake}, 'Bet: ' || joined.text || ' · ' || ${option}::text FROM joined
       RETURNING id
     ) SELECT joined.* FROM joined, ledger` as unknown as Record<string, unknown>[];
   if (!row) throw new Error("Bet unavailable, already joined, or not enough KOINS");
@@ -1529,6 +1529,7 @@ export async function leaveGameSession(sessionId: string, userId: string) {
 export async function setPaymentAssignee(partyId: string, userId: string, targetUserId: string) {
   await ensurePartySchema();
   await requireOwner(partyId, userId);
+  await requirePartyMember(partyId, targetUserId);
   await db()`UPDATE party_members SET paid_by = ${targetUserId} WHERE party_id = ${partyId} AND clerk_user_id = ${userId}`;
   return { partyId, ownerId: userId, paidBy: targetUserId };
 }
@@ -1578,7 +1579,7 @@ export async function addGameScore(sessionId: string, userId: string, score: num
   const persistedMetadata = { ...(metadata ?? {}), clientMutationId: mutationId };
   let [row] = await db()`INSERT INTO game_scores (id, session_id, clerk_user_id, score, metadata, client_mutation_id)
     VALUES (${randomUUID()}, ${sessionId}, ${userId}, ${safeScore}, ${JSON.stringify(persistedMetadata)}::jsonb, ${mutationId})
-    ON CONFLICT (session_id, client_mutation_id) DO NOTHING
+    ON CONFLICT (session_id, client_mutation_id) WHERE client_mutation_id IS NOT NULL DO NOTHING
     RETURNING *` as unknown as Record<string, unknown>[];
   const created = Boolean(row);
   if (!row && mutationId) {
@@ -1610,7 +1611,11 @@ export async function updateShoppingItem(itemId: string, userId: string, updates
   const [itemRow] = await db()`SELECT party_id, clerk_user_id FROM party_shopping_items WHERE id = ${itemId}` as unknown as Record<string, unknown>[];
   if (!itemRow) return null;
   const itemUserId = String(itemRow.clerk_user_id);
-  if (itemUserId !== userId) await requireOwner(String(itemRow.party_id), userId);
+  const itemPartyId = String(itemRow.party_id);
+  await requirePartyMember(itemPartyId, userId);
+  const sharedUpdate = Object.keys(updates).every((key) => key === "quantity" || key === "purchased");
+  if (itemUserId !== userId && !sharedUpdate) await requireOwner(itemPartyId, userId);
+  if (updates.buyerId) await requirePartyMember(itemPartyId, updates.buyerId);
   const text = updates.text !== undefined ? updates.text.slice(0, 200) : undefined;
   const quantity = updates.quantity !== undefined ? Math.max(1, updates.quantity) : undefined;
   const unit = updates.unit !== undefined ? updates.unit.slice(0, 10) : undefined;

@@ -93,7 +93,7 @@ export default defineGame<State>({
       if (ctx.actorId !== ctx.creatorId || state.phase !== "reveal") return { state, changed: false, error: "Only the stage can start the next round." };
       const round = state.round + 1;
       if (round >= MAX_ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
-      return { changed: true, state: { ...state, phase: "clue", round, word: IMPOSTOR_WORDS[state.locale][round % IMPOSTOR_WORDS[state.locale].length], impostorId: ctx.participants[round % ctx.participants.length] ?? "", clues: {}, votes: {}, guess: "", accusedId: "", outcome: "" } };
+      return { changed: true, state: { ...state, phase: "clue", round, word: IMPOSTOR_WORDS[state.locale][round % IMPOSTOR_WORDS[state.locale].length], impostorId: ctx.participants[(Math.abs(ctx.now) + round) % Math.max(1, ctx.participants.length)] ?? "", clues: {}, votes: {}, guess: "", accusedId: "", outcome: "" } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },

@@ -13,6 +13,8 @@ import BrandLogo from "@/app/components/BrandLogo";
 import { useLiveStream } from "@/app/components/useLiveStream";
 import { useGameRole } from "@/app/components/useGameRole";
 import { botDisplayName, isBotId } from "@/lib/games/bot-names";
+import { PlayerNamesProvider } from "@/app/components/PlayerNames";
+import { PublicStageProvider } from "@/app/components/GameView";
 const LIVE_REACTIONS = ["🔥", "😂", "👏", "❤️", "😱"] as const;
 const AliasGame = dynamic(() => import("@/app/components/games/AliasGame"));
 const MafiaGame = dynamic(() => import("@/app/components/games/MafiaGame"));
@@ -98,6 +100,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   const [themeId, setThemeId] = useState(party.theme?.id ?? "lime");
   const [preferredRole, setPreferredRole] = useState<"stage" | "controller" | null>(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [koinsRefresh, setKoinsRefresh] = useState(0);
   const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number }>>([]);
   const router = useRouter();
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -111,6 +114,10 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   useEffect(() => {
     unlockAudio();
   }, []);
+
+  useEffect(() => {
+    fetch("/api/rewards", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ activity: "streak", partyId: party.id }) }).catch(() => undefined);
+  }, [party.id]);
 
   useEffect(() => {
     if (!anyModalOpen) return;
@@ -152,6 +159,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   const gameRooms = roomPickerGame ? activeSessions.filter((session) => session.game === roomPickerGame) : [];
   const gameRole = useGameRole(activeSession?.participants ?? [], actorId, activeSession?.status, preferredRole, activeSession?.createdBy);
 
+  const playerNames = useMemo(() => Object.fromEntries(members.map((member) => [member.clerkUserId, member.displayName])), [members]);
   const liveChat = useLiveStream<Record<string, unknown>>(`chat:${party.id}`);
   const liveParty = useLiveStream<Record<string, unknown>>(`party:${party.id}`);
 
@@ -282,7 +290,8 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       body: JSON.stringify({ action: "react", partyId: party.id, messageId, emoji }),
     }).catch(() => undefined);
   }
-  useEffect(() => { fetch(`/api/parties/${party.inviteCode}/members`).then((r) => r.json()).then((data) => { if (data.members) setMembers(data.members); }).catch(() => undefined); }, [party.inviteCode]);
+  const [membersVersion, setMembersVersion] = useState(0);
+  useEffect(() => { fetch(`/api/parties/${party.inviteCode}/members`).then((r) => r.json()).then((data) => { if (data.members) setMembers(data.members); }).catch(() => undefined); }, [party.inviteCode, membersVersion]);
 
   useEffect(() => {
     const loadSessions = () => fetch(`/api/games?partyId=${party.id}`).then((r) => r.json()).then((data) => {
@@ -325,6 +334,8 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       if (ev.type === "session:completed" && ev.sessionId) {
         setActiveSessions((prev) => prev.filter((p) => p.id !== ev.sessionId));
       }
+      if (ev.type === "koins:updated") setKoinsRefresh((value) => value + 1);
+      if (ev.type === "member:joined") setMembersVersion((value) => value + 1);
       if (ev.type === "reaction:float" && typeof ev.emoji === "string" && ev.userId !== actorId) {
         const id = crypto.randomUUID();
         const x = typeof ev.x === "number" ? ev.x : 20 + Math.random() * 60;
@@ -384,13 +395,24 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       }).catch((err) => console.error("joinSession failed", err));
   }
 
+  function rankPlayers(state: Record<string, unknown> | undefined, participants: string[], fallback: GameScore[]): GameScore[] {
+    const scores = state?.scores;
+    if (!scores || typeof scores !== "object" || Array.isArray(scores)) return fallback;
+    const entries = Object.entries(scores as Record<string, unknown>).filter(([id, value]) => typeof value === "number" && (participants.includes(id) || isBotId(id)));
+    if (!entries.length) return fallback;
+    const ids = new Set([...participants, ...entries.map(([id]) => id)]);
+    return [...ids].map((id) => ({ id, sessionId: gameSession ?? "", userId: id, displayName: participantName(id), score: Number((scores as Record<string, unknown>)[id] ?? 0), metadata: {}, created: false }))
+      .sort((left, right) => right.score - left.score);
+  }
+
   function saveGameScore() {
     if (!gameSession || !selectedGame) return;
     const game = gameCatalogue.find((g) => g.id === selectedGame);
     fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "score", sessionId: gameSession, clientMutationId: `score:${gameSession}`, metadata: { game: selectedGame } }) })
-      .then((r) => r.json()).then((data) => {
+      .then((r) => r.json()).then(async (data) => {
         if (data.scores) {
-          setGameResults({ scores: data.scores as GameScore[], gameTitle: game ? t(game.titleKey) : "" });
+          const snapshot = await fetch(`/api/games?sessionId=${gameSession}`).then((response) => response.json()).catch(() => null) as { session?: { state?: Record<string, unknown>; participants?: string[] } } | null;
+          setGameResults({ scores: rankPlayers(snapshot?.session?.state, snapshot?.session?.participants ?? [], data.scores as GameScore[]), gameTitle: game ? t(game.titleKey) : "" });
           soundFanfare();
         }
         const verifiedScore = Number(data.score?.score ?? 0);
@@ -586,7 +608,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
                 </button>
               </>
             )}
-            <button aria-label={t("fullscreen")} className="role-toggle-btn" onClick={toggleFullscreen} title={t("fullscreen")} type="button">
+            <button aria-label={t("fullscreen")} className="role-toggle-btn role-toggle-fullscreen" onClick={toggleFullscreen} title={t("fullscreen")} type="button">
               <span className="material-symbols-rounded" aria-hidden="true">fullscreen</span>
             </button>
           </div>
@@ -597,7 +619,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
             <strong>{t("spectating")}</strong>
           </div>
         )}
-        <div className="spectator-board">{board}</div>
+        <div className="spectator-board"><PublicStageProvider value={preferredRole === "stage" && gameRole === "stage"}><PlayerNamesProvider names={playerNames}>{board}</PlayerNamesProvider></PublicStageProvider></div>
         <div className="party-live-reactions-dock" role="group" aria-label={t("liveReactions")}>
           {LIVE_REACTIONS.map((emoji) => (
             <button aria-label={t("reactionSend").replace("{emoji}", emoji)} key={emoji} onClick={() => sendLiveReaction(emoji)} type="button">{emoji}</button>
@@ -787,7 +809,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
     {gameResults && <div className="demo-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) closeGameResults(); }}><section aria-modal="true" className="demo-modal game-results-modal" role="dialog"><span className="demo-kicker">{t("gamesResults")}</span><h2>{gameResults.gameTitle}</h2><div className="game-results-list">{gameResults.scores.map((s, i) => <div className={`game-result-row ${s.userId === actorId ? "is-me" : ""}`} key={s.userId}><span className="game-result-rank">#{i + 1}</span><strong>{s.displayName || s.userId.slice(0, 8)}</strong><span className="game-result-score">{s.score}</span></div>)}</div><button className="demo-action demo-action--lime" onClick={closeGameResults} type="button">{t("gamesBack")}</button>{actorKind === "guest" && <p className="guest-signup-prompt"><Link href={`/sign-up?redirect_url=/party/${party.inviteCode}`}>{t("guestSignupPrompt")}</Link></p>}</section></div>}
     {tab === "shop" && <ShoppingList partyId={party.id} members={members} canManage={isOwner || party.role === "co_host"} />}
     {tab === "gallery" && <Gallery partyId={party.id} actorId={actorId} />}
-    {tab === "koins" && <Koins partyId={party.id} />}
+    {tab === "koins" && <Koins partyId={party.id} actorId={actorId} isOwner={isOwner} refreshKey={koinsRefresh} />}
     {tab === "pass" && <PartyPass />}
     {tab === "quests" && <SocialQuests partyId={party.id} />}
     {tab === "highlights" && <Highlights partyId={party.id} />}
@@ -835,7 +857,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
         <div ref={chatEndRef} />
       </div>
       {unreadMessages > 0 && <button className="chat-jump-latest" onClick={scrollChatToLatest} type="button">{t("chatNewMessages").replace("{count}", String(unreadMessages))}</button>}
-      {showStickers && <StickerPicker onSelect={sendSticker} onClose={() => setShowStickers(false)} />}
+      {showStickers && <StickerPicker label={t("chatStickers")} onSelect={sendSticker} onClose={() => setShowStickers(false)} />}
       <div className="chat-input-bar">
         {showVoice && <VoiceRecorder onSend={sendVoice} onCancel={() => setShowVoice(false)} />}
         <div className="chat-input-wrap">

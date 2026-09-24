@@ -6,7 +6,7 @@ import { createPartyWithPromo, deleteParty, getDashboard, syncProfile, trackAnal
 export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
-  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:parties`, 60, 60000);
+  const rl = await distributedRateLimit(`api:parties:${userId}:${getClientIp(request.headers)}`, 60, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   return NextResponse.json({ parties: await getDashboard(userId) });
 }
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const { userId } = await auth();
   const user = await currentUser();
   if (!userId || !user) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
-  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:parties`, 10, 60000);
+  const rl = await distributedRateLimit(`api:parties:${userId}:${getClientIp(request.headers)}`, 10, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   const required = ["title", "date", "time", "venue", "category"] as const;
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
-  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:parties`, 10, 60000);
+  const rl = await distributedRateLimit(`api:parties:${userId}:${getClientIp(request.headers)}`, 10, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   if (!body.id) return NextResponse.json({ error: "Укажите ID тусы." }, { status: 400 });
@@ -62,7 +62,7 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 });
-  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:parties`, 10, 60000);
+  const rl = await distributedRateLimit(`api:parties:${userId}:${getClientIp(request.headers)}`, 10, 60000);
   if (!rl.allowed) return NextResponse.json({ error: "Слишком много запросов." }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   if (!body.id) return NextResponse.json({ error: "Укажите ID тусы." }, { status: 400 });

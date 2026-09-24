@@ -3984,8 +3984,10 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
   .product-header__spacer, .product-header__nav { display: none; }
   .product-header__actions { gap: 8px; }
   .product-header__back { max-width: 132px; justify-content: flex-end; font-size: 11px; text-align: right; }
-  .cookie-banner { align-items: stretch; flex-direction: column; gap: 10px; padding: 14px; }
-  .cookie-banner button { width: 100%; }
+  .cookie-banner { align-items: center; flex-direction: row; gap: 10px; min-height: 0; padding: 10px 10px 10px 14px; }
+  .cookie-banner p { display: -webkit-box; overflow: hidden; font-size: 12px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+  .cookie-banner button { flex: 0 0 auto; width: auto; min-width: 56px; }
+  body.has-cookie-banner { padding-bottom: 96px; }
   .catalogue-header { margin-bottom: 18px; }
   .catalogue-header .brand-logo--long { height: 44px; }
   .catalogue-header > a:last-child { max-width: 120px; text-align: right; }
@@ -5130,3 +5132,31 @@ button:active:not(:disabled), .button:active, a.game-card-footer:active { transf
   .floating-party-reaction { animation-duration: 0.01ms; }
 }
 
+
+.bet-own-stake { margin: 0; padding: 8px 12px; border: 2px solid var(--black); border-radius: 10px; background: var(--lime-soft); color: var(--black); font-weight: 800; }
+.bet-settle { display: grid; gap: 6px; padding-top: 8px; border-top: 2px dashed var(--black); }
+.bet-settle > span { font-size: 11px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.event-calendar-days button:disabled { color: var(--gray); cursor: not-allowed; opacity: .45; }
+.event-calendar-days button:disabled:hover { background: transparent; outline: none; }
+.local-auth-form { width: 100%; }
+.local-auth-hint { margin-top: -8px; color: #4f4f55; font-size: 12px; font-weight: 600; line-height: 1.4; }
+
+.active-game-head > .active-game-role-toggle { flex: 0 0 auto; }
+@media (max-width: 600px) {
+  .active-game-head { display: grid; grid-template-columns: 1fr auto; gap: 10px 12px; align-items: center; }
+  .active-game-head > button { grid-column: 1; grid-row: 1; }
+  .active-game-head > .active-game-role-toggle { grid-column: 2; grid-row: 1; justify-self: end; }
+  .active-game-head > div:not(.active-game-role-toggle) { grid-column: 1 / -1; }
+  .active-game-head h2 { font-size: 26px; overflow-wrap: normal; word-break: normal; }
+  .role-toggle-fullscreen { display: none !important; }
+  .active-game-role-toggle:not(:has(.role-toggle-btn:not(.role-toggle-fullscreen))) { display: none; }
+  .party-game-board h3 { font-size: clamp(22px, 7vw, 32px); margin: 10px 0; overflow-wrap: break-word; hyphens: auto; }
+}
+.chat-input-wrap { position: relative; }
+.chat-input-wrap .chat-emoji-btn { z-index: 3; }
+.chat-input-wrap .chat-emoji-btn,
+.chat-input-wrap .chat-emoji-btn:hover,
+.chat-input-wrap .chat-emoji-btn:active,
+.chat-input-wrap .chat-emoji-btn:focus-visible { transform: translateY(-50%); }
+.local-auth-password button:hover,
+.local-auth-password button:active { transform: translateY(-50%); }

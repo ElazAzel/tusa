@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { sendGameCommand } from "./sendGameCommand";
 import { useGameChannel } from "./useGameChannel";
+import { usePublicStage } from "./GameView";
 
 export type PlayerAction = {
   id?: string;
@@ -15,6 +16,7 @@ export function useStageGame<T extends Record<string, unknown>>(
   sessionId: string | null,
   initialState: () => T,
 ) {
+  const publicStage = usePublicStage();
   const [state, _setState] = useState<T>(initialState);
   const [playerActions, setPlayerActions] = useState<PlayerAction[]>([]);
   const initialStateRef = useRef(initialState);
@@ -49,8 +51,8 @@ export function useStageGame<T extends Record<string, unknown>>(
 
   const syncSnapshot = useCallback(() => {
     if (!sessionId) return;
-    void fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
-  }, [sessionId, applySnapshot]);
+    void fetch(`/api/games?sessionId=${sessionId}${publicStage ? "&view=public" : ""}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
+  }, [sessionId, applySnapshot, publicStage]);
 
   useEffect(() => {
     versionRef.current = 1;
@@ -86,9 +88,12 @@ export function useStageGame<T extends Record<string, unknown>>(
   const sendAction = useCallback((actionType: string, payload?: unknown) => {
     if (!sessionId) return;
     void sendGameCommand(sessionId, actionType, payload)
-      .then((data) => { if (data && "session" in data && data.session) applySnapshot({ session: data.session as { state?: Partial<T>; version?: number; participants?: string[] } }); })
+      .then((data) => {
+        if (publicStage) syncSnapshot();
+        else if (data && "session" in data && data.session) applySnapshot({ session: data.session as { state?: Partial<T>; version?: number; participants?: string[] } });
+      })
       .catch(() => undefined);
-  }, [sessionId, applySnapshot]);
+  }, [sessionId, applySnapshot, publicStage, syncSnapshot]);
 
   return { state, setState, playerActions, clearActions, complete, sendAction };
 }

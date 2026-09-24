@@ -13,13 +13,13 @@ const registrationSchema = z.object({
 export async function POST(request: Request) {
   try {
     const parsed = registrationSchema.safeParse(await request.json().catch(() => null));
-    if (!parsed.success) return NextResponse.json({ error: "Check your registration details." }, { status: 400 });
+    if (!parsed.success) return NextResponse.json({ error: "Check your registration details.", code: parsed.error.issues.some((issue) => issue.path[0] === "password") ? "weak_password" : parsed.error.issues.some((issue) => issue.path[0] === "email") ? "invalid_email" : "invalid_input" }, { status: 400 });
     const email = parsed.data.email.toLowerCase();
     const [ipLimit, emailLimit] = await Promise.all([
-      distributedRateLimit(`auth:sign-up:ip:${getClientIp(request.headers)}`, 5, 60 * 60_000),
+      distributedRateLimit(`auth:sign-up:ip:${getClientIp(request.headers)}`, 30, 60 * 60_000),
       distributedRateLimit(`auth:sign-up:email:${email}`, 2, 60 * 60_000),
     ]);
-    if (!ipLimit.allowed || !emailLimit.allowed) return NextResponse.json({ error: "Try again later." }, { status: 429 });
+    if (!ipLimit.allowed || !emailLimit.allowed) return NextResponse.json({ error: "Try again later.", code: "rate_limited" }, { status: 429 });
     const user = await register({ email, password: parsed.data.password, name: parsed.data.name });
     const verification = await requestEmailVerification(user.id);
     let verificationUrl = "";
@@ -31,7 +31,9 @@ export async function POST(request: Request) {
     const cookie = await sessionCookie(user.id);
     response.cookies.set(cookie.name, cookie.value, cookie.options);
     return response;
-  } catch {
-    return NextResponse.json({ error: "Could not create account." }, { status: 400 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    const code = /уже зарегистрирован/i.test(message) ? "email_taken" : /Пароль/i.test(message) ? "weak_password" : /email/i.test(message) ? "invalid_email" : /имя/i.test(message) ? "name_required" : "unknown";
+    return NextResponse.json({ error: "Could not create account.", code }, { status: code === "email_taken" ? 409 : 400 });
   }
 }

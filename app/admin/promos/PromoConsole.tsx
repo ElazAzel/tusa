@@ -55,14 +55,15 @@ export default function PromoConsole({ initialPromos, initialStats, canWrite }: 
 
   async function createPromo(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const benefits = computeBenefits(form);
     setBusy("create");
     setNotice("");
     try {
       const data = await request("POST", { code: form.get("code"), mode: form.get("mode"), maxRedemptions: form.get("maxRedemptions") || null, expiresAt: form.get("expiresAt") || null, benefits });
       setPromos((items) => [data.promo, ...items]);
-      event.currentTarget.reset();
+      formElement.reset();
       setNotice(`${c.code} ${data.promo.code} ${c.created}`);
     } catch (error) { setNotice(error instanceof Error ? error.message : "Create failed."); } finally { setBusy(""); }
   }

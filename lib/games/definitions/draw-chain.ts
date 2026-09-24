@@ -21,6 +21,6 @@ export default defineGame<State>({
     if (action === "finish") { if (ctx.actorId !== ctx.creatorId) return {state,changed:false,error:"Only the stage can finish."}; return {changed:true,state:{...state,phase:"finished"}}; }
     return {state,changed:false,error:"Unsupported server game command."};
   },
-  sanitizeForViewer(state, viewer) { const source=state.assignments[viewer]; return viewer === "__stage__" ? state : { ...state, prompts:{}, privatePrompt:source?state.prompts[source]??"":"", privateDrawing:source?state.drawings[source]??[]:[] }; },
+  sanitizeForViewer(state, viewer) { const source=(state.assignments??{})[viewer]; return viewer === "__stage__" ? state : { ...state, prompts:{}, privatePrompt:source?(state.prompts??{})[source]??"":"", privateDrawing:source?(state.drawings??{})[source]??[]:[] }; },
   deriveScore: (state) => Math.max(0,...Object.values(state.scores)),
 });

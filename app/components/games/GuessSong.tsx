@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePlayerName } from "@/app/components/PlayerNames";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { useStageGame } from "@/app/components/useStageGame";
@@ -24,6 +25,7 @@ type MusicState = {
 const emptyState = (): MusicState => ({ engine: "server-v1", game: "guessSong", phase: "clue", round: 0, artist: "", year: "", fact: "", revealedTitle: "", deadline: 0, scores: {}, guesses: {}, winner: "", players: [] });
 
 export default function GuessSong({ sessionId, onSave, role, mode = "guessSong" }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller"; mode?: "guessSong" | "musicQuiz" }) {
+  const playerName = usePlayerName();
   const { locale } = useLocale();
   const isStage = role === "stage";
   const stage = useStageGame<MusicState>(isStage ? sessionId ?? null : null, emptyState);
@@ -83,8 +85,8 @@ export default function GuessSong({ sessionId, onSave, role, mode = "guessSong" 
     <h3>{copy.title}</h3>
     {(state.phase === "clue" || state.phase === "guess") && <div className="trivia-result"><p>{copy.clue}</p><p><b>{state.artist}</b> · {state.year}</p>{state.phase === "guess" && <p>{state.fact}</p>}</div>}
     {state.phase === "guess" && <div className="game-text-entry"><label htmlFor={`${mode}-answer`}>{copy.answer}</label><input id={`${mode}-answer`} value={guess} onChange={(event) => setGuess(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submit(); }} disabled={sent || seconds <= 0} maxLength={120} /><button className="demo-action demo-action--lime" onClick={submit} disabled={sent || !guess.trim() || seconds <= 0} type="button">{sent ? copy.waiting : copy.send}</button></div>}
-    {state.phase === "reveal" && <div className="trivia-result"><p><b>{copy.reveal}:</b> {state.revealedTitle}</p><p>{state.winner ? `${copy.winner}: ${state.winner.slice(-8)}` : copy.nobody}</p>{sorted.map(([userId, score], index) => <p key={userId}><span>#{index + 1} {userId.slice(-8)}</span> <strong>{score} {copy.points}</strong></p>)}{isStage && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 4 ? copy.finish : copy.next}</button>}</div>}
-    {state.phase === "finished" && <div className="trivia-result"><p>{sorted[0] ? `${copy.winner}: ${sorted[0][0].slice(-8)}` : copy.nobody}</p></div>}
+    {state.phase === "reveal" && <div className="trivia-result"><p><b>{copy.reveal}:</b> {state.revealedTitle}</p><p>{state.winner ? `${copy.winner}: ${playerName(state.winner)}` : copy.nobody}</p>{sorted.map(([userId, score], index) => <p key={userId}><span>#{index + 1} {playerName(userId)}</span> <strong>{score} {copy.points}</strong></p>)}{isStage && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 4 ? copy.finish : copy.next}</button>}</div>}
+    {state.phase === "finished" && <div className="trivia-result"><p>{sorted[0] ? `${copy.winner}: ${playerName(sorted[0][0])}` : copy.nobody}</p></div>}
     {sessionId && <span className="multiplayer-badge">LIVE</span>}
   </section>;
 }

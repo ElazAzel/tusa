@@ -14,7 +14,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const origin = request.headers.get("origin");
   if (!userId) return cors(NextResponse.json({ error: "Войдите в аккаунт." }, { status: 401 }), origin);
   const { inviteCode } = await params;
-  const rl = await distributedRateLimit(`api:${getClientIp(request.headers)}:theme`, 10, 60000);
+  const rl = await distributedRateLimit(`api:theme:${userId}:${getClientIp(request.headers)}`, 10, 60000);
   if (!rl.allowed) return cors(NextResponse.json({ error: "Слишком много запросов." }, { status: 429 }), origin);
   const body = await request.json().catch(() => ({}));
   if (!body.theme || typeof body.theme !== "object") return cors(NextResponse.json({ error: "Укажите theme." }, { status: 400 }), origin);

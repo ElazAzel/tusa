@@ -11,7 +11,7 @@ const schema = z.object({
 }).strict();
 
 export async function POST(request: Request) {
-  const limit = await distributedRateLimit(`telemetry:error:${getClientIp(request.headers)}`, 10, 60_000);
+  const limit = await distributedRateLimit(`telemetry:error:${getClientIp(request.headers)}`, 60, 60_000);
   if (!limit.allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const parsed = schema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Invalid error report" }, { status: 400 });

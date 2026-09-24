@@ -19,7 +19,8 @@ export default defineGame<State>({
     if (action === "start") {
       if (ctx.actorId !== ctx.creatorId) return { state, changed:false, error:"Only the stage can start." };
       if (ctx.participants.length < 5) return { state, changed:false, error:"At least five players are required." };
-      const assigned = Object.fromEntries(ctx.participants.map((id, index) => [id, traits[index % traits.length]]));
+      const offset = Math.abs(Math.trunc(ctx.now)) % traits.length;
+      const assigned = Object.fromEntries(ctx.participants.map((id, index) => [id, traits[(index * 7 + offset) % traits.length]]));
       return { changed:true, state:{ ...state, phase:"argue", players:[...ctx.participants], traits:assigned, votes:{}, survivors:[], deadline:ctx.now + 90_000, round:1 } };
     }
     if (action === "openVote") {

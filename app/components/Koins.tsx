@@ -8,7 +8,7 @@ type RewardStats = Record<string, { count: number; total: number; daily: number;
 
 const REWARD_KEYS = ["photo", "chat", "game_play", "game_win", "streak", "friend_add"] as const;
 
-export default function Koins({ partyId }: { partyId: string }) {
+export default function Koins({ partyId, actorId, isOwner = false, refreshKey = 0 }: { partyId: string; actorId: string; isOwner?: boolean; refreshKey?: number }) {
   const { t, locale } = useLocale();
   const [bets, setBets] = useState<PartyBet[]>([]);
   const [balance, setBalance] = useState(0);
@@ -36,9 +36,9 @@ export default function Koins({ partyId }: { partyId: string }) {
     }).catch(() => undefined);
   }
 
-  useEffect(() => { loadBets(); loadBalance(); loadRewards(); }, [partyId, loadBets]);
+  useEffect(() => { loadBets(); loadBalance(); loadRewards(); }, [partyId, loadBets, refreshKey]);
 
-  const activeStake = useMemo(() => bets.filter((b) => b.status === "open").flatMap((b) => b.entries).filter((e) => e.userId === "me").reduce((sum, e) => sum + e.stake, 0), [bets]);
+  const activeStake = useMemo(() => bets.filter((b) => b.status === "open").flatMap((b) => b.entries).filter((e) => e.userId === actorId).reduce((sum, e) => sum + e.stake, 0), [bets, actorId]);
 
   function transactionLabel(label: string) {
     if (label.startsWith("Reward: ")) {
@@ -59,22 +59,30 @@ export default function Koins({ partyId }: { partyId: string }) {
 
   async function createBetAction(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
+    const formElement = e.currentTarget;
+    const form = new FormData(formElement);
     const text = String(form.get("text") || "").trim();
     const first = String(form.get("first") || "").trim();
     const second = String(form.get("second") || "").trim();
     if (!text || !first || !second || first === second) { setError(t("koinsNeedDiffs")); return; }
     setError("");
     const res = await fetch("/api/koins", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", partyId, text, options: [first, second] }) });
-    if (res.ok) { loadBets(); e.currentTarget.reset(); } else { const data = await res.json(); setError(data.error || t("createError")); }
+    if (res.ok) { loadBets(); formElement.reset(); } else { const data = await res.json(); setError(data.error || t("createError")); }
   }
 
   async function joinBetAction(betId: string, option: string) {
     const stake = Math.max(1, Math.round(stakes[betId] || 25));
     if (stake > balance) { setError(t("koinsNotEnough")); return; }
     setError("");
-    const res = await fetch("/api/koins", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "join", betId, option, stake }) });
+    const res = await fetch("/api/koins", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "join", partyId, betId, option, stake }) });
     if (res.ok) { loadBets(); loadBalance(); } else { const data = await res.json(); setError(data.error || t("createError")); }
+  }
+
+  async function closeBetAction(betId: string, winner: string | null) {
+    setError("");
+    const body = winner ? { action: "settle", partyId, betId, winner } : { action: "cancel", partyId, betId };
+    const res = await fetch("/api/koins", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (res.ok) { loadBets(); loadBalance(); } else { const data = await res.json().catch(() => ({})); setError(data.error || t("createError")); }
   }
 
   return <section className="party-room-panel">
@@ -97,7 +105,14 @@ export default function Koins({ partyId }: { partyId: string }) {
 
     <div className="demo-panel-title"><div><span>{t("koinsMini")}</span><h2>{t("koinsSub")}</h2></div><span className="demo-chip">{t("koinsLocal")}</span></div>
     <form className="bet-create-form" onSubmit={createBetAction}><label><span>{t("koinsQuestion")}</span><input name="text" placeholder={t("koinsQuestionPlace")} required /></label><label><span>{t("koinsOutcomeA")}</span><input defaultValue={t("koinsOutcomeA") === "Исход A" ? "Да" : "Yes"} name="first" required /></label><label><span>{t("koinsOutcomeB")}</span><input defaultValue={t("koinsOutcomeB") === "Исход B" ? "Нет" : "No"} name="second" required /></label><button className="demo-action demo-action--lime" type="submit"><span className="material-symbols-rounded">add</span> {t("koinsOpenBet")}</button></form>
-    <div className="bets-list bets-list--full">{bets.map((bet) => { const total = bet.entries.reduce((sum, e) => sum + e.stake, 0); return <article className={bet.status} key={bet.id}><div className="bet-copy"><span>{bet.status === "open" ? t("koinsOpenStatus") : bet.status === "settled" ? `${t("koinsSettled")}${bet.winner}` : t("koinsCancelled")}</span><h3>{bet.text}</h3><p>{t("koinsPool")}{total}{t("koinsPoolEnd")}{bet.entries.length}{t("koinsBets")}</p></div>{bet.status === "open" && <div className="bet-interaction"><label>{t("koinsStakeFor")}<input aria-label={`${t("koinsStakeFor")}${bet.text}`} min="1" max={balance} type="number" value={stakes[bet.id] ?? 25} onChange={(e) => setStakes((s) => ({ ...s, [bet.id]: Math.max(1, Number(e.target.value)) }))} /></label><div className="bet-buttons">{bet.options.map((option) => <button className="demo-action demo-action--lime" key={option} onClick={() => joinBetAction(bet.id, option)} type="button">{option}</button>)}</div></div>}</article>; })}</div>
+    <div className="bets-list bets-list--full">{bets.map((bet) => { const total = bet.entries.reduce((sum, e) => sum + e.stake, 0); return <article className={bet.status} key={bet.id}><div className="bet-copy"><span>{bet.status === "open" ? t("koinsOpenStatus") : bet.status === "settled" ? `${t("koinsSettled")}${bet.winner}` : t("koinsCancelled")}</span><h3>{bet.text}</h3><p>{t("koinsPool")}{total}{t("koinsPoolEnd")}{bet.entries.length}{t("koinsBets")}</p></div>{bet.status === "open" && (() => {
+      const mine = bet.entries.find((entry) => entry.userId === actorId);
+      const canClose = bet.userId === actorId || isOwner;
+      return <div className="bet-interaction">
+        {mine ? <p className="bet-own-stake">{t("koinsYourBet")}{mine.stake}{t("koinsOn")}{mine.option}{t("koinsOnEnd")}</p> : <><label>{t("koinsStakeFor")}<input aria-label={`${t("koinsStakeFor")}${bet.text}`} min="1" max={balance} type="number" value={stakes[bet.id] ?? 25} onChange={(e) => setStakes((s) => ({ ...s, [bet.id]: Math.max(1, Number(e.target.value)) }))} /></label><div className="bet-buttons">{bet.options.map((option) => <button className="demo-action demo-action--lime" key={option} onClick={() => joinBetAction(bet.id, option)} type="button">{option}</button>)}</div></>}
+        {canClose && <div className="bet-settle"><span>{t("koinsSettleResult")}</span><div className="bet-buttons">{bet.options.map((option) => <button className="demo-action demo-action--cream" key={option} onClick={() => closeBetAction(bet.id, option)} type="button">{option}</button>)}<button className="demo-action" onClick={() => closeBetAction(bet.id, null)} type="button">{t("koinsCancel")}</button></div></div>}
+      </div>;
+    })()}</article>; })}</div>
     {transactions.length > 0 && <div className="demo-panel-title" style={{ marginTop: 24 }}><div><span>{t("koinsLedger")}</span><h2>{t("koinsLedgerSub")}</h2></div></div>}
     <div className="koins-ledger-list">{transactions.map((tx) => <article className={`koins-ledger-item ${tx.amount > 0 ? "open" : "settled"}`} key={tx.id}><div className="bet-copy"><span>{tx.amount > 0 ? "+" : ""}{tx.amount} KOINS</span><h3>{transactionLabel(tx.label)}</h3></div><time dateTime={tx.createdAt}>{new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(tx.createdAt))}</time></article>)}</div>
   </section>;

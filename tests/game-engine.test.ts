@@ -18,10 +18,14 @@ test("server trivia scores an answer once and ignores a duplicate", () => {
   const correct = Number(started.correct);
   const first = applyServerGameCommand("trivia", started, "answer", { index: correct }, context("guest", 2_000))!;
   assert.equal(first.changed, true);
-  assert.equal((first.state.scores as Record<string, number>).guest, 2);
+  assert.equal((first.state.scores as Record<string, number>).guest, undefined, "points stay hidden until the reveal");
+  assert.equal((first.state.roundPoints as Record<string, number>).guest, 2);
   const duplicate = applyServerGameCommand("trivia", first.state, "answer", { index: correct }, context("guest", 2_500))!;
   assert.equal(duplicate.changed, false);
-  assert.equal((duplicate.state.scores as Record<string, number>).guest, 2);
+  const hostAnswer = applyServerGameCommand("trivia", first.state, "answer", { index: correct }, context("host", 2_600))!;
+  const revealed = applyServerGameCommand("trivia", hostAnswer.state, "reveal", {}, context("host", 3_000))!;
+  assert.equal((revealed.state.scores as Record<string, number>).guest, 2);
+  assert.deepEqual(revealed.state.roundPoints, {});
 });
 
 test("server trivia enforces deadline and stage-only transitions", () => {
@@ -45,7 +49,7 @@ test("Quiz Battle reuses the engine with a faster deadline and bonus", () => {
   assert.equal(started.game, "quiz");
   assert.equal(started.deadline, 17_000);
   const answer = applyServerGameCommand("quiz", started, "answer", { index: started.correct }, context("guest", 6_000))!;
-  assert.equal((answer.state.scores as Record<string, number>).guest, 3);
+  assert.equal((answer.state.roundPoints as Record<string, number>).guest, 3);
 });
 
 test("Would You Rather keeps voting and round transitions on the server", () => {
@@ -101,7 +105,8 @@ test("Brain Burst uses a ten-second server timer and server scoring", () => {
   assert.equal(started.deadline, 15_000);
   assert.equal(started.question, "Столица Казахстана?");
   const answer = applyServerGameCommand("brainBurst", started, "answer", { index: started.correct }, context("guest", 6_000))!;
-  assert.equal((answer.state.scores as Record<string, number>).guest, 2);
+  assert.equal((answer.state.scores as Record<string, number>).guest, undefined);
+  assert.equal((answer.state.roundPoints as Record<string, number>).guest, 2);
   const late = applyServerGameCommand("brainBurst", started, "answer", { index: started.correct }, context("guest", 16_000))!;
   assert.match(late.error ?? "", /deadline/);
 });
@@ -341,17 +346,23 @@ test("Night Council keeps roles private and resolves votes on the server", () =>
     assert.equal(hasDefinition(game), true);
     const started = applyServerGameCommand(game, lobby, "start", {}, ctx("host"))!;
     assert.equal(started.state.phase, "night");
-    const safe = getDefinition(game)?.sanitizeForViewer?.(started.state, "guest") as Record<string, unknown>;
-    assert.deepEqual(safe.roles, { guest: "doctor" });
-    const mafiaAction = applyServerGameCommand(game, started.state, "nightAction", { target: "fifth" }, ctx("host"))!;
-    const doctorAction = applyServerGameCommand(game, mafiaAction.state, "nightAction", { target: "guest" }, ctx("guest"))!;
+    const roles = started.state.roles as Record<string, string>;
+    const holder = (role: string) => Object.entries(roles).find(([, value]) => value === role)![0];
+    const mafia = holder("mafia");
+    const doctor = holder("doctor");
+    const safe = getDefinition(game)?.sanitizeForViewer?.(started.state, doctor) as Record<string, unknown>;
+    assert.deepEqual(safe.roles, { [doctor]: "doctor" });
+    const victim = councilPlayers.find((id) => id !== mafia && id !== doctor)!;
+    const mafiaAction = applyServerGameCommand(game, started.state, "nightAction", { target: victim }, ctx(mafia))!;
+    const doctorAction = applyServerGameCommand(game, mafiaAction.state, "nightAction", { target: doctor }, ctx(doctor))!;
     const night = applyServerGameCommand(game, doctorAction.state, "resolveNight", {}, ctx("host"))!;
     assert.equal(night.state.phase, "day");
+    assert.equal(night.state.eliminated, victim);
     const vote = applyServerGameCommand(game, night.state, "openVote", {}, ctx("host"))!;
     let voted = vote.state;
-    for (const actorId of voted.alive as string[]) voted = applyServerGameCommand(game, voted, "vote", { target: "host" }, ctx(actorId))!.state;
+    for (const actorId of voted.alive as string[]) voted = applyServerGameCommand(game, voted, "vote", { target: mafia }, ctx(actorId))!.state;
     const reveal = applyServerGameCommand(game, voted, "revealVote", {}, ctx("host"))!;
-    assert.equal(reveal.state.eliminated, "host");
+    assert.equal(reveal.state.eliminated, mafia);
     assert.equal(reveal.state.phase, "reveal");
   }
 });
