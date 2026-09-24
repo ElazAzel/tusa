@@ -2,7 +2,7 @@
 
 Твоя туса. Твои правила. TUSA.game — browser-first платформа для создания тусовок, общего чата, списка покупок, фотографий, результатов и многопользовательских игр.
 
-**Документационный checkpoint:** 22.07.2026
+**Документационный checkpoint:** 16.08.2026
 **Repository baseline:** `main@edee56e`
 **Production:** https://tusa.game
 **Статус:** supported public beta. Платформа не объявляется готовой к автономным платным B2B-мероприятиям.
@@ -17,7 +17,7 @@
 - Authenticated SSE, Ably integration, reconnect и Upstash rate limiting с fail-closed режимом для strict production.
 - RU/EN UI, PWA install surface, public SEO/knowledge pages и локальный RAG index.
 - Production schema v12: party, auth, admin и waitlist управляются Drizzle migrations; production request не выполняет runtime DDL.
-- На checkpoint проходят 61 unit/invariant test, TypeScript, ESLint, production build и RAG build.
+- На checkpoint проходят 65 unit/invariant tests, TypeScript, ESLint, production build и RAG build.
 
 ## Запуск
 

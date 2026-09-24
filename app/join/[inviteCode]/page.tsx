@@ -1,4 +1,4 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@/lib/local-auth/server";
 import { getPartyByInvite, syncProfile } from "@/lib/parties";
 import JoinPartyCard from "./JoinPartyCard";
 

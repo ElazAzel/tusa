@@ -5,7 +5,7 @@
 **Current reconciliation:** `main@edee56e` on 22.07.2026<br>
 **Status:** public beta; 32 Beta modes; certified = 0
 
-> **Reconciled 22.07.2026 — `main@edee56e`:** this dated audit is retained for its certification criteria. Its findings about request-time business DDL, non-atomic KOINS bets, absent moderation/reporting and incomplete controlled media are resolved in the current beta baseline. Production schema v12 and `/api/health` are verified. All 32 games still remain Beta; no mode may be called certified until current browser evidence is recorded.
+> **Reconciled 16.08.2026:** this dated audit is retained for its certification criteria. Its findings about request-time business DDL, non-atomic KOINS bets, absent moderation/reporting and incomplete controlled media are resolved in the current beta baseline. The current code requires schema v13; the last external database verification was v12. All 32 games still remain Beta; no mode may be called certified until current browser evidence is recorded.
 
 Источник текущих фактов: `docs/IMPLEMENTATION_STATUS_2026-07-19.md`. Target-требования определяются актуальными документами 02 Product Requirements и 04 Game Platform из `tmp/pdfs/Editable_DOCX/`.
 
@@ -16,13 +16,13 @@
 | Catalogue | 32 canonical manifest modes | Не использовать количество как readiness metric |
 | Game SDK | 32 registered definitions, strict schemas, server snapshots | Per-mode browser certification отсутствует |
 | Release status | Все 32 Beta | Certified = 0 |
-| Join | Guest-first HMAC session | Account provider и lifecycle требуют решения |
+| Join | Guest-first HMAC session and local email/password lifecycle | Production email/MFA setup remains |
 | Realtime | Authenticated SSE, Ably integration, reconnect | Production credentials, strict mode и load не подтверждены |
 | Rate limiting | Upstash integration + local fallback | Strict production preflight не подтверждён |
-| Persistence | Neon, version locking, idempotency | Runtime business DDL остаётся P0 |
-| Economy | KOINS, pools, bets, transaction log; reward retry идемпотентен | Join/settle/cancel bets неатомарны |
-| Safety | Authz guards and input validation | Moderation/reporting отсутствуют |
-| Media | Gallery and voice/photo flows exist | Object storage, retention and moderation incomplete |
+| Persistence | Neon, version locking, idempotency, versioned migrations | Connected production baseline needs migration v13 |
+| Economy | KOINS, pools, bets, transaction log; atomic join/settle/cancel and idempotent rewards | Reconciliation and event-night evidence remain |
+| Safety | Authz, report/review/action/appeal, blocks and restrictions | Abuse certification evidence remains |
+| Media | Controlled Blob storage, consent, validation, retention and deletion | Production/device evidence remains |
 | Commercial | Marketing/partner surfaces exist | Payment, booking, subscriptions and partner console absent |
 
 ## Certification gate
@@ -56,19 +56,15 @@ The current Game Platform document proposes:
 7. Would You Rather.
 8. Two Truths and a Lie.
 
-Этот список остаётся **target product decision**, пока он не закреплён в manifest через явное поле owner/priority/isCore. Punchline и Fake Fact дополнительно заблокированы отсутствием moderation/reporting.
+Этот список закреплён в `CORE_GAME_IDS` модуля manifest в certification priority order. Punchline и Fake Fact всё ещё требуют browser/moderation evidence до Certified.
 
 ## Release blockers
 
-1. Auth ambiguity and incomplete account lifecycle.
-2. Runtime DDL instead of migration-first business schema.
-3. Non-atomic bet join/settle/cancel and missing reconciliation.
-4. No certified core modes and no reusable host + two controllers + reconnect harness.
-5. No UGC moderation/reporting workflow.
-6. Incomplete media upload, retention and moderation controls.
-7. Unverified production Ably/Upstash/load/observability.
-8. Timed SEO redirects and user-facing third-party game names.
-9. No complete payment, booking or merchant flow.
+1. Production database must be migrated to schema v13 before this checkpoint is deployed.
+2. No certified core modes until isolated Host + two Controller browser evidence passes.
+3. Production Ably/Upstash/load/observability, email and root-admin MFA evidence is external.
+4. DNS, legal/privacy and naming/IP review are external release gates.
+5. Payments, booking and merchant flows remain intentionally pre-implementation.
 
 ## Commercial interpretation
 

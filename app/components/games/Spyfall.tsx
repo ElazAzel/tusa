@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePlayerName } from "@/app/components/PlayerNames";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { useStageGame } from "@/app/components/useStageGame";
@@ -37,6 +38,7 @@ const emptyState = (): GameState => ({
 });
 
 export default function Spyfall({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+  const playerName = usePlayerName();
   const { locale } = useLocale();
   const isHost = role === "stage";
   const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, emptyState);
@@ -47,8 +49,8 @@ export default function Spyfall({ sessionId, onSave, role }: { partyId: string; 
   const [guess, setGuess] = useState("");
   const completed = useRef(false);
   const copy = locale === "ru"
-    ? { title: "Lost Location", round: "Раунд", location: "Локация", spy: "Ты шпион", citizen: "Ты на локации", qa: "Задавайте вопросы и ищите того, кто не знает место.", vote: "Голосование", voted: "голосов", choose: "Кого подозреваешь?", guess: "Угадать локацию", guessPlace: "Например, аэропорт", openVote: "Перейти к голосованию", reveal: "Открыть результат", next: "Следующий раунд", finish: "Завершить", accused: "Под подозрением", spyWas: "Шпион", citizensWin: "Горожане нашли шпиона", spyWin: "Шпион выкрутился" }
-    : { title: "Lost Location", round: "Round", location: "Location", spy: "You are the spy", citizen: "You are at", qa: "Ask questions and find who does not know the place.", vote: "Voting", voted: "votes", choose: "Who looks suspicious?", guess: "Guess location", guessPlace: "For example, airport", openVote: "Open voting", reveal: "Reveal result", next: "Next round", finish: "Finish", accused: "Accused", spyWas: "Spy", citizensWin: "Citizens found the spy", spyWin: "Spy got away" };
+    ? { title: "Шпион", round: "Раунд", location: "Локация", spy: "Ты шпион", citizen: "Ты на локации", qa: "Задавайте вопросы и ищите того, кто не знает место.", vote: "Голосование", voted: "голосов", choose: "Кого подозреваешь?", guess: "Угадать локацию", guessPlace: "Например, аэропорт", openVote: "Перейти к голосованию", reveal: "Открыть результат", next: "Следующий раунд", finish: "Завершить", accused: "Под подозрением", spyWas: "Шпион", citizensWin: "Горожане нашли шпиона", spyWin: "Шпион выкрутился" }
+    : { title: "Spyfall", round: "Round", location: "Location", spy: "You are the spy", citizen: "You are at", qa: "Ask questions and find who does not know the place.", vote: "Voting", voted: "votes", choose: "Who looks suspicious?", guess: "Guess location", guessPlace: "For example, airport", openVote: "Open voting", reveal: "Reveal result", next: "Next round", finish: "Finish", accused: "Accused", spyWas: "Spy", citizensWin: "Citizens found the spy", spyWin: "Spy got away" };
 
   useEffect(() => { setVoteTarget(""); setGuess(""); }, [state.phase, state.round]);
   useEffect(() => {
@@ -74,14 +76,14 @@ export default function Spyfall({ sessionId, onSave, role }: { partyId: string; 
     {state.phase === "qa" && <>{isSpy && <div className="game-primary-actions"><input className="bs-input" maxLength={120} onChange={(event) => setGuess(event.target.value)} placeholder={copy.guessPlace} value={guess} /><button className="demo-action demo-action--white" disabled={!guess.trim()} onClick={() => sendAction("spyGuess", { location: guess.trim() })} type="button">{copy.guess}</button></div>}{isHost && <div className="game-primary-actions"><button className="demo-action demo-action--lime" onClick={() => sendAction("openVote")} type="button">{copy.openVote}</button></div>}</>}
     {state.phase === "vote" && <div>
       <p>{Object.keys(state.votes).length}/{players.length} {copy.voted}</p>
-      <div className="quiz-options">{players.map((player) => <button className={voteTarget === player ? "selected" : ""} disabled={voted || voteTarget === player} key={player} onClick={() => { setVoteTarget(player); sendAction("vote", { target: player }); }} type="button">{player.slice(-8)}</button>)}</div>
+      <div className="quiz-options">{players.map((player) => <button className={voteTarget === player ? "selected" : ""} disabled={voted || voteTarget === player} key={player} onClick={() => { setVoteTarget(player); sendAction("vote", { target: player }); }} type="button">{playerName(player)}</button>)}</div>
       {isSpy && <div className="game-primary-actions"><input className="bs-input" maxLength={120} onChange={(event) => setGuess(event.target.value)} placeholder={copy.guessPlace} value={guess} /><button className="demo-action demo-action--white" disabled={!guess.trim()} onClick={() => sendAction("spyGuess", { location: guess.trim() })} type="button">{copy.guess}</button></div>}
       {isHost && <button className="demo-action demo-action--lime" disabled={!Object.keys(state.votes).length} onClick={() => sendAction("reveal")} type="button">{copy.reveal}</button>}
     </div>}
     {state.phase === "reveal" && <div className="trivia-result">
       <p>{copy.location}: <b>{state.location}</b></p>
-      <p>{copy.spyWas}: <b>{state.spyId?.slice(-8)}</b></p>
-      {state.accusedId && <p>{copy.accused}: <b>{state.accusedId.slice(-8)}</b></p>}
+      <p>{copy.spyWas}: <b>{playerName(state.spyId)}</b></p>
+      {state.accusedId && <p>{copy.accused}: <b>{playerName(state.accusedId)}</b></p>}
       <h4>{state.outcome === "citizens" ? copy.citizensWin : copy.spyWin}</h4>
       {isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 4 ? copy.finish : copy.next}</button>}
     </div>}

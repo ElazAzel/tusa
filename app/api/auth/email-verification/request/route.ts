@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/local-auth/server";
 import { requestEmailVerification } from "@/lib/local-auth/server";
 import { deliverAuthEmail } from "@/lib/auth-email";
 import { distributedRateLimit } from "@/lib/rate-limit";

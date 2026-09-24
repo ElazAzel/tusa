@@ -32,20 +32,18 @@ PDF из `tmp/pdfs/PDF_Exports/` являются опубликованными
 - 32 canonical modes в manifest, 32 SDK definitions.
 - Все 32 режима имеют `releaseStatus: "beta"`; certified = 0.
 - Guest-first join, Party Room, chat, gallery, profile, KOINS, SSE/Ably integration, Upstash integration и CI существуют.
-- Production build использует local email/password compatibility layer через aliases; старые упоминания активного Clerk-flow не являются фактом.
-- Drizzle migrations are the production source of schema changes. Runtime DDL remains only as a non-production developer compatibility fallback; Vercel production requires schema version 12 before serving party, auth, waitlist and admin data.
+- Production build использует локальные email/password auth-модули и подписанные сессии; внешнего account provider в runtime нет.
+- Drizzle migrations are the production source of schema changes. Runtime DDL remains only as a non-production developer compatibility fallback; Vercel production requires schema version 13 before serving party, auth, waitlist and admin data.
 - Venue Night, Event Pass, TUSA Plus, payments, white-label, partner console и marketplace являются pre-implementation.
 
 ## Release gates
 
-1. Выбрать и укрепить одну auth-модель.
-2. Keep the schema migration gate and validate it on every production deploy; the legacy local compatibility fallback must not be enabled in production.
-3. Завершить atomic join/settle/cancel betting и reconciliation; reward double-credit уже закрыт.
-4. Закрепить core eight в manifest и пройти browser, reconnect, rematch, privacy и moderation certification.
-5. Проверить Ably/Upstash strict production mode, load, monitoring и incident fallback.
-6. Удалить SEO auto-redirects и завершить naming/IP review.
-7. Реализовать moderation/reporting и контролируемое object storage для media.
-8. Провести сопровождаемый платный Venue pilot; только затем заменять гипотезы фактическими коммерческими данными.
+1. Применить migration 0013 к подключённой production database и повторить `/api/health`.
+2. Пройти browser, reconnect, rematch, privacy и moderation certification для core eight; пока все режимы остаются Beta.
+3. Проверить Ably/Upstash strict production mode, venue load, monitoring и incident fallback.
+4. Настроить production email delivery и завершить root-admin MFA enrollment.
+5. Завершить DNS, legal/privacy и naming/IP review.
+6. Провести сопровождаемый платный Venue pilot; только затем заменять гипотезы фактическими коммерческими данными.
 
 ## Правило обновления
 

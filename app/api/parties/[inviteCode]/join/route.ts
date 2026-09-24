@@ -4,6 +4,7 @@ import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getPartyByInvite, joinParty, syncProfile } from "@/lib/parties";
 import { createGuestSession, GUEST_COOKIE, guestCookieOptions, resolveActor } from "@/lib/guest-session";
 import { recordOperationalEvent } from "@/lib/operations";
+import { publish } from "@/lib/live";
 
 const joinSchema = z.object({
   rsvp: z.enum(["going", "maybe", "pass"]).default("going"),
@@ -16,7 +17,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ inv
   const { inviteCode } = await params;
   void recordOperationalEvent({ eventType: "join_attempt", dimensions: { inviteLength: inviteCode.length } }).catch(() => undefined);
   if (!/^[A-Za-z0-9_-]{4,32}$/.test(inviteCode)) return NextResponse.json({ error: "Invalid invite." }, { status: 400 });
-  const rl = await distributedRateLimit(`party:join:${getClientIp(request.headers)}:${inviteCode}`, 10, 60_000);
+  const rl = await distributedRateLimit(`party:join:${getClientIp(request.headers)}:${inviteCode}`, 120, 60_000);
   if (!rl.allowed) return NextResponse.json({ error: "Too many join attempts. Try again shortly." }, { status: 429 });
   const parsed = joinSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Check your name and RSVP choice.", details: parsed.error.flatten() }, { status: 400 });
@@ -45,6 +46,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ inv
   await syncProfile({ id: actor.id, displayName: actor.displayName, imageUrl: actor.imageUrl });
   const party = await joinParty(actor.id, inviteCode, parsed.data.rsvp);
   if (!party) return NextResponse.json({ error: "Invite not found." }, { status: 404 });
+  publish(`party:${party.id}`, { type: "member:joined", userId: actor.id });
   const response = NextResponse.json({ party, actor: { id: actor.id, kind: actor.kind } });
   if (guestToken) response.cookies.set(GUEST_COOKIE, guestToken, guestCookieOptions);
   void recordOperationalEvent({ eventType: "join_success", durationMs: performance.now() - startedAt, dimensions: { actorKind: actor.kind, rsvp: parsed.data.rsvp } }).catch(() => undefined);

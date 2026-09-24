@@ -15,6 +15,11 @@ export default function CookieConsent() {
   }, []);
   const { t } = useLocale();
 
+  useEffect(() => {
+    document.body.classList.toggle("has-cookie-banner", visible);
+    return () => document.body.classList.remove("has-cookie-banner");
+  }, [visible]);
+
   function accept() {
     document.cookie = "tusa_consent=1; path=/; max-age=31536000; SameSite=Lax";
     setVisible(false);

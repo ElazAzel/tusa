@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
 import { LOST_LOCATION_ROUNDS } from "../lost-location-content";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
 
 type State = {
   engine: "server-v1";
@@ -17,10 +18,10 @@ type State = {
   outcome: "" | "citizens" | "spy";
   scores: Record<string, number>;
   players: string[];
-};
+} & DeckState;
 
-function locationFor(round: number, locale: "ru" | "en") {
-  return LOST_LOCATION_ROUNDS[round % LOST_LOCATION_ROUNDS.length][locale];
+function locationFor(round: number, locale: "ru" | "en", deck: { deckSeed?: string; deckStart?: number }) {
+  return deckItem(LOST_LOCATION_ROUNDS, deckOf(deck), round)[locale];
 }
 
 function tallyVotes(votes: Record<string, string>) {
@@ -32,7 +33,8 @@ export default defineGame<State>({
   version: 1,
   createInitialState(participants, config, now = Date.now()) {
     const locale = config.locale === "en" ? "en" : "ru";
-    return { engine: "server-v1", game: "spyfall", locale, phase: "qa", round: 0, location: locationFor(0, locale), spyId: participants[Math.abs(now) % Math.max(1, participants.length)] ?? "", turnIndex: 0, votes: {}, spyGuess: "", accusedId: "", outcome: "", scores: {}, players: participants };
+    const deck = initialDeck(config, "spyfall");
+    return { ...deck, engine: "server-v1", game: "spyfall", locale, phase: "qa", round: 0, location: locationFor(0, locale, deck), spyId: participants[Math.abs(now) % Math.max(1, participants.length)] ?? "", turnIndex: 0, votes: {}, spyGuess: "", accusedId: "", outcome: "", scores: {}, players: participants };
   },
   commandSchemas: {
     openVote: z.object({}).strict(),
@@ -58,7 +60,11 @@ export default defineGame<State>({
       if (ctx.actorId !== state.spyId) return { state, changed: false, error: "Only the spy can guess the location." };
       const spyGuess = (payload as { location: string }).location.trim();
       const correct = spyGuess.toLocaleLowerCase(state.locale) === state.location.toLocaleLowerCase(state.locale);
-      if (!correct) return { changed: true, state: { ...state, spyGuess } };
+      if (!correct) {
+        const scores = { ...state.scores };
+        ctx.participants.filter((id) => id !== state.spyId).forEach((id) => { scores[id] = (scores[id] ?? 0) + 1; });
+        return { changed: true, state: { ...state, phase: "reveal", spyGuess, accusedId: state.spyId, outcome: "citizens", scores } };
+      }
       return { changed: true, state: { ...state, phase: "reveal", spyGuess, outcome: "spy", scores: { ...state.scores, [state.spyId]: (state.scores[state.spyId] ?? 0) + 3 } } };
     }
     if (actionType === "reveal") {
@@ -75,7 +81,7 @@ export default defineGame<State>({
       if (ctx.actorId !== ctx.creatorId || state.phase !== "reveal") return { state, changed: false, error: "Only the stage can start the next round." };
       const round = state.round + 1;
       if (round >= 5) return { changed: true, state: { ...state, phase: "finished" } };
-      return { changed: true, state: { ...state, phase: "qa", round, location: locationFor(round, state.locale), spyId: ctx.participants[round % ctx.participants.length] ?? "", turnIndex: round % Math.max(1, ctx.participants.length), votes: {}, spyGuess: "", accusedId: "", outcome: "", players: ctx.participants } };
+      return { changed: true, state: { ...state, phase: "qa", round, location: locationFor(round, state.locale, state), contentUsed: round + 1, spyId: ctx.participants[(Math.abs(ctx.now) + round) % Math.max(1, ctx.participants.length)] ?? "", turnIndex: round % Math.max(1, ctx.participants.length), votes: {}, spyGuess: "", accusedId: "", outcome: "", players: ctx.participants } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },

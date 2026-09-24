@@ -1,3 +1,6 @@
+import { MUSIC_QUIZ_BANK } from "./content/music";
+import { deckItem, type ContentDeck } from "./content-deck";
+
 export type MusicQuizLocale = "ru" | "en";
 
 export type MusicQuizPrompt = {
@@ -7,27 +10,18 @@ export type MusicQuizPrompt = {
   fact: string;
 };
 
-const prompts: Record<MusicQuizLocale, MusicQuizPrompt[]> = {
-  en: [
-    { answer: "Bohemian Rhapsody", artist: "Queen", year: "1975", fact: "A genre-bending rock epic with several distinct sections.", },
-    { answer: "Imagine", artist: "John Lennon", year: "1971", fact: "A piano-led peace anthem from a former Beatle.", },
-    { answer: "Billie Jean", artist: "Michael Jackson", year: "1982", fact: "A landmark pop single with an instantly recognisable bassline.", },
-    { answer: "Smells Like Teen Spirit", artist: "Nirvana", year: "1991", fact: "A grunge anthem that helped define the early nineties.", },
-    { answer: "Hey Jude", artist: "The Beatles", year: "1968", fact: "A seven-minute Beatles singalong named after a child named Julian.", },
-    { answer: "Rolling in the Deep", artist: "Adele", year: "2010", fact: "A soul-pop breakthrough built around a dramatic breakup.", },
-  ],
-  ru: [
-    { answer: "Bohemian Rhapsody", artist: "Queen", year: "1975", fact: "Рок-эпос с несколькими разными музыкальными частями.", },
-    { answer: "Imagine", artist: "John Lennon", year: "1971", fact: "Фортепианный гимн миру от бывшего участника The Beatles.", },
-    { answer: "Billie Jean", artist: "Michael Jackson", year: "1982", fact: "Знаковый поп-сингл с узнаваемой басовой партией.", },
-    { answer: "Smells Like Teen Spirit", artist: "Nirvana", year: "1991", fact: "Гранж-гимн, определивший звучание ранних девяностых.", },
-    { answer: "Hey Jude", artist: "The Beatles", year: "1968", fact: "Семиминутная песня The Beatles, названная в честь Джулиана.", },
-    { answer: "Rolling in the Deep", artist: "Adele", year: "2010", fact: "Прорывной соул-поп хит о драматичном расставании.", },
-  ],
+const pools: Record<MusicQuizLocale, typeof MUSIC_QUIZ_BANK> = {
+  ru: MUSIC_QUIZ_BANK.filter((entry) => entry.locales.includes("ru")),
+  en: MUSIC_QUIZ_BANK.filter((entry) => entry.locales.includes("en")),
 };
 
-export function musicQuizPrompt(locale: MusicQuizLocale, round: number): MusicQuizPrompt {
-  return prompts[locale][round % prompts[locale].length];
+export function musicQuizPoolSize(locale: MusicQuizLocale) {
+  return pools[locale].length;
+}
+
+export function musicQuizPrompt(locale: MusicQuizLocale, round: number, deck: ContentDeck = { deckSeed: "default:music", deckStart: 0 }): MusicQuizPrompt {
+  const entry = deckItem(pools[locale], deck, round);
+  return { answer: entry.answer, artist: entry.artist, year: entry.year, fact: entry.fact[locale] };
 }
 
 export const MUSIC_QUIZ_ROUNDS = 5;

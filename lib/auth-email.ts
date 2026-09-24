@@ -1,6 +1,7 @@
 import "server-only";
 import { recordPlatformError } from "@/lib/observability";
 import { createEmailDelivery } from "@/lib/operations";
+import { runtimeEnvironment } from "@/lib/runtime-status";
 
 function escapeHtml(value: unknown) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] ?? character);
@@ -41,7 +42,7 @@ export async function deliverAuthEmail(payload: Record<string, unknown>) {
       return false;
     }
   }
-  if (!process.env.AUTH_EMAIL_WEBHOOK_URL) return false;
+  if (runtimeEnvironment() === "production" || !process.env.AUTH_EMAIL_WEBHOOK_URL) return false;
   try {
     const response = await fetch(process.env.AUTH_EMAIL_WEBHOOK_URL, {
       method: "POST",

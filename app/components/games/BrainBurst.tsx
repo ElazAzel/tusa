@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePlayerName } from "@/app/components/PlayerNames";
 import { useStageGame } from "@/app/components/useStageGame";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
@@ -9,6 +10,7 @@ type GameState = { engine: "server-v1"; round: number; phase: "question" | "resu
 const initialState = (): GameState => ({ engine: "server-v1", round: 0, phase: "question", question: "", options: [], correct: -1, deadline: 0, scores: {}, answered: {}, players: [] });
 
 export default function BrainBurst({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+  const playerName = usePlayerName();
   const { locale } = useLocale();
   const isHost = role === "stage";
   const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, initialState);
@@ -19,7 +21,7 @@ export default function BrainBurst({ sessionId, onSave, role }: { partyId: strin
   const [now, setNow] = useState(0);
   const revealRequested = useRef(-1);
   const completed = useRef(false);
-  const copy = locale === "ru" ? { title: "Мозговой штурм", round: "Раунд", waiting: "Готовим вопрос…", accepted: "Ответ принят", correct: "Правильный ответ", points: "очк.", next: "Дальше", finish: "Завершить" } : { title: "Brain Burst", round: "Round", waiting: "Preparing the question…", accepted: "Answer accepted", correct: "Correct answer", points: "pts", next: "Next", finish: "Finish" };
+  const copy = locale === "ru" ? { title: "Блиц-квиз", round: "Раунд", waiting: "Готовим вопрос…", accepted: "Ответ принят", correct: "Правильный ответ", points: "очк.", next: "Дальше", finish: "Завершить" } : { title: "Brain Burst", round: "Round", waiting: "Preparing the question…", accepted: "Answer accepted", correct: "Correct answer", points: "pts", next: "Next", finish: "Finish" };
 
   useEffect(() => { setChosen(null); revealRequested.current = -1; }, [state.round]);
   useEffect(() => {
@@ -49,10 +51,10 @@ export default function BrainBurst({ sessionId, onSave, role }: { partyId: strin
   }
 
   return <div className="party-game-board game-board-enter trivia-board brain-burst-board">
-    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/8</span><strong className={seconds <= 3 ? "is-ending" : ""}>{seconds}s</strong></div>
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/8</span><strong className={seconds <= 3 ? "is-ending" : ""}>{seconds}{locale === "ru" ? " с" : "s"}</strong></div>
     <h3>{state.question || copy.waiting}</h3>
     {state.phase === "question" && <div className="quiz-options">{state.options.map((option, index) => <button className={chosen === index ? "selected" : ""} disabled={chosen !== null || seconds <= 0} key={option} onClick={() => answer(index)} type="button"><b>{String.fromCharCode(65 + index)}</b><span>{option}</span></button>)}</div>}
     {chosen !== null && state.phase === "question" && <p className="controller-answered">{copy.accepted}</p>}
-    {state.phase === "result" && <div className="trivia-result"><p><b>{copy.correct}:</b> {state.options[state.correct]}</p><div className="trivia-scores">{ranking.map(([userId, score], index) => <p key={userId}><span>#{index + 1} {userId.slice(-8)}</span><strong>{score} {copy.points}</strong></p>)}</div>{isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 7 ? copy.finish : copy.next}</button>}</div>}
+    {state.phase === "result" && <div className="trivia-result"><p><b>{copy.correct}:</b> {state.options[state.correct]}</p><div className="trivia-scores">{ranking.map(([userId, score], index) => <p key={userId}><span>#{index + 1} {playerName(userId)}</span><strong>{score} {copy.points}</strong></p>)}</div>{isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 7 ? copy.finish : copy.next}</button>}</div>}
   </div>;
 }

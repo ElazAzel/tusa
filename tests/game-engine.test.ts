@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { applyServerGameCommand, initialServerGameState } from "../lib/games/engine";
 import { GAME_MANIFEST } from "../lib/games/manifest";
-import { getDefinition, hasDefinition } from "../lib/games/sdk";
+import { getDefinition, hasDefinition, sanitizeSdkState } from "../lib/games/sdk";
 import { certificationGameIds, certificationParticipantCount } from "../lib/games/certification-node";
 
 const players = ["host", "guest"];
@@ -18,10 +18,14 @@ test("server trivia scores an answer once and ignores a duplicate", () => {
   const correct = Number(started.correct);
   const first = applyServerGameCommand("trivia", started, "answer", { index: correct }, context("guest", 2_000))!;
   assert.equal(first.changed, true);
-  assert.equal((first.state.scores as Record<string, number>).guest, 2);
+  assert.equal((first.state.scores as Record<string, number>).guest, undefined, "points stay hidden until the reveal");
+  assert.equal((first.state.roundPoints as Record<string, number>).guest, 2);
   const duplicate = applyServerGameCommand("trivia", first.state, "answer", { index: correct }, context("guest", 2_500))!;
   assert.equal(duplicate.changed, false);
-  assert.equal((duplicate.state.scores as Record<string, number>).guest, 2);
+  const hostAnswer = applyServerGameCommand("trivia", first.state, "answer", { index: correct }, context("host", 2_600))!;
+  const revealed = applyServerGameCommand("trivia", hostAnswer.state, "reveal", {}, context("host", 3_000))!;
+  assert.equal((revealed.state.scores as Record<string, number>).guest, 2);
+  assert.deepEqual(revealed.state.roundPoints, {});
 });
 
 test("server trivia enforces deadline and stage-only transitions", () => {
@@ -45,13 +49,13 @@ test("Quiz Battle reuses the engine with a faster deadline and bonus", () => {
   assert.equal(started.game, "quiz");
   assert.equal(started.deadline, 17_000);
   const answer = applyServerGameCommand("quiz", started, "answer", { index: started.correct }, context("guest", 6_000))!;
-  assert.equal((answer.state.scores as Record<string, number>).guest, 3);
+  assert.equal((answer.state.roundPoints as Record<string, number>).guest, 3);
 });
 
 test("Would You Rather keeps voting and round transitions on the server", () => {
   const started = initialServerGameState("wouldRather", players, { locale: "ru" }, 1_000)!;
   assert.equal(started.phase, "vote");
-  assert.equal((started.prompt as { a: string }).a, "Уметь летать");
+  assert.ok((started.prompt as { a: string }).a.length > 0);
 
   const vote = applyServerGameCommand("wouldRather", started, "vote", { choice: "b" }, context("guest", 2_000))!;
   assert.equal(vote.changed, true);
@@ -99,9 +103,10 @@ test("Brain Burst uses a ten-second server timer and server scoring", () => {
   assert.equal(hasDefinition("brainBurst"), true);
   const started = initialServerGameState("brainBurst", players, { locale: "ru" }, 5_000)!;
   assert.equal(started.deadline, 15_000);
-  assert.equal(started.question, "Столица Казахстана?");
+  assert.ok(String(started.question).length > 0);
   const answer = applyServerGameCommand("brainBurst", started, "answer", { index: started.correct }, context("guest", 6_000))!;
-  assert.equal((answer.state.scores as Record<string, number>).guest, 2);
+  assert.equal((answer.state.scores as Record<string, number>).guest, undefined);
+  assert.equal((answer.state.roundPoints as Record<string, number>).guest, 2);
   const late = applyServerGameCommand("brainBurst", started, "answer", { index: started.correct }, context("guest", 16_000))!;
   assert.match(late.error ?? "", /deadline/);
 });
@@ -120,11 +125,14 @@ test("Same Word keeps submissions private and scores matching answers", () => {
 
 test("Word Bomb validates letters, uniqueness, deadlines, and elimination", () => {
   const started = initialServerGameState("bombParty", players, { locale: "en" }, 1_000)!;
-  const wrong = applyServerGameCommand("bombParty", started, "submit", { word: "apple" }, context("guest", 2_000))!;
-  assert.match(wrong.error ?? "", /start with C/);
-  const valid = applyServerGameCommand("bombParty", started, "submit", { word: "Cloud" }, context("guest", 2_100))!;
-  assert.equal((valid.state.submissions as Record<string, string>).guest, "Cloud");
-  const duplicateWord = applyServerGameCommand("bombParty", valid.state, "submit", { word: "cloud" }, context("host", 2_200))!;
+  const letter = String(started.letter);
+  const wrongStart = letter.startsWith("Q") ? "zebra" : "quartz";
+  const wrong = applyServerGameCommand("bombParty", started, "submit", { word: wrongStart }, context("guest", 2_000))!;
+  assert.match(wrong.error ?? "", new RegExp(`start with ${letter}`));
+  const word = `${letter}oud`;
+  const valid = applyServerGameCommand("bombParty", started, "submit", { word }, context("guest", 2_100))!;
+  assert.equal((valid.state.submissions as Record<string, string>).guest, word);
+  const duplicateWord = applyServerGameCommand("bombParty", valid.state, "submit", { word: word.toLowerCase() }, context("host", 2_200))!;
   assert.match(duplicateWord.error ?? "", /already used/);
   const finalized = applyServerGameCommand("bombParty", valid.state, "finalize", {}, context("host", 22_000))!;
   assert.deepEqual(finalized.state.eliminated, ["host"]);
@@ -133,11 +141,12 @@ test("Word Bomb validates letters, uniqueness, deadlines, and elimination", () =
 test("Spectrum hides authority on the server and scores the team average", () => {
   assert.equal(hasDefinition("wavelength"), true);
   const started = initialServerGameState("wavelength", players, { locale: "en" }, 1_003)!;
-  assert.equal(started.target, 4);
+  const target = Number(started.target);
+  assert.ok(target >= 1 && target <= 10);
   const clue = applyServerGameCommand("wavelength", started, "clue", { text: "A warm shower" }, context("host", 2_000))!;
-  const hostGuess = applyServerGameCommand("wavelength", clue.state, "guess", { value: 4 }, context("host", 2_100))!;
+  const hostGuess = applyServerGameCommand("wavelength", clue.state, "guess", { value: target }, context("host", 2_100))!;
   assert.match(hostGuess.error ?? "", /cannot guess/);
-  const guess = applyServerGameCommand("wavelength", clue.state, "guess", { value: 4 }, context("guest", 2_200))!;
+  const guess = applyServerGameCommand("wavelength", clue.state, "guess", { value: target }, context("guest", 2_200))!;
   const reveal = applyServerGameCommand("wavelength", guess.state, "reveal", {}, context("host", 2_300))!;
   assert.equal(reveal.state.roundScore, 4);
   assert.equal(reveal.state.teamScore, 4);
@@ -157,10 +166,11 @@ test("Punchline keeps answers server-owned and prevents self voting", () => {
 
 test("Fake Fact protects the truth and scores correct and deceptive votes", () => {
   const started = initialServerGameState("fibbage", players, { locale: "en" }, 1_000)!;
-  const truthLeak = applyServerGameCommand("fibbage", started, "answer", { text: "11" }, context("guest", 2_000))!;
+  assert.ok(String(started.question).length > 0);
+  const truthLeak = applyServerGameCommand("fibbage", started, "answer", { text: String(started.truth).toUpperCase() }, context("guest", 2_000))!;
   assert.match(truthLeak.error ?? "", /real answer/);
-  const first = applyServerGameCommand("fibbage", started, "answer", { text: "Nine" }, context("host", 2_100))!;
-  const second = applyServerGameCommand("fibbage", first.state, "answer", { text: "Twelve" }, context("guest", 2_200))!;
+  const first = applyServerGameCommand("fibbage", started, "answer", { text: "Zzyzx lie one" }, context("host", 2_100))!;
+  const second = applyServerGameCommand("fibbage", first.state, "answer", { text: "Zzyzx lie two" }, context("guest", 2_200))!;
   const opened = applyServerGameCommand("fibbage", second.state, "openVote", {}, context("host", 2_300))!;
   const truthVote = applyServerGameCommand("fibbage", opened.state, "vote", { target: opened.state.truthChoiceId }, context("guest", 2_400))!;
   const reveal = applyServerGameCommand("fibbage", truthVote.state, "reveal", {}, context("host", 2_500))!;
@@ -237,6 +247,11 @@ test("Lost Location keeps spy identity private and resolves votes server-side", 
   assert.equal(opened.state.phase, "vote");
   const wrongGuess = applyServerGameCommand("spyfall", opened.state, "spyGuess", { location: "Beach" }, context("host", 2_100))!;
   assert.match(wrongGuess.error ?? "", /Only the spy/);
+  const spyMiss = applyServerGameCommand("spyfall", opened.state, "spyGuess", { location: "Nowhere at all" }, context("guest", 2_150))!;
+  assert.equal(spyMiss.state.phase, "reveal");
+  assert.equal(spyMiss.state.outcome, "citizens");
+  const secondTry = applyServerGameCommand("spyfall", spyMiss.state, "spyGuess", { location: String(started.location) }, context("guest", 2_160))!;
+  assert.equal(secondTry.changed, false);
   const vote = applyServerGameCommand("spyfall", opened.state, "vote", { target: "guest" }, context("host", 2_200))!;
   const reveal = applyServerGameCommand("spyfall", vote.state, "reveal", {}, context("host", 2_300))!;
   assert.equal(reveal.state.outcome, "citizens");
@@ -341,17 +356,23 @@ test("Night Council keeps roles private and resolves votes on the server", () =>
     assert.equal(hasDefinition(game), true);
     const started = applyServerGameCommand(game, lobby, "start", {}, ctx("host"))!;
     assert.equal(started.state.phase, "night");
-    const safe = getDefinition(game)?.sanitizeForViewer?.(started.state, "guest") as Record<string, unknown>;
-    assert.deepEqual(safe.roles, { guest: "doctor" });
-    const mafiaAction = applyServerGameCommand(game, started.state, "nightAction", { target: "fifth" }, ctx("host"))!;
-    const doctorAction = applyServerGameCommand(game, mafiaAction.state, "nightAction", { target: "guest" }, ctx("guest"))!;
+    const roles = started.state.roles as Record<string, string>;
+    const holder = (role: string) => Object.entries(roles).find(([, value]) => value === role)![0];
+    const mafia = holder("mafia");
+    const doctor = holder("doctor");
+    const safe = getDefinition(game)?.sanitizeForViewer?.(started.state, doctor) as Record<string, unknown>;
+    assert.deepEqual(safe.roles, { [doctor]: "doctor" });
+    const victim = councilPlayers.find((id) => id !== mafia && id !== doctor)!;
+    const mafiaAction = applyServerGameCommand(game, started.state, "nightAction", { target: victim }, ctx(mafia))!;
+    const doctorAction = applyServerGameCommand(game, mafiaAction.state, "nightAction", { target: doctor }, ctx(doctor))!;
     const night = applyServerGameCommand(game, doctorAction.state, "resolveNight", {}, ctx("host"))!;
     assert.equal(night.state.phase, "day");
+    assert.equal(night.state.eliminated, victim);
     const vote = applyServerGameCommand(game, night.state, "openVote", {}, ctx("host"))!;
     let voted = vote.state;
-    for (const actorId of voted.alive as string[]) voted = applyServerGameCommand(game, voted, "vote", { target: "host" }, ctx(actorId))!.state;
+    for (const actorId of voted.alive as string[]) voted = applyServerGameCommand(game, voted, "vote", { target: mafia }, ctx(actorId))!.state;
     const reveal = applyServerGameCommand(game, voted, "revealVote", {}, ctx("host"))!;
-    assert.equal(reveal.state.eliminated, "host");
+    assert.equal(reveal.state.eliminated, mafia);
     assert.equal(reveal.state.phase, "reveal");
   }
 });
@@ -418,6 +439,20 @@ test("Draw Chain requires every player through prompt, drawing and guessing", ()
   assert.equal(state.phase, "reveal");
 });
 
+test("Pictionary gives three guesses per round and lets the stage reveal a stuck word", () => {
+  const party = ["host", "guest", "third"];
+  const ctx = (actorId: string) => ({ actorId, creatorId: "host", participants: party, now: 2_000 });
+  let state = applyServerGameCommand("pictionary", initialServerGameState("pictionary", party, { locale: "en" }, 1_000)!, "start", {}, ctx("host"))!.state;
+  for (const attempt of ["one", "two", "three"]) state = applyServerGameCommand("pictionary", state, "guess", { text: `wrong ${attempt}` }, ctx("guest"))!.state;
+  const fourth = applyServerGameCommand("pictionary", state, "guess", { text: "wrong four" }, ctx("guest"))!;
+  assert.match(fourth.error ?? "", /No guesses left/);
+  assert.match(applyServerGameCommand("pictionary", state, "reveal", {}, ctx("guest"))!.error ?? "", /Only the stage/);
+  const revealed = applyServerGameCommand("pictionary", state, "reveal", {}, ctx("host"))!;
+  assert.equal(revealed.state.phase, "result");
+  assert.equal(sanitizeSdkState("pictionary", structuredClone(revealed.state), "guest").word, state.word);
+  assert.equal(applyServerGameCommand("pictionary", revealed.state, "next", {}, ctx("host"))!.state.round, 2);
+});
+
 test("Impostor keeps the word private and resolves clues and votes on the server", () => {
   const started = initialServerGameState("impostor", players, { locale: "en" }, 1_001)!;
   assert.equal(started.impostorId, "guest");
@@ -426,10 +461,25 @@ test("Impostor keeps the word private and resolves clues and votes on the server
   const secondClue = applyServerGameCommand("impostor", clue.state, "clue", { clue: "space" }, context("guest", 2_050))!;
   const wrongGuess = applyServerGameCommand("impostor", secondClue.state, "guess", { word: "Pizza" }, context("host", 2_100))!;
   assert.match(wrongGuess.error ?? "", /Only the impostor/);
+  const impostorMiss = applyServerGameCommand("impostor", secondClue.state, "guess", { word: "Not the word" }, context("guest", 2_150))!;
+  assert.equal(impostorMiss.state.phase, "reveal");
+  assert.equal(impostorMiss.state.outcome, "crew");
   const opened = applyServerGameCommand("impostor", secondClue.state, "openVote", {}, context("host", 2_200))!;
   assert.equal(opened.state.phase, "vote");
   const vote = applyServerGameCommand("impostor", opened.state, "vote", { target: "guest" }, context("host", 2_300))!;
   const reveal = applyServerGameCommand("impostor", vote.state, "reveal", {}, context("host", 2_400))!;
   assert.equal(reveal.state.outcome, "crew");
   assert.equal((reveal.state.scores as Record<string, number>).host, 1);
+});
+
+test("Mafia, Werewolf and Bunker ignore a second start while a game is running", () => {
+  const party = ["host", "a", "b", "c", "d"];
+  const ctx = { actorId: "host", creatorId: "host", participants: party, now: 5_000 };
+  for (const game of ["mafia", "werewolf", "bunker"]) {
+    const started = applyServerGameCommand(game, initialServerGameState(game, party, { locale: "ru" }, 1_000)!, "start", {}, ctx)!;
+    assert.equal(started.changed, true, game);
+    const again = applyServerGameCommand(game, started.state, "start", {}, { ...ctx, now: 9_000 })!;
+    assert.equal(again.changed, false, game);
+    assert.deepEqual(again.state.roles ?? again.state.cards, started.state.roles ?? started.state.cards, game);
+  }
 });

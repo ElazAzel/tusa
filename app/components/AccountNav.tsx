@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { UserButton, useAuth } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@/lib/local-auth/client";
 import LocaleToggle from "./LocaleToggle";
 import { useLocale } from "./LocaleProvider";
 

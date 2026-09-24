@@ -17,7 +17,7 @@ export default function TwoTruths({ sessionId, onSave, role }: { partyId: string
   const sendAction = isHost ? stage.sendAction : controller.sendAction;
   const [chosen, setChosen] = useState<number | null>(null);
   const completed = useRef(false);
-  const copy = locale === "ru" ? { round: "Раунд", title: "Две правды и ложь", prompt: "Какое утверждение — ложь?", accepted: "Выбор принят", votes: "голосов", reveal: "Раскрыть ложь", lie: "Это ложь", next: "Следующий раунд", finish: "Завершить" } : { round: "Round", title: "Two Truths and a Lie", prompt: "Which statement is the lie?", accepted: "Vote accepted", votes: "votes", reveal: "Reveal the lie", lie: "This is the lie", next: "Next round", finish: "Finish" };
+  const copy = locale === "ru" ? { round: "Раунд", title: "Две правды и ложь", prompt: "Какое утверждение ложное?", accepted: "Выбор принят", votes: "голосов", reveal: "Раскрыть ложь", lie: "Это ложь", next: "Следующий раунд", finish: "Завершить" } : { round: "Round", title: "Two Truths and a Lie", prompt: "Which statement is the lie?", accepted: "Vote accepted", votes: "votes", reveal: "Reveal the lie", lie: "This is the lie", next: "Next round", finish: "Finish" };
 
   useEffect(() => { setChosen(null); }, [state.round]);
   useEffect(() => {

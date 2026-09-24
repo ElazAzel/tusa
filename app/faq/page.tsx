@@ -12,39 +12,32 @@ import { copy, normalizeLocale } from "@/lib/i18n";
 
 const faqItems = [
   {
-    question: "What is TUSA.game?",
-    answer:
-      "TUSA.game is a browser-based social gaming platform where friends use 32 party game modes together from any device — no downloads needed.",
+    ru: { question: "Что такое TUSA.game?", answer: "Браузерная платформа для вечеринок: 32 игровых режима, в которые друзья играют вместе с любых устройств. Ничего скачивать не нужно." },
+    en: { question: "What is TUSA.game?", answer: "TUSA.game is a browser-based social gaming platform where friends use 32 party game modes together from any device, with no downloads." },
   },
   {
-    question: "How many players can play?",
-    answer:
-      "TUSA.game supports 2 to 20+ players per party, depending on the game mode.",
+    ru: { question: "Сколько человек может играть?", answer: "От 2 до 20 с лишним человек в одной тусе. Точное число зависит от режима." },
+    en: { question: "How many players can play?", answer: "TUSA.game supports 2 to 20+ players per party, depending on the game mode." },
   },
   {
-    question: "Is TUSA.game free?",
-    answer:
-      "Yes, TUSA.game is currently free during beta. Some premium features may be added later.",
+    ru: { question: "Это бесплатно?", answer: "Да, пока идёт бета, TUSA.game бесплатна. Платные функции могут появиться позже." },
+    en: { question: "Is TUSA.game free?", answer: "Yes, TUSA.game is free during beta. Some premium features may be added later." },
   },
   {
-    question: "Do my friends need to register?",
-    answer:
-      "Your friends join via a link — no registration required on their end. The host needs a free account to create a party.",
+    ru: { question: "Друзьям нужно регистрироваться?", answer: "Нет. Друзья заходят по ссылке или QR-коду и просто вводят имя. Аккаунт нужен только тому, кто создаёт тусу." },
+    en: { question: "Do my friends need to register?", answer: "No. Friends join via a link or QR code and just enter a name. Only the host needs a free account to create a party." },
   },
   {
-    question: "Can I play on TV?",
-    answer:
-      "Yes — TUSA.game works on any device with a browser. Project it on TV while friends join from their phones.",
+    ru: { question: "Можно играть на телевизоре?", answer: "Да. Откройте тусу в браузере на телевизоре или ноутбуке и включите режим экрана, а друзья играют со своих телефонов." },
+    en: { question: "Can I play on TV?", answer: "Yes. Open the party in a browser on a TV or laptop and switch to screen mode while friends play from their phones." },
   },
   {
-    question: "What games are available?",
-    answer:
-      "TUSA.game has 32 game modes including Word Blast, Mime Riot, Night Wolves, Secret Grid, Punchline, Fake Fact, Trivia, Word Bomb, and more.",
+    ru: { question: "Какие есть игры?", answer: "32 режима: Alias, Мафия, Оборотень, Крокодил, Шпион, Импостор, Бункер, Кодовые имена, квизы, Панчлайн, Фейк-факт, Правда или действие и другие." },
+    en: { question: "What games are available?", answer: "32 modes including Alias, Mafia Lite, Werewolf, Charades, Spyfall, Impostor, Bunker, Codenames, quizzes, Quiplash, Fibbage, Truth or Dare and more." },
   },
   {
-    question: "Does TUSA.game require downloading an app?",
-    answer:
-      "No. Everything runs in the browser — no app store, no installation, no updates.",
+    ru: { question: "Нужно ли скачивать приложение?", answer: "Нет. Всё работает в браузере. Если хочется, TUSA.game можно добавить на главный экран телефона." },
+    en: { question: "Does TUSA.game require downloading an app?", answer: "No. Everything runs in the browser. You can add TUSA.game to your home screen if you like." },
   },
 ];
 
@@ -69,7 +62,7 @@ export default async function FaqPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: faqItems.map((item) => ({
+    mainEntity: faqItems.map((entry) => entry[locale]).map((item) => ({
       "@type": "Question",
       name: item.question,
       acceptedAnswer: {
@@ -83,14 +76,14 @@ export default async function FaqPage() {
     <main className="legal-page faq-page">
       <div className="legal-container">
         <Link href="/" className="legal-back">
-          {t("backToParties")}
+          {t("notFoundHome")}
         </Link>
         <h1>{t("faqTitle")}</h1>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        {faqItems.map((item, i) => (
+        {faqItems.map((entry) => entry[locale]).map((item, i) => (
           <details key={i}>
             <summary className="faq-question">{item.question}</summary>
             <p className="faq-answer">{item.answer}</p>

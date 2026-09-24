@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/local-auth/server";
 import { redirect } from "next/navigation";
 import CreatePartyForm from "./CreatePartyForm";
 

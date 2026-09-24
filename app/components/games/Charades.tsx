@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePlayerName } from "@/app/components/PlayerNames";
 import { useStageGame } from "@/app/components/useStageGame";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
@@ -9,6 +10,7 @@ type GameState = { engine: "server-v1"; viewerId?: string; phase: "play" | "resu
 const initialState = (): GameState => ({ engine: "server-v1", phase: "play", round: 0, activePlayer: "", deadline: 0, word: "", score: 0, roundScore: 0, players: [] });
 
 export default function Charades({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+  const playerName = usePlayerName();
   const { locale } = useLocale();
   const isHost = role === "stage";
   const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, initialState);
@@ -28,8 +30,8 @@ export default function Charades({ sessionId, onSave, role }: { partyId: string;
   useEffect(() => { if (!isHost || state.phase !== "finished" || completed.current) return; completed.current = true; stage.complete(); onSave(0); }, [isHost, onSave, stage, state.phase]);
 
   return <div className="party-game-board game-board-enter charades-board">
-    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/5</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}s</strong></div>
-    <h3>{copy.title}</h3><p>{copy.active}: <b>{state.activePlayer.slice(-8)}</b></p>
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/5</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}{locale === "ru" ? " с" : "s"}</strong></div>
+    <h3>{copy.title}</h3><p>{copy.active}: <b>{playerName(state.activePlayer)}</b></p>
     {state.phase === "play" && <>{isActive ? <div className="charades-secret"><span>{copy.yourWord}</span><strong>{state.word}</strong></div> : <p className="controller-answered">{copy.watch}</p>}<div className="charades-score"><span>{copy.roundScore}: <b>{state.roundScore}</b></span><span>{copy.total}: <b>{state.score}</b></span></div>{isActive && <div className="game-primary-actions"><button className="demo-action demo-action--lime" onClick={() => sendAction("correct")} type="button">{copy.correct}</button><button className="demo-action demo-action--white" onClick={() => sendAction("skip")} type="button">{copy.skip}</button></div>}</>}
     {state.phase === "result" && <div className="trivia-result"><p>{copy.roundScore}: <b>{state.roundScore}</b> · {copy.total}: <b>{state.score}</b></p>{isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 4 ? copy.finish : copy.next}</button>}</div>}
   </div>;

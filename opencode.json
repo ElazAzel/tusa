@@ -1,42 +1,20 @@
 {
-  "agent": {
-    "description": "TUSA.game AI assistant — multiplayer party platform (Next.js 16, React 19, TypeScript, Clerk, Neon Postgres, SSE)",
-    "mode": "code",
-    "instructions": [
-      "Read AGENTS.md before making any changes — it is the orchestration hub with all project context.",
-      "Run `npm run build` and `npm test` before committing any changes.",
-      "Run `npm run rag:build` after any code change to keep the RAG index fresh.",
-      "Use RAG search (`npm run rag:search \"query\"`) to find relevant code before editing.",
-      "Prefer editing existing files over creating new ones unless explicitly required.",
-      "Follow the Files to Touch table in AGENTS.md to find the right file for each task.",
-      "Never add comments unless asked — match existing code style (no comments).",
-      "Never commit unless explicitly asked by the user."
-    ],
-    "skills": {
-      "add-game": {
-        "description": "Add a new multiplayer game to the platform",
-        "path": ".opencode/skills/add-game.md"
-      },
-      "fix-game-bug": {
-        "description": "Debug and fix a game component or engine issue",
-        "path": ".opencode/skills/fix-game-bug.md"
-      },
-      "rag-index": {
-        "description": "Rebuild or search the RAG index",
-        "path": ".opencode/skills/rag-index.md"
-      }
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "AGENTS.md"
+  ],
+  "references": {
+    "humanizer-ru": {
+      "path": "E:\\Open Design\\resources\\humanizer-ru",
+      "description": "humanizer-ru v3.16.1 — обязательный стандарт для ЛЮБОГО русского текста в проекте (lib/i18n.ts, SEO-страницы, лендинг, docs). Точка входа: skills/humanizer-ru/SKILL.md + references/catalog.md (58 паттернов AI-текста, HARD BANS). Использовать при написании И редактировании русского текста."
     },
-    "entrypoints": [
-      "AGENTS.md",
-      "README.md",
-      "lib/games/engine.ts",
-      "app/api/games/route.ts",
-      "lib/parties.ts",
-      "app/globals.css"
-    ],
-    "test_command": "npm test",
-    "build_command": "npm run build",
-    "lint_command": "npm run lint",
-    "typecheck_command": "npm run typecheck"
+    "open-design": {
+      "path": "E:\\Open Design\\resources\\open-design",
+      "description": "Библиотека дизайн-ресурсов: 152 design system (tokens.css, DESIGN.md), craft rules (anti-ai-slop, laws-of-ux, state-coverage, animation-discipline), redesign-skill workflow."
+    },
+    "owasp-top10": {
+      "repository": "OWASP/www-project-top-ten",
+      "description": "OWASP Top 10:2025 — чеклист безопасности для всех изменений API/auth/DB. Актуальный список: https://owasp.org/Top10/2025/. Локальная выжимка с маппингом на кодовую базу: .opencode/skills/security-review/SKILL.md"
+    }
   }
 }

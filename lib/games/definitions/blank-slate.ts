@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
 import { SAME_WORD_PROMPTS } from "../same-word-content";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
+
+export const BLANK_SLATE_ROUNDS = 6;
 
 type State = {
   engine: "server-v1";
@@ -13,10 +16,10 @@ type State = {
   roundMatches: number;
   totalMatches: number;
   players: string[];
-};
+} & DeckState;
 
-function promptFor(round: number, locale: "ru" | "en") {
-  return SAME_WORD_PROMPTS[locale][round % SAME_WORD_PROMPTS[locale].length];
+function promptFor(round: number, locale: "ru" | "en", deck: { deckSeed?: string; deckStart?: number }) {
+  return deckItem(SAME_WORD_PROMPTS[locale], deckOf(deck), round);
 }
 
 function matchedAnswers(submissions: Record<string, string>, locale: "ru" | "en") {
@@ -33,13 +36,15 @@ export default defineGame<State>({
   version: 1,
   createInitialState(participants, config) {
     const locale = config.locale === "en" ? "en" : "ru";
+    const deck = initialDeck(config, "blankSlate");
     return {
+      ...deck,
       engine: "server-v1",
       game: "blankSlate",
       locale,
       phase: "write",
       round: 0,
-      prompt: promptFor(0, locale),
+      prompt: promptFor(0, locale, deck),
       submissions: {},
       roundMatches: 0,
       totalMatches: 0,
@@ -68,8 +73,8 @@ export default defineGame<State>({
       if (ctx.actorId !== ctx.creatorId) return { state, changed: false, error: "Only the stage can advance the game." };
       if (state.phase !== "reveal") return { state, changed: false, error: "Reveal answers first." };
       const round = state.round + 1;
-      if (round >= SAME_WORD_PROMPTS[state.locale].length) return { changed: true, state: { ...state, phase: "finished" } };
-      return { changed: true, state: { ...state, phase: "write", round, prompt: promptFor(round, state.locale), submissions: {}, roundMatches: 0 } };
+      if (round >= BLANK_SLATE_ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
+      return { changed: true, state: { ...state, phase: "write", round, prompt: promptFor(round, state.locale, state), contentUsed: round + 1, submissions: {}, roundMatches: 0 } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },

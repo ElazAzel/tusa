@@ -36,7 +36,8 @@ export default function CosmeticsAdmin({ initialItems, canWrite }: { initialItem
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     setNotice("");
     try {
       const data = await request("POST", {
@@ -46,7 +47,7 @@ export default function CosmeticsAdmin({ initialItems, canWrite }: { initialItem
         sortOrder: Number(form.get("sortOrder")) || 0,
       });
       setItems((prev) => [...prev, data.item]);
-      event.currentTarget.reset();
+      formElement.reset();
       setNotice(r ? "Создано" : "Created");
     } catch (error) { setNotice(error instanceof Error ? error.message : "Error"); }
   }

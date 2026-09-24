@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePlayerName } from "@/app/components/PlayerNames";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { useStageGame } from "@/app/components/useStageGame";
@@ -36,6 +37,7 @@ const emptyState = (): GameState => ({
 });
 
 export default function Crocodil({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+  const playerName = usePlayerName();
   const { locale } = useLocale();
   const isHost = role === "stage";
   const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, emptyState);
@@ -48,8 +50,8 @@ export default function Crocodil({ sessionId, onSave, role }: { partyId: string;
   const me = state.viewerId ?? "";
   const isActive = me === state.activePlayer;
   const copy = locale === "ru"
-    ? { title: "Mime Riot", round: "Раунд", active: "Показывает", team: "Команда", teamA: "Команда A", teamB: "Команда B", yourWord: "Твоё задание", watch: "Смотри жесты активного игрока. Подсказывать словами нельзя.", correct: "Угадали", pass: "Пас", turn: "За ход", score: "Счёт", next: "Следующий ход", finish: "Завершить" }
-    : { title: "Mime Riot", round: "Round", active: "Acting", team: "Team", teamA: "Team A", teamB: "Team B", yourWord: "Your prompt", watch: "Watch the active player's gestures. No spoken hints.", correct: "Correct", pass: "Pass", turn: "This turn", score: "Score", next: "Next turn", finish: "Finish" };
+    ? { title: "Крокодил", round: "Раунд", active: "Показывает", team: "Команда", teamA: "Команда A", teamB: "Команда B", yourWord: "Твоё задание", watch: "Смотри жесты активного игрока. Подсказывать словами нельзя.", correct: "Угадали", pass: "Пас", turn: "За ход", score: "Счёт", next: "Следующий ход", finish: "Завершить" }
+    : { title: "Crocodil", round: "Round", active: "Acting", team: "Team", teamA: "Team A", teamB: "Team B", yourWord: "Your prompt", watch: "Watch the active player's gestures. No spoken hints.", correct: "Correct", pass: "Pass", turn: "This turn", score: "Score", next: "Next turn", finish: "Finish" };
 
   useEffect(() => {
     if (state.phase !== "play") return;
@@ -73,10 +75,10 @@ export default function Crocodil({ sessionId, onSave, role }: { partyId: string;
   }, [isHost, onSave, stage, state.phase, state.scores.A, state.scores.B]);
 
   const activeLabel = state.activeTeam === "A" ? copy.teamA : copy.teamB;
-  const activeShort = state.activePlayer ? state.activePlayer.slice(-8) : "stage";
+  const activeShort = state.activePlayer ? playerName(state.activePlayer) : "stage";
 
   return <div className="party-game-board game-board-enter charades-board">
-    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/6</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}s</strong></div>
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/6</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}{locale === "ru" ? " с" : "s"}</strong></div>
     <h3>{copy.title}</h3>
     <p>{copy.active}: <b>{activeShort}</b> · {copy.team}: <b>{activeLabel}</b></p>
     <div className="charades-score"><span>{copy.teamA}: <b>{state.scores.A}</b></span><span>{copy.teamB}: <b>{state.scores.B}</b></span></div>

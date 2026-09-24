@@ -6,13 +6,13 @@
 **Current reconciliation:** `main@edee56e` on 22.07.2026<br>
 **Decision:** not ready for unsupervised paid B2B events
 
-> **Reconciled 22.07.2026 — `main@edee56e`:** the migration-first schema, atomic KOINS betting/rewards, moderation, controlled Blob media, production health, certification harness and fail-closed production guards described as gaps below are now shipped for the beta. Schema v12 is applied and production health reports database, local auth, realtime, rate limit, media and observability as ready. The remaining gates are current browser certification evidence (`0/8`), production email and root-admin MFA configuration, venue/load and incident drills, plus DNS, legal/privacy and naming/IP review.
+> **Reconciled 16.08.2026:** local auth is the single account provider in runtime, migration-first schema, atomic KOINS betting/rewards, moderation, controlled Blob media, production health and fail-closed guards are shipped for the beta. The current code requires schema v13; the last external database verification was v12, so migration 0013 must be applied before deployment. Remaining gates are current browser certification evidence (`0/8`), production email and root-admin MFA configuration, venue/load and incident drills, plus DNS, legal/privacy and naming/IP review.
 
 This audit follows `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md` and `docs/IMPLEMENTATION_STATUS_2026-07-19.md`.
 
 ## Executive decision
 
-The platform has a broad public-beta surface and a complete 32-mode SDK registry, but production readiness is blocked by auth ambiguity, schema bootstrap, economy consistency, missing per-mode certification, safety controls, media handling, naming/IP cleanup and production verification. CI success and SDK contract coverage are necessary evidence, not event-readiness evidence.
+The platform has a broad public-beta surface and a complete 32-mode SDK registry. Unsupervised paid-event readiness is still blocked by external certification, infrastructure, legal and operational evidence; CI success and SDK contract coverage are necessary evidence, not event-readiness evidence.
 
 ## Verified shipped state
 
@@ -29,14 +29,11 @@ The platform has a broad public-beta surface and a complete 32-mode SDK registry
 
 | Priority | Finding | Required evidence to close |
 |---|---|---|
-| P0 | Two auth stories: local compatibility layer in production build vs Clerk in older docs | One provider decision; recovery, verification, revocation, rate limits and admin MFA tested |
-| P0 | Business schema still depends on request-time runtime DDL | Versioned migrations, clean bootstrap and rollback rehearsal |
-| P0 | KOINS reward retry is fixed; betting join/settle/cancel are not atomic | PostgreSQL transaction tests and reconciliation |
+| P0 | Current production database is one migration behind the code gate | Apply migration 0013, then rerun `/api/health` and rollback rehearsal |
 | P0 | 32 Beta modes, certified = 0 | Manifest-pinned core eight and per-mode certification evidence |
-| P0 | UGC moderation/reporting absent | Report, review, action and appeal workflow plus abuse tests |
-| P0 | Voice/photo storage controls incomplete | Signed object upload, MIME/size validation, retention, deletion and moderation |
 | P0 | Production distributed runtime unverified | Ably/Upstash strict mode, load results, dashboards, alerts and fallback drill |
-| P0 | SEO timed redirects and third-party visible names | Human-useful pages, redirect removal, neutral UI names and trademark review |
+| P0 | Production auth delivery and root-admin MFA are not owner-configured | Resend delivery checks and MFA enrollment/recovery evidence |
+| P0 | Legal, DNS and naming/IP evidence is external | Canonical DNS smoke and approved privacy/naming review |
 
 ## Game readiness
 
@@ -51,7 +48,7 @@ Each manifest entry is SDK-managed and contract-tested. None is certified. Certi
 7. Analytics and operational error context.
 8. Moderation review for UGC modes.
 
-The proposed core eight is Impostor, Word Blast, Trivia, Word Bomb, Punchline, Fake Fact, Would You Rather and Two Truths and a Lie. It is not authoritative until encoded in the manifest.
+The core eight is pinned in `lib/games/manifest.ts` as `CORE_GAME_IDS` in certification priority order. It remains Beta until browser evidence is written and verified.
 
 ## Infrastructure gates
 

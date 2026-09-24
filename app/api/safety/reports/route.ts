@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveActor } from "@/lib/guest-session";
-import { createSafetyReport, appealSafetyReport } from "@/lib/parties";
+import { createSafetyReport, appealSafetyReport, listSafetyReportsForUser } from "@/lib/parties";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const reportSchema = z.object({
@@ -15,8 +15,16 @@ const reportSchema = z.object({
 
 const appealSchema = z.object({ action: z.literal("appeal"), reportId: z.string().uuid(), details: z.string().min(3).max(500) }).strict();
 
+export async function GET(request: NextRequest) {
+  const actor = await resolveActor({ allowSuspended: true });
+  if (!actor) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const rate = await distributedRateLimit(`safety:reports:${actor.id}:${getClientIp(request.headers)}`, 30, 60_000);
+  if (!rate.allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  return NextResponse.json({ reports: await listSafetyReportsForUser(actor.id) }, { headers: { "Cache-Control": "no-store" } });
+}
+
 export async function POST(request: NextRequest) {
-  const actor = await resolveActor();
+  const actor = await resolveActor({ allowSuspended: true });
   if (!actor) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   const rate = await distributedRateLimit(`safety:report:${actor.id}:${getClientIp(request.headers)}`, 8, 60_000);
   if (!rate.allowed) return NextResponse.json({ error: "Too many reports." }, { status: 429 });
@@ -26,6 +34,7 @@ export async function POST(request: NextRequest) {
     const report = await appealSafetyReport(appeal.data.reportId, actor.id, appeal.data.details);
     return report ? NextResponse.json({ report }) : NextResponse.json({ error: "Appeal is not available." }, { status: 403 });
   }
+  if (await resolveActor() === null) return NextResponse.json({ error: "Suspended accounts may only submit appeals." }, { status: 403 });
   const parsed = reportSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid report.", details: parsed.error.flatten() }, { status: 400 });
   try {

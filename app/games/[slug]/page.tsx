@@ -7,7 +7,6 @@ import { GAME_MANIFEST, formatPlayerRange, getGameBySlug } from "@/lib/games/man
 import { gamePageCopy } from "@/lib/games/page-copy";
 import { GAME_RULES } from "@/lib/games/rules";
 import { SEO_PROGRAMMATIC, PROGRAMMATIC_SLUGS } from "@/lib/seo-programmatic";
-import RedirectManager from "@/app/[locale]/guides/[slug]/RedirectManager";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -26,7 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const locale = normalizeLocale(store.get("tusa_locale")?.value) as "ru" | "en";
     const content = progContent[locale];
     return {
-      title: `${content.title} — TUSA.game`,
+      title: `${content.title} · TUSA.game`,
       description: content.description,
       alternates: { canonical: `/games/${slug}` },
     };
@@ -39,10 +38,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = copy(locale, game.titleKey);
   const description = copy(locale, game.descKey);
   return {
-    title: `${title} — TUSA.game`,
+    title: `${title} · TUSA.game`,
     description,
     alternates: { canonical: `/games/${game.seo.slug}` },
-    openGraph: { title: `${title} — TUSA.game`, description, type: "website", url: `/games/${game.seo.slug}` },
+    openGraph: { title: `${title} · TUSA.game`, description, type: "website", url: `/games/${game.seo.slug}` },
   };
 }
 
@@ -74,11 +73,10 @@ export default async function GamePage({ params }: PageProps) {
     return (
       <main className="legal-page">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-        <RedirectManager slug={slug} locale={locale} />
-        <article>
+        <article className="legal-container">
           <span className="app-kicker">{content.kicker}</span>
           <h1>{content.h1}</h1>
-          <p style={{ fontWeight: "bold", fontSize: "1.1rem" }}>{content.intro}</p>
+          <p className="guide-intro">{content.intro}</p>
           <p>{content.body}</p>
 
           <h2>{content.stepsTitle}</h2>
@@ -89,35 +87,24 @@ export default async function GamePage({ params }: PageProps) {
           </ol>
 
           <h2>{content.gamesTitle}</h2>
-          <div style={{ display: "grid", gap: "15px", margin: "20px 0" }}>
+          <div className="guide-games">
             {content.games.map((game, index) => (
-              <div
-                key={index}
-                style={{
-                  border: "var(--line, 3px solid #000)",
-                  boxShadow: "var(--shadow, 6px 6px 0 #000)",
-                  backgroundColor: "var(--cream, #f7f7f2)",
-                  color: "var(--black, #000)",
-                  padding: "15px",
-                }}
-              >
-                <h3 style={{ margin: "0 0 5px 0", fontSize: "1.2rem", fontWeight: 800 }}>
-                  {game.name}
-                </h3>
-                <p style={{ margin: 0, fontSize: "0.95rem" }}>{game.desc}</p>
+              <div className="guide-game" key={index}>
+                <h3>{game.name}</h3>
+                <p>{game.desc}</p>
               </div>
             ))}
           </div>
 
           <h2>FAQ</h2>
           {content.faqs.map((faq, index) => (
-            <section key={index} style={{ marginBottom: "20px" }}>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{faq.q}</h3>
+            <section className="guide-faq" key={index}>
+              <h3>{faq.q}</h3>
               <p>{faq.a}</p>
             </section>
           ))}
 
-          <Link className="demo-action demo-action--lime" href="/">
+          <Link className="demo-action demo-action--lime guide-cta" href={`/sign-up?ref=guide-${slug}`}>
             {locale === "en" ? "Create a party" : "Создать тусу"}
           </Link>
         </article>

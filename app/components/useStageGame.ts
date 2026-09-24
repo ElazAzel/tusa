@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { sendGameCommand } from "./sendGameCommand";
+import { useGameChannel } from "./useGameChannel";
+import { usePublicStage } from "./GameView";
 
 export type PlayerAction = {
   id?: string;
@@ -14,100 +16,63 @@ export function useStageGame<T extends Record<string, unknown>>(
   sessionId: string | null,
   initialState: () => T,
 ) {
+  const publicStage = usePublicStage();
   const [state, _setState] = useState<T>(initialState);
   const [playerActions, setPlayerActions] = useState<PlayerAction[]>([]);
-  const esRef = useRef<EventSource | null>(null);
   const initialStateRef = useRef(initialState);
   const versionRef = useRef<number>(1);
   const seenActionsRef = useRef<Set<string>>(new Set());
-  const syncQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  const pushActions = useCallback((actions: PlayerAction[]) => {
+    const fresh = actions.filter((action) => !action.id || !seenActionsRef.current.has(action.id));
+    fresh.forEach((action) => { if (action.id) seenActionsRef.current.add(action.id); });
+    if (fresh.length) setPlayerActions((prev) => [...prev, ...fresh]);
+  }, []);
+
+  const applySnapshot = useCallback((data: { viewerId?: string; session?: { state?: Partial<T>; version?: number; participants?: string[] }; actions?: PlayerAction[] }) => {
+    const snap = data.session?.state;
+    const snapshotVersion = data.session?.version ?? 0;
+    if (snap && Object.keys(snap).length > 0 && (!snapshotVersion || snapshotVersion >= versionRef.current)) {
+      if (snapshotVersion) versionRef.current = snapshotVersion;
+      _setState((prev) => {
+        const merged = { ...prev, ...snap } as T;
+        if (data.viewerId) (merged as Record<string, unknown>).viewerId = data.viewerId;
+        const participants = data.session?.participants ?? [];
+        if (participants.length && Array.isArray(merged.players)) {
+          const currentPlayers = merged.players as unknown[];
+          if (!currentPlayers.length || currentPlayers.every((player) => typeof player === "string" && /^Player \d+$/.test(player))) (merged as Record<string, unknown>).players = participants;
+        }
+        return merged;
+      });
+    }
+    const syntheticJoins: PlayerAction[] = (data.session?.participants ?? []).map((userId) => ({ id: `join:${userId}`, userId, actionType: "join", payload: {} }));
+    pushActions([...syntheticJoins, ...(data.actions ?? [])]);
+  }, [pushActions]);
+
+  const syncSnapshot = useCallback(() => {
+    if (!sessionId) return;
+    void fetch(`/api/games?sessionId=${sessionId}${publicStage ? "&view=public" : ""}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
+  }, [sessionId, applySnapshot, publicStage]);
 
   useEffect(() => {
+    versionRef.current = 1;
+    seenActionsRef.current = new Set();
     if (!sessionId) { _setState(initialStateRef.current); return; }
+    syncSnapshot();
+  }, [sessionId, syncSnapshot]);
 
-    const applySnapshot = (data: { viewerId?: string; session?: { state?: Partial<T>; version?: number; participants?: string[] }; actions?: PlayerAction[] }) => {
-        const snap = data.session?.state;
-        if (snap && Object.keys(snap).length > 0) {
-          const snapshotVersion = data.session?.version;
-          if (snapshotVersion) versionRef.current = snapshotVersion;
-          _setState((prev) => {
-            const merged = { ...prev, ...snap } as T;
-            if (data.viewerId) (merged as Record<string, unknown>).viewerId = data.viewerId;
-            const participants = data.session?.participants ?? [];
-            if (participants.length && Array.isArray(merged.players)) {
-              const currentPlayers = merged.players as unknown[];
-              if (!currentPlayers.length || currentPlayers.every((player) => typeof player === "string" && /^Player \d+$/.test(player))) (merged as Record<string, unknown>).players = participants;
-            }
-            return merged;
-          });
-        }
-        const syntheticJoins: PlayerAction[] = (data.session?.participants ?? []).map((userId) => ({ id: `join:${userId}`, userId, actionType: "join", payload: {} }));
-        const fresh = [...syntheticJoins, ...(data.actions ?? [])].filter((action) => !action.id || !seenActionsRef.current.has(action.id));
-        fresh.forEach((action) => { if (action.id) seenActionsRef.current.add(action.id); });
-        if (fresh.length) setPlayerActions((prev) => [...prev, ...fresh]);
-    };
-
-    let disposed = false;
-    let attempts = 0;
-    const syncSnapshot = () => fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
-    void syncSnapshot();
-
-    let reconnectTimer: ReturnType<typeof setTimeout>;
-    const connect = () => {
-      if (disposed) return;
-      const es = new EventSource(`/api/live?channel=${encodeURIComponent(`game:${sessionId}`)}`);
-      esRef.current = es;
-      es.onopen = () => { attempts = 0; void syncSnapshot(); };
-      es.onmessage = (msg) => {
-        try {
-          const event = JSON.parse(msg.data) as { type: string; id?: string; state?: Partial<T>; version?: number; userId?: string; actionType?: string; payload?: unknown };
-          if (event.type === "state:updated" && event.state) {
-            void syncSnapshot();
-          } else if (event.type === "state:updated" && (!event.version || event.version > versionRef.current)) {
-            void syncSnapshot();
-          }
-          if (event.type === "player:action" && event.userId && event.actionType) {
-            if (event.id && seenActionsRef.current.has(event.id)) return;
-            if (event.id) seenActionsRef.current.add(event.id);
-            setPlayerActions((prev) => [...prev, { id: event.id, userId: event.userId!, actionType: event.actionType!, payload: event.payload }]);
-          }
-        } catch { /* ping */ }
-      };
-      es.onerror = () => {
-        es.close();
-        attempts += 1;
-        const delay = Math.min(30_000, 1_000 * 2 ** Math.min(attempts, 5)) + Math.floor(Math.random() * 500);
-        reconnectTimer = setTimeout(connect, delay);
-      };
-    };
-    connect();
-    return () => { disposed = true; clearTimeout(reconnectTimer); esRef.current?.close(); };
-  }, [sessionId]);
+  useGameChannel(sessionId, (event) => {
+    if (event.type === "state:updated" && (!event.version || event.version > versionRef.current)) syncSnapshot();
+    if (event.type === "session:started" || event.type === "player:joined" || event.type === "player:left") syncSnapshot();
+    if (event.type === "player:action" && event.userId && event.actionType) pushActions([{ id: event.id, userId: event.userId, actionType: event.actionType, payload: event.payload }]);
+  }, syncSnapshot);
 
   const setState = useCallback((updater: T | ((prev: T) => T)) => {
     _setState((prev) => {
       const next = typeof updater === "function" ? (updater as (prev: T) => T)(prev) : updater;
-      if (sessionId) {
-        syncQueueRef.current = syncQueueRef.current.then(async () => {
-          const ver = versionRef.current;
-          const res = await fetch("/api/games", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "update", sessionId, state: next, version: ver }),
-          });
-          if (res.status === 409) {
-            const data = await fetch(`/api/games?sessionId=${sessionId}`).then((r) => r.json());
-            if (data.session?.version) versionRef.current = data.session.version;
-            if (data.session?.state) _setState((current) => ({ ...current, ...data.session.state }));
-          } else if (res.ok) {
-            const data = await res.json();
-            if (data.session?.version) versionRef.current = data.session.version;
-          }
-        }).catch(() => undefined);
-      }
       return next;
     });
-  }, [sessionId]);
+  }, []);
 
   const clearActions = useCallback(() => setPlayerActions([]), []);
 
@@ -122,8 +87,13 @@ export function useStageGame<T extends Record<string, unknown>>(
 
   const sendAction = useCallback((actionType: string, payload?: unknown) => {
     if (!sessionId) return;
-    void sendGameCommand(sessionId, actionType, payload).catch(() => undefined);
-  }, [sessionId]);
+    void sendGameCommand(sessionId, actionType, payload)
+      .then((data) => {
+        if (publicStage) syncSnapshot();
+        else if (data && "session" in data && data.session) applySnapshot({ session: data.session as { state?: Partial<T>; version?: number; participants?: string[] } });
+      })
+      .catch(() => undefined);
+  }, [sessionId, applySnapshot, publicStage, syncSnapshot]);
 
   return { state, setState, playerActions, clearActions, complete, sendAction };
 }

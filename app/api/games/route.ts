@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { distributedRateLimit, getClientIp } from "@/lib/rate-limit";
 import {
   addGameAction, addGameScore, createGameSession, getActiveGameSessions, getGameScores, getGameActionByMutationId,
   getGameSessionById, getPendingGameActions, joinGameSession,
   leaveGameSession, requirePartyMember, updateGameSession, trackAnalytics, grantEngagementReward,
-  addPassXp, trackQuestProgress, saveHighlight,
+  addPassXp, trackQuestProgress, saveHighlight, getContentConsumed,
 } from "@/lib/parties";
 import { getGameById, isGameId } from "@/lib/games/manifest";
 import { publish } from "@/lib/live";
 import { resolveActor } from "@/lib/guest-session";
-import { deriveVerifiedScore } from "@/lib/games/scoring";
+import { deriveScore } from "@/lib/games/sdk";
 import { parseGameCommand } from "@/lib/games/commands";
+import { contentFamily } from "@/lib/games/content-deck";
 import { applyServerGameCommand, initialServerGameState, isServerGameState } from "@/lib/games/engine";
 import { sanitizeSdkState } from "@/lib/games/sdk";
+import { isBotId, runBotAutopilot, sandboxBotIds } from "@/lib/games/bots";
 import { recordPlatformError } from "@/lib/observability";
 import { recordOperationalEvent } from "@/lib/operations";
 
@@ -30,7 +32,13 @@ const gameRequestSchema = z.object({
   clientMutationId: z.string().min(8).max(64).optional(),
   actionType: z.string().min(1).max(80).regex(/^[a-zA-Z0-9:_-]+$/).optional(),
   payload: z.unknown().optional(),
+  sandbox: z.boolean().optional(),
 }).strict();
+
+function contentDeckSeed(partyId: string, game: string) {
+  const secret = process.env.LOCAL_AUTH_SECRET || process.env.GUEST_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || "tusa-local-content-deck";
+  return createHmac("sha256", secret).update(`content-deck:${partyId}:${game}`).digest("base64url");
+}
 
 function apiError(message: string, status: number, details?: unknown) {
   return NextResponse.json({ error: message, ...(details ? { details } : {}) }, { status });
@@ -56,9 +64,10 @@ export async function POST(request: Request) {
       const session = await createGameSession(body.partyId, body.game, body.config, userId);
       await joinGameSession(session.id, userId);
       const updated = await getGameSessionById(session.id);
-      publish(`game:${session.id}`, { type: "session:created", session: updated });
-      publish(`party:${body.partyId}`, { type: "session:created", session: updated });
-      return NextResponse.json({ session: updated }, { status: 201 });
+      if (!updated) return apiError("Game session was not found after creation.", 500);
+      publish(`game:${session.id}`, { type: "session:created", session: publicGameSession(updated) });
+      publish(`party:${body.partyId}`, { type: "session:created", session: publicGameSession(updated) });
+      return NextResponse.json({ session: sanitizeControllerSession(updated, userId) }, { status: 201 });
     }
 
     if (!body.sessionId) return apiError("sessionId is required.", 400);
@@ -71,8 +80,8 @@ export async function POST(request: Request) {
       const session = await joinGameSession(body.sessionId, userId);
       if (!session) return apiError("Session not found.", 404);
       publish(`game:${body.sessionId}`, { type: "player:joined", sessionId: body.sessionId, userId, participants: session.participants });
-      publish(`party:${session.partyId}`, { type: "session:updated", session });
-      return NextResponse.json({ session });
+      publish(`party:${session.partyId}`, { type: "session:updated", session: publicGameSession(session) });
+      return NextResponse.json({ session: sanitizeControllerSession(session, userId) });
     }
 
     if (body.action === "start") {
@@ -80,14 +89,26 @@ export async function POST(request: Request) {
       if (current.status !== "lobby") return apiError("Only a lobby can be started.", 409);
       const gameDefinition = getGameById(current.game);
       if (!gameDefinition) return apiError("Game definition was not found.", 400);
-      if (current.participants.length < gameDefinition.minPlayers) return apiError(`At least ${gameDefinition.minPlayers} players are required.`, 400);
-      const initialState = initialServerGameState(current.game, current.participants, current.config);
-      const session = await updateGameSession(body.sessionId, userId, { status: "active", state: initialState ?? undefined, expectedVersion: current.version });
+
+      if (!body.sandbox && current.participants.length < gameDefinition.minPlayers) {
+        return apiError(`At least ${gameDefinition.minPlayers} players are required.`, 400);
+      }
+      const participants = [...current.participants];
+      if (body.sandbox && participants.length < gameDefinition.minPlayers) participants.push(...sandboxBotIds(gameDefinition.minPlayers - participants.length));
+      const family = contentFamily(current.game);
+      const deckStart = await getContentConsumed(current.partyId, family, current.id);
+      const createdState = initialServerGameState(current.game, participants, { ...current.config, deckSeed: contentDeckSeed(current.partyId, family[0]), deckStart });
+      const initialState = createdState ? runBotAutopilot({ game: current.game, state: createdState, participants, creatorId: userId }).state : null;
+      const session = await updateGameSession(body.sessionId, userId, {
+        status: "active",
+        state: initialState ?? undefined,
+        participants,
+        expectedVersion: current.version,
+      });
       if (!session) return apiError("Session version changed. Refresh and retry.", 409);
-      const responseSession = { ...session, participants: current.participants, createdBy: current.createdBy };
-      const publicSession = sanitizeControllerSession(responseSession, "");
-      publish(`game:${body.sessionId}`, { type: "session:started", session: publicSession });
-      publish(`party:${session.partyId}`, { type: "session:updated", session: publicSession });
+      const responseSession = { ...session, participants, createdBy: current.createdBy };
+      publish(`game:${body.sessionId}`, { type: "session:started", session: publicGameSession(responseSession) });
+      publish(`party:${session.partyId}`, { type: "session:updated", session: publicGameSession(responseSession) });
       void recordOperationalEvent({ eventType: "game_start", durationMs: performance.now() - startedAt, dimensions: { game: current.game } }).catch(() => undefined);
       return NextResponse.json({ session: sanitizeControllerSession(responseSession, userId) });
     }
@@ -96,8 +117,8 @@ export async function POST(request: Request) {
       const session = await leaveGameSession(body.sessionId, userId);
       if (!session) return apiError("Session not found.", 404);
       publish(`game:${body.sessionId}`, { type: "player:left", sessionId: body.sessionId, userId, participants: session.participants });
-      publish(`party:${session.partyId}`, { type: "session:updated", session });
-      return NextResponse.json({ session });
+      publish(`party:${session.partyId}`, { type: "session:updated", session: publicGameSession(session) });
+      return NextResponse.json({ session: sanitizeControllerSession(session, userId) });
     }
 
     if (body.action === "update") {
@@ -123,19 +144,22 @@ export async function POST(request: Request) {
     if (body.action === "score") {
       if (current.createdBy !== userId) return apiError("Only the game creator can submit the verified result.", 403);
       if (body.metadata?.game && body.metadata.game !== current.game) return apiError("Game metadata does not match the session.", 400);
-      const verifiedScore = deriveVerifiedScore(current.state);
-      const metadata = { game: current.game, scoring: "server-snapshot-v1", clientMutationId: body.clientMutationId || `${userId}_${body.sessionId}_${current.version}` };
+      const verifiedScore = deriveScore(current.game, current.state);
+      const metadata = { game: current.game, scoring: "server-snapshot-v1", clientMutationId: `score:${body.sessionId}` };
       const score = await addGameScore(body.sessionId, userId, verifiedScore, metadata);
       const scores = await getGameScores(body.sessionId);
       publish(`game:${body.sessionId}`, { type: "score:added", sessionId: body.sessionId, score, scores });
+      const sandboxRun = current.participants.some(isBotId);
       if (score.created) {
         void trackAnalytics(userId, "game_played", { sessionId: body.sessionId, game: current.game, score: score.score });
-        void grantEngagementReward(userId, "game_play", current.partyId).catch(() => undefined);
-        if (score.score > 0) void grantEngagementReward(userId, "game_win", current.partyId).catch(() => undefined);
-        void addPassXp(userId, Math.min(score.score, 50)).catch(() => undefined);
-        void trackQuestProgress("playgames", current.partyId, userId).catch(() => undefined);
-        if (score.score > 0) void trackQuestProgress("winrounds", current.partyId, userId).catch(() => undefined);
-        void saveHighlight({ partyId: current.partyId, sessionId: body.sessionId, userId, type: "score", data: { game: current.game, score: score.score } }).catch(() => undefined);
+        if (!sandboxRun) {
+          void grantEngagementReward(userId, "game_play", current.partyId).catch(() => undefined);
+          if (score.score > 0) void grantEngagementReward(userId, "game_win", current.partyId).catch(() => undefined);
+          void addPassXp(userId, Math.min(score.score, 50)).catch(() => undefined);
+          void trackQuestProgress("playgames", current.partyId, userId).catch(() => undefined);
+          if (score.score > 0) void trackQuestProgress("winrounds", current.partyId, userId).catch(() => undefined);
+          void saveHighlight({ partyId: current.partyId, sessionId: body.sessionId, userId, type: "score", data: { game: current.game, score: score.score } }).catch(() => undefined);
+        }
       }
       return NextResponse.json({ score, scores });
     }
@@ -158,11 +182,12 @@ export async function POST(request: Request) {
           if (!reduced) break;
           if (reduced.error) return apiError(reduced.error, 409);
           if (!reduced.changed) return NextResponse.json({ ok: true, commandId, duplicate: true, session: sanitizeControllerSession(snapshot, userId) });
-          const updated = await updateGameSession(body.sessionId, creatorId, { state: reduced.state, expectedVersion: snapshot.version });
+          const nextState = runBotAutopilot({ game: snapshot.game, state: reduced.state, participants: snapshot.participants, creatorId }).state;
+          const updated = await updateGameSession(body.sessionId, creatorId, { state: nextState, expectedVersion: snapshot.version });
           if (updated) {
             const gameAction = await addGameAction(body.sessionId, userId, actionType, command.payload, commandId);
             const responseSession = { ...updated, participants: snapshot.participants, createdBy: snapshot.createdBy };
-            publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, state: sanitizeControllerState(snapshot.game, reduced.state, ""), version: updated.version });
+            publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, version: updated.version });
             void recordOperationalEvent({ eventType: "game_action", durationMs: performance.now() - startedAt, dimensions: { game: current.game, actionType } }).catch(() => undefined);
             if (actionType === "next") void recordOperationalEvent({ eventType: "round_complete", durationMs: performance.now() - startedAt, dimensions: { game: current.game } }).catch(() => undefined);
             return NextResponse.json({ ok: true, commandId, action: gameAction, session: sanitizeControllerSession(responseSession, userId) });
@@ -219,8 +244,9 @@ export async function GET(request: NextRequest) {
         getGameScores(sessionId),
         session.createdBy === userId ? getPendingGameActions(sessionId) : Promise.resolve([]),
       ]);
-      const safeSession = sanitizeControllerSession(session, userId);
-      return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant, viewerId: userId });
+      const publicView = request.nextUrl.searchParams.get("view") === "public" && session.createdBy === userId;
+      const safeSession = sanitizeControllerSession(session, userId, publicView);
+      return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant, viewerId: publicView ? "" : userId, publicView });
     }
 
     if (partyId) {
@@ -240,14 +266,26 @@ export async function GET(request: NextRequest) {
 
 type SessionView = NonNullable<Awaited<ReturnType<typeof getGameSessionById>>>;
 
-function sanitizeControllerSession(session: SessionView, userId: string) {
-  return { ...session, state: sanitizeControllerState(session.game, session.state, userId, session.createdBy) };
+function publicGameSession(session: SessionView) {
+  return Object.fromEntries(Object.entries(session).filter(([key]) => key !== "state"));
 }
 
+const STAGE_DEVICE_GAMES = new Set(["alias"]);
+
+function sanitizeControllerSession(session: SessionView, userId: string, publicView = false) {
+  return { ...session, state: sanitizeControllerState(session.game, session.state, publicView ? PUBLIC_VIEWER : userId, session.createdBy) };
+}
+
+const PUBLIC_VIEWER = "__public__";
+
 function sanitizeControllerState(game: string, rawState: Record<string, unknown>, userId: string, creatorId = "") {
-  const state = sanitizeSdkState(game, structuredClone(rawState), userId === creatorId ? "__stage__" : userId);
+  const publicView = userId === PUBLIC_VIEWER;
+  const sdkViewer = !publicView && userId === creatorId && STAGE_DEVICE_GAMES.has(game) ? "__stage__" : userId;
+  const state = sanitizeSdkState(game, structuredClone(rawState), sdkViewer);
+  delete state.deckSeed;
+  delete state.deckStart;
   const phase = String(state.phase ?? "");
-  if ((game === "trivia" || game === "quiz" || game === "brainBurst") && phase === "question") state.correct = -1;
+  if ((game === "trivia" || game === "quiz" || game === "brainBurst") && phase === "question") { state.correct = -1; delete state.roundPoints; }
   if (game === "twoTruths" && phase === "vote") state.lie = -1;
   if (game === "blankSlate" && phase === "write") {
     const submissions = (state.submissions ?? {}) as Record<string, string>;
@@ -313,7 +351,9 @@ function sanitizeControllerState(game: string, rawState: Record<string, unknown>
     if (phase === "play") state.submissions = {};
   }
   if (game === "crocodil" && phase === "play" && state.activePlayer !== userId) state.word = "";
-  if (game === "headsup" && phase === "play" && (!userId || state.activePlayer === userId)) state.word = "";
+  if (game === "headsup" && phase === "play" && (!userId || publicView || state.activePlayer === userId)) state.word = "";
+  if (publicView && game === "impostor" && phase !== "reveal") state.word = "";
+  if (publicView && game === "spyfall" && phase !== "reveal") state.location = "";
   if (game === "charades" && phase === "play" && state.activePlayer !== userId) state.word = "";
   return state;
 }

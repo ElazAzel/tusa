@@ -3,6 +3,15 @@
 import { useEffect, useState } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 
+const PASS_TEXT: Record<string, { ru: string; en: string }> = {
+  "Beta Season 1": { ru: "Бета-сезон 1", en: "Beta Season 1" },
+  Starter: { ru: "Новичок", en: "Starter" },
+  "Team Player": { ru: "Командный игрок", en: "Team Player" },
+  "Party Regular": { ru: "Завсегдатай", en: "Party Regular" },
+  "Game Host": { ru: "Ведущий игр", en: "Game Host" },
+  "TUSA Legend": { ru: "Легенда TUSA", en: "TUSA Legend" },
+};
+const passText = (value: string, locale: "ru" | "en") => PASS_TEXT[value]?.[locale] ?? value;
 type PassTier = { tier: number; xpRequired: number; rewards: Array<{ type: string; value: string }> };
 type PartyPassSeason = { id: string; name: string; startDate: string; endDate: string; tiers: PassTier[]; active: boolean };
 type UserPass = { xp: number; tier: number; seasonId: string };
@@ -37,7 +46,7 @@ export default function PartyPass() {
 
   return <div className="party-feature-surface party-pass-surface game-board-enter">
     <header className="party-pass-head">
-      <div><span className="game-step">{t("passSeason")}</span><h3>{season.name}</h3><p>{t("partyPassEarnXp")}</p></div>
+      <div><span className="game-step">{t("passSeason")}</span><h3>{passText(season.name, locale)}</h3><p>{t("partyPassEarnXp")}</p></div>
       <strong>{currentTier}/{maxTier}</strong>
     </header>
     <div className="party-pass-progress" aria-label={`${progress.xp} XP`}><span style={{ width: `${progressPercent}%` }} /></div>
@@ -47,7 +56,7 @@ export default function PartyPass() {
         const unlocked = progress.xp >= tier.xpRequired;
         return <article className={unlocked ? "is-unlocked" : ""} key={tier.tier}>
           <span>{tier.tier}</span>
-          <div><strong>{tier.rewards.map((reward) => reward.value).join(", ")}</strong><small>{tier.xpRequired} XP</small></div>
+          <div><strong>{tier.rewards.map((reward) => passText(reward.value, locale)).join(", ")}</strong><small>{tier.xpRequired} XP</small></div>
           <span className="material-symbols-rounded">{unlocked ? "check_circle" : "lock"}</span>
         </article>;
       })}

@@ -13,7 +13,7 @@
     "test:e2e": "playwright test",
     "test:a11y": "playwright test tests/e2e/accessibility.spec.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:verbose": "node scripts/migrate-database.mjs",
@@ -29,7 +29,6 @@
     "check:canonical": "node scripts/check-canonical.mjs"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.5.17",
     "@neondatabase/serverless": "^1.1.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
@@ -39,7 +38,7 @@
     "ably": "^2.24.0",
     "drizzle-orm": "^0.45.2",
     "material-symbols": "^0.45.7",
-    "next": "^16.2.11",
+    "next": "^16.3.2",
     "qrcode": "^1.5.4",
     "react": "19.2.6",
     "react-dom": "19.2.6",
@@ -48,21 +47,22 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.61.1",
-    "@tailwindcss/postcss": "4.2.1",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "22.19.19",
     "@types/qrcode": "^1.5.6",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "drizzle-kit": "^0.31.10",
     "eslint": "9.39.4",
-    "eslint-config-next": "^16.2.11",
-    "tailwindcss": "4.2.1",
+    "eslint-config-next": "^16.3.2",
+    "tailwindcss": "4.3.3",
     "tsx": "^4.23.0",
     "typescript": "5.9.3"
   },
   "overrides": {
-    "postcss": "8.5.18",
-    "sharp": "0.35.0"
+    "esbuild": "0.25.12",
+    "postcss": "8.5.26",
+    "sharp": "0.35.4"
   },
   "type": "module"
 }

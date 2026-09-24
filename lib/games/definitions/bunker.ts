@@ -1,9 +1,23 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
+import { BUNKER_BAGGAGE, BUNKER_HEALTH, BUNKER_HOBBIES, BUNKER_PROFESSIONS, BUNKER_SCENARIOS, BUNKER_SECRETS, type BunkerText } from "../content/bunker";
 
-const traits = ["Chef", "Doctor", "Engineer", "Navigator", "Farmer", "Medic", "Climber", "Linguist", "Builder", "Musician"];
+type Locale = "ru" | "en";
+export type BunkerCard = { profession:string; health:string; hobby:string; baggage:string; secret:string };
+type State = { engine:"server-v1"; game:"bunker"; locale:Locale; phase:"lobby"|"argue"|"vote"|"result"|"finished"; players:string[]; scenario:string; traits:Record<string,string>; cards:Record<string,BunkerCard>; votes:Record<string,string>; survivors:string[]; deadline:number; round:number } & DeckState;
 
-type State = { engine:"server-v1"; game:"bunker"; phase:"lobby"|"argue"|"vote"|"result"|"finished"; players:string[]; traits:Record<string,string>; votes:Record<string,string>; survivors:string[]; deadline:number; round:number };
+const CATEGORIES: Record<keyof BunkerCard, readonly BunkerText[]> = { profession:BUNKER_PROFESSIONS, health:BUNKER_HEALTH, hobby:BUNKER_HOBBIES, baggage:BUNKER_BAGGAGE, secret:BUNKER_SECRETS };
+
+function pick(state: State, category: string, pool: readonly BunkerText[], position: number) {
+  const deck = deckOf(state);
+  return deckItem(pool, { deckSeed:`${deck.deckSeed}:${category}`, deckStart:deck.deckStart }, position)[state.locale];
+}
+
+function dealCards(state: State, players: string[]) {
+  const cards = Object.fromEntries(players.map((id, index) => [id, Object.fromEntries(Object.entries(CATEGORIES).map(([category, pool]) => [category, pick(state, category, pool, index)])) as BunkerCard]));
+  return { cards, traits:Object.fromEntries(players.map((id) => [id, cards[id].profession])), scenario:pick(state, "scenario", BUNKER_SCENARIOS, 0) };
+}
 
 function resolve(votes: Record<string,string>, players: string[]) {
   const tally: Record<string,number> = {};
@@ -13,14 +27,15 @@ function resolve(votes: Record<string,string>, players: string[]) {
 
 export default defineGame<State>({
   id:"bunker", version:1,
-  createInitialState(players) { return { engine:"server-v1", game:"bunker", phase:"lobby", players, traits:{}, votes:{}, survivors:[], deadline:0, round:0 }; },
+  createInitialState(players, config) { return { ...initialDeck(config, "bunker"), contentUsed:0, engine:"server-v1", game:"bunker", locale:config.locale === "en" ? "en" : "ru", phase:"lobby", players, scenario:"", traits:{}, cards:{}, votes:{}, survivors:[], deadline:0, round:0 }; },
   commandSchemas:{ start:z.object({}).strict(), openVote:z.object({}).strict(), vote:z.object({target:z.string().min(1).max(128)}).strict(), resolve:z.object({}).strict(), finish:z.object({}).strict() },
   reducer(state, action, payload, ctx) {
     if (action === "start") {
       if (ctx.actorId !== ctx.creatorId) return { state, changed:false, error:"Only the stage can start." };
+      if (state.phase !== "lobby" && state.phase !== "finished") return { state, changed:false, error:"The game is already running." };
       if (ctx.participants.length < 5) return { state, changed:false, error:"At least five players are required." };
-      const assigned = Object.fromEntries(ctx.participants.map((id, index) => [id, traits[index % traits.length]]));
-      return { changed:true, state:{ ...state, phase:"argue", players:[...ctx.participants], traits:assigned, votes:{}, survivors:[], deadline:ctx.now + 90_000, round:1 } };
+      const dealt = dealCards(state, ctx.participants);
+      return { changed:true, state:{ ...state, ...dealt, contentUsed:ctx.participants.length, phase:"argue", players:[...ctx.participants], votes:{}, survivors:[], deadline:ctx.now + 90_000, round:1 } };
     }
     if (action === "openVote") {
       if (ctx.actorId !== ctx.creatorId || state.phase !== "argue") return { state, changed:false, error:"Only the stage can open voting." };
@@ -45,7 +60,7 @@ export default defineGame<State>({
   },
   sanitizeForViewer(state, viewer) {
     if (viewer === "__stage__" || state.phase === "result" || state.phase === "finished") return state;
-    return { ...state, traits: state.traits[viewer] ? { [viewer]:state.traits[viewer] } : {} };
+    return { ...state, traits: state.traits[viewer] ? { [viewer]:state.traits[viewer] } : {}, cards: state.cards?.[viewer] ? { [viewer]:state.cards[viewer] } : {} };
   },
   deriveScore: (state) => state.survivors.length,
 });

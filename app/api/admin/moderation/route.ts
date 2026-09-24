@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getAdminAccess } from "@/lib/admin-auth";
 import { listSafetyReports, moderateSafetyReport } from "@/lib/parties";
 
-const actionSchema = z.object({ reportId: z.string().uuid(), action: z.enum(["review", "dismiss", "remove_content", "warn", "suspend"]), note: z.string().max(500).default("") }).strict();
+const actionSchema = z.object({ reportId: z.string().uuid(), action: z.enum(["review", "dismiss", "remove_content", "warn", "suspend", "restore"]), note: z.string().max(500).default("") }).strict();
 
 export async function GET(request: NextRequest) {
   const access = await getAdminAccess();

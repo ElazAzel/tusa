@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
-import { WORD_BOMB_LETTERS } from "../word-bomb-content";
+import { WORD_BOMB_LETTERS, WORD_BOMB_ROUNDS } from "../word-bomb-content";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
+
+const letterAt = (locale: "ru" | "en", deck: { deckSeed?: string; deckStart?: number }, round: number) => deckItem(WORD_BOMB_LETTERS[locale], deckOf(deck), round);
 
 type State = {
   engine: "server-v1";
@@ -15,20 +18,22 @@ type State = {
   eliminated: string[];
   winner?: string | null;
   players: string[];
-};
+} & DeckState;
 
 export default defineGame<State>({
   id: "bombParty",
   version: 1,
   createInitialState(participants, config, now = Date.now()) {
     const locale = config.locale === "en" ? "en" : "ru";
+    const deck = initialDeck(config, "bombParty");
     return {
+      ...deck,
       engine: "server-v1",
       game: "bombParty",
       locale,
       phase: "play",
       round: 0,
-      letter: WORD_BOMB_LETTERS[locale][0],
+      letter: letterAt(locale, deck, 0),
       deadline: now + 20_000,
       submissions: {},
       usedWords: [],
@@ -66,8 +71,8 @@ export default defineGame<State>({
       if (state.phase !== "result") return { state, changed: false, error: "Close the current round first." };
       const survivors = ctx.participants.filter((id) => !state.eliminated.includes(id));
       const round = state.round + 1;
-      if (survivors.length <= 1 || round >= WORD_BOMB_LETTERS[state.locale].length) return { changed: true, state: { ...state, phase: "finished", winner: survivors[0] ?? null } };
-      return { changed: true, state: { ...state, phase: "play", round, letter: WORD_BOMB_LETTERS[state.locale][round], deadline: ctx.now + 20_000, submissions: {} } };
+      if (survivors.length <= 1 || round >= WORD_BOMB_ROUNDS) return { changed: true, state: { ...state, phase: "finished", winner: survivors[0] ?? null } };
+      return { changed: true, state: { ...state, phase: "play", round, letter: letterAt(state.locale, state, round), contentUsed: round + 1, deadline: ctx.now + 20_000, submissions: {} } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },

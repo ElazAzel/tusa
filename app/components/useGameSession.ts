@@ -37,8 +37,14 @@ export function useGameSession(sessionId: string | null) {
         if (event.type === "player:joined" || event.type === "player:left") {
           if (event.participants) setParticipants(event.participants);
         }
-        if (event.type === "state:updated" && event.state) {
-          setRemoteState((prev) => ({ ...prev, ...event.state }));
+        if (event.type === "state:updated") {
+          void fetch(`/api/games?sessionId=${sessionId}`).then((response) => response.json()).then((data: { session?: GameSession }) => {
+            if (data.session) {
+              setSession(data.session);
+              setRemoteState(data.session.state ?? {});
+              setParticipants(data.session.participants ?? []);
+            }
+          }).catch(() => undefined);
         }
         if (event.type === "session:completed") {
           setSession((prev) => prev ? { ...prev, status: "completed" } : prev);
@@ -52,11 +58,6 @@ export function useGameSession(sessionId: string | null) {
   const updateState = useCallback((state: Record<string, unknown>) => {
     if (!sessionId) return;
     setRemoteState((prev) => ({ ...prev, ...state }));
-    fetch("/api/games", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "update", sessionId, state }),
-    }).catch(() => undefined);
   }, [sessionId]);
 
   const setStatus = useCallback((status: string) => {

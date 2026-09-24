@@ -3,7 +3,7 @@
 import WaitlistForm from "./WaitlistForm";
 import BrandLogo from "./components/BrandLogo";
 import AccountNav from "./components/AccountNav";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/lib/local-auth/client";
 import InstallButton from "./components/InstallButton";
 import Link from "next/link";
 import { useLocale } from "./components/LocaleProvider";
@@ -136,7 +136,7 @@ export default function Home() {
       </section>
       {false && <header className="site-header">
         <div className="container header-inner">
-          <a className="brand" href="#top" aria-label="TUSA.game — наверх">
+          <a className="brand" href="#top" aria-label="TUSA.game: наверх">
             <BrandLogo priority />
           </a>
           <nav className="desktop-nav" aria-label={t("navFeatures")}>
@@ -377,7 +377,7 @@ export default function Home() {
       <footer className="footer">
         <div className="container footer-inner">
           <div>
-            <a className="brand" href="#top" aria-label="TUSA.game — наверх">
+            <a className="brand" href="#top" aria-label="TUSA.game: наверх">
               <BrandLogo />
             </a>
             <p>{t("footerTagline")}</p>

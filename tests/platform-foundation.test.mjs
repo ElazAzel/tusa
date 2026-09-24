@@ -20,13 +20,29 @@ const commandRegistry = readFileSync(new URL("../lib/games/commands.ts", import.
 const chatApi = readFileSync(new URL("../app/api/chat/route.ts", import.meta.url), "utf8");
 const systemApi = readFileSync(new URL("../app/api/admin/system/route.ts", import.meta.url), "utf8");
 const runtimeStatus = readFileSync(new URL("../lib/runtime-status.ts", import.meta.url), "utf8");
+const nextConfig = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
+const authRuntimeFiles = [
+  "../app/layout.tsx",
+  "../app/page.tsx",
+  "../app/app/auth-runtime.ts",
+  "../app/components/AccountNav.tsx",
+  "../app/sign-in/[[...sign-in]]/page.tsx",
+  "../app/sign-up/[[...sign-up]]/page.tsx",
+  "../app/api/auth/session/route.ts",
+  "../app/api/auth/email-verification/request/route.ts",
+  "../lib/admin-auth.ts",
+  "../lib/guest-session.ts",
+].map((file) => readFileSync(new URL(file, import.meta.url), "utf8")).join("\n");
 const cosmeticsApi = readFileSync(new URL("../app/api/cosmetics/route.ts", import.meta.url), "utf8");
 const cosmeticsAdminApi = readFileSync(new URL("../app/api/admin/cosmetics/route.ts", import.meta.url), "utf8");
 const profileApi = readFileSync(new URL("../app/api/profile/route.ts", import.meta.url), "utf8");
 const runtimeRepairMigration = readFileSync(new URL("../drizzle/0002_runtime_schema_repair.sql", import.meta.url), "utf8");
 const safetyMigration = readFileSync(new URL("../drizzle/0003_safety_and_media.sql", import.meta.url), "utf8");
+const safetyRestrictionsMigration = readFileSync(new URL("../drizzle/0013_safety_restrictions.sql", import.meta.url), "utf8");
 const authMigration = readFileSync(new URL("../drizzle/0004_local_auth_lifecycle.sql", import.meta.url), "utf8");
 const mediaApi = readFileSync(new URL("../app/api/media/route.ts", import.meta.url), "utf8");
+const blocksApi = readFileSync(new URL("../app/api/safety/blocks/route.ts", import.meta.url), "utf8");
+const galleryApiSource = readFileSync(new URL("../app/api/gallery/route.ts", import.meta.url), "utf8");
 const moderationApi = readFileSync(new URL("../app/api/admin/moderation/route.ts", import.meta.url), "utf8");
 const localAuth = readFileSync(new URL("../lib/local-auth/server.ts", import.meta.url), "utf8");
 const liveSource = readFileSync(new URL("../lib/live.ts", import.meta.url), "utf8");
@@ -46,6 +62,9 @@ const signInApi = readFileSync(new URL("../app/api/auth/sign-in/route.ts", impor
 const signUpApi = readFileSync(new URL("../app/api/auth/sign-up/route.ts", import.meta.url), "utf8");
 const adminAuthApi = readFileSync(new URL("../app/api/admin/auth/route.ts", import.meta.url), "utf8");
 const mediaSource = readFileSync(new URL("../lib/media.ts", import.meta.url), "utf8");
+const safetyBlocksApi = readFileSync(new URL("../app/api/safety/blocks/route.ts", import.meta.url), "utf8");
+const healthApi = readFileSync(new URL("../app/api/health/route.ts", import.meta.url), "utf8");
+const authEmail = readFileSync(new URL("../lib/auth-email.ts", import.meta.url), "utf8");
 
 test("canonical manifest contains exactly 32 unique game ids and slugs", () => {
   const ids = [...manifest.matchAll(/game\(\{ id: "([^"]+)"/g)].map((match) => match[1]);
@@ -66,7 +85,8 @@ test("game endpoints validate input and authorize party access", () => {
   assert.match(gamesApi, /requirePartyMember/);
   assert.match(gamesApi, /current\.createdBy !== userId/);
   assert.match(liveApi, /Publishing directly to live channels is not allowed/);
-  assert.match(gamesApi, /deriveVerifiedScore\(current\.state\)/);
+  assert.match(gamesApi, /deriveScore\(current\.game, current\.state\)/);
+  assert.doesNotMatch(gamesApi, /state: sanitizeControllerState\(snapshot\.game, reduced\.state/);
   assert.doesNotMatch(gamesApi, /body\.score/);
   assert.match(scoring, /persisted server snapshot/i);
   assert.match(gamesApi, /current\.participants\.length < gameDefinition\.minPlayers/);
@@ -85,6 +105,41 @@ test("OWASP remediation keeps party media, auth and admin controls server-enforc
   assert.match(mediaSource, /matchesMediaSignature/);
 });
 
+test("safety block reads and writes are rate limited per actor and client", () => {
+  assert.match(safetyBlocksApi, /distributedRateLimit/);
+  assert.match(safetyBlocksApi, /safety:blocks:read/);
+  assert.match(safetyBlocksApi, /safety:blocks:write/);
+  assert.match(safetyBlocksApi, /getClientIp/);
+  assert.match(safetyBlocksApi, /Too many requests/);
+});
+
+test("production health fails closed for degraded runtime and unenrolled admin MFA", () => {
+  assert.match(healthApi, /getAdminMfaStatus/);
+  assert.match(healthApi, /runtime\.environment === "production"/);
+  assert.match(healthApi, /runtime\.overall === "ready"/);
+  assert.match(healthApi, /adminMfaReady/);
+});
+
+test("bundler auth aliases keep local auth active in production", () => {
+  assert.match(nextConfig, /turbopack:/);
+  assert.match(nextConfig, /resolveAlias:/);
+  assert.match(nextConfig, /webpack\s*\(/);
+  assert.match(nextConfig, /@clerk\/nextjs.*local-auth\/client\.tsx/s);
+  assert.match(nextConfig, /@clerk\/nextjs\/server.*local-auth\/server\.ts/s);
+});
+
+test("runtime auth imports bypass third-party Clerk resolution", () => {
+  assert.doesNotMatch(authRuntimeFiles, /from [\"']@clerk\/nextjs(?:\/server)?[\"']/);
+  assert.match(authRuntimeFiles, /@\/lib\/local-auth\/client/);
+  assert.match(authRuntimeFiles, /@\/lib\/local-auth\/server/);
+});
+
+test("production auth email does not use the development webhook fallback", () => {
+  assert.match(authEmail, /runtimeEnvironment/);
+  assert.match(authEmail, /runtimeEnvironment\(\) === "production"/);
+  assert.match(runtimeStatus, /environment !== "production"/);
+});
+
 test("sitemap and AI discovery are manifest driven", () => {
   assert.match(sitemap, /GAME_MANIFEST/);
   assert.match(readFileSync(new URL("../app/llms.txt/route.ts", import.meta.url), "utf8"), /GAME_MANIFEST/);
@@ -92,6 +147,8 @@ test("sitemap and AI discovery are manifest driven", () => {
 
 test("daily challenge is server-scored and never uses a random client score", () => {
   assert.match(dailyApi, /submitDailyAnswers/);
+  assert.match(dailyApi, /submission\.created \? addPassXp/);
+  assert.match(partiesSource, /ON CONFLICT \(challenge_id, clerk_user_id\) DO NOTHING/);
   assert.match(dailyApi, /submissionSchema\.safeParse/);
   assert.doesNotMatch(dailyApi, /Access-Control-Allow-Origin.*\*/);
   assert.doesNotMatch(dailyUi, /Math\.random/);
@@ -132,6 +189,8 @@ test("engagement and game retries cannot duplicate rewards", () => {
   assert.match(rewardFunction, /ledger AS/);
   assert.doesNotMatch(rewardFunction, /addKoinsTransaction/);
   assert.match(gamesApi, /if \(score\.created\)/);
+  assert.match(gamesApi, /clientMutationId: `score:\$\{body\.sessionId\}`/);
+  assert.match(partiesSource, /const mutationId = `score:\$\{sessionId\}`/);
 });
 
 test("every accepted multiplayer command is game-scoped and payload-validated", () => {
@@ -166,7 +225,7 @@ test("runtime schema upgrades do not drop and recreate idempotency constraints",
   assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS chat_messages_mutation_idx/);
   assert.match(partiesSource, /CREATE UNIQUE INDEX IF NOT EXISTS game_scores_mutation_idx/);
   assert.match(partiesSource, /process\.env\.VERCEL_ENV === "production"/);
-  assert.match(partiesSource, /Number\(version\.version\) < 12/);
+  assert.match(partiesSource, /Number\(version\.version\) < 13/);
   assert.match(partiesSource, /Database schema is outdated\. Run npm run db:migrate/);
 });
 
@@ -204,9 +263,17 @@ test("UGC has controlled media, retention and a moderation audit trail", () => {
   assert.match(safetyMigration, /CREATE TABLE IF NOT EXISTS safety_reports/);
   assert.match(safetyMigration, /CREATE TABLE IF NOT EXISTS moderation_actions/);
   assert.match(safetyMigration, /CREATE TABLE IF NOT EXISTS safety_blocks/);
+  assert.match(safetyRestrictionsMigration, /CREATE TABLE IF NOT EXISTS safety_user_restrictions/);
+  assert.match(safetyRestrictionsMigration, /'restore'/);
   assert.match(moderationApi, /moderation_write/);
+  assert.match(partiesSource, /safety_user_restrictions/);
   assert.match(partiesSource, /retention_until <= NOW\(\)/);
   assert.match(partiesSource, /moderation_status = 'removed'/);
+  assert.match(blocksApi, /safety:blocks:write/);
+  assert.match(galleryApiSource, /const updateSchema = z\.object/);
+  assert.match(galleryApiSource, /publish\(`gallery:\$\{deleted\.partyId\}`/);
+  assert.doesNotMatch(galleryApiSource, /publish\(`gallery:\$\{body\.partyId\}`/);
+  assert.match(mediaApi, /rawKind !== "image" && rawKind !== "voice"/);
 });
 
 test("local auth supports reset tokens and global session revocation", () => {
@@ -217,7 +284,7 @@ test("local auth supports reset tokens and global session revocation", () => {
   assert.match(authMigration, /CREATE TABLE IF NOT EXISTS password_reset_tokens/);
   assert.match(localAuth, /process\.env\.VERCEL_ENV === "production"/);
   assert.match(localAuth, /Number\(version\.version\) < PRODUCTION_SCHEMA_VERSION/);
-  assert.match(localAuth, /const PRODUCTION_SCHEMA_VERSION = 12/);
+  assert.match(localAuth, /const PRODUCTION_SCHEMA_VERSION = 13/);
   assert.match(localAuth, /before serving auth traffic/);
 });
 
@@ -254,7 +321,7 @@ test("admin RBAC is migration-backed and production never provisions it on a req
   assert.match(adminRbacMigration, /CREATE TABLE IF NOT EXISTS admin_audit_log/);
   assert.match(adminRbacMigration, /VALUES \(TRUE, 11, NOW\(\)\)/);
   assert.match(adminMembers, /process\.env\.VERCEL_ENV === "production"/);
-  assert.match(adminMembers, /Number\(version\.version\) < 12/);
+  assert.match(adminMembers, /Number\(version\.version\) < 13/);
 });
 
 test("waitlist is migration-backed and production never provisions it on a request", () => {
@@ -262,6 +329,6 @@ test("waitlist is migration-backed and production never provisions it on a reque
   assert.match(waitlistMigration, /CREATE TABLE IF NOT EXISTS waitlist_applications/);
   assert.match(waitlistMigration, /VALUES \(TRUE, 12, NOW\(\)\)/);
   assert.match(waitlist, /process\.env\.VERCEL_ENV === "production"/);
-  assert.match(waitlist, /const PRODUCTION_SCHEMA_VERSION = 12/);
+  assert.match(waitlist, /const PRODUCTION_SCHEMA_VERSION = 13/);
   assert.match(waitlist, /before serving waitlist traffic/);
 });

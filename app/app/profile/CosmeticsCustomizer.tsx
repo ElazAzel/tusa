@@ -54,10 +54,12 @@ const categoryLabels: Record<string, { ru: string; en: string }> = {
 
 export default function CosmeticsCustomizer({
   profileCosmetics,
+  displayName = "",
   onSave,
   onClose,
 }: {
   profileCosmetics: ProfileCosmetics;
+  displayName?: string;
   onSave: (cosmetics: Record<string, string>) => Promise<void>;
   onClose: () => void;
 }) {
@@ -128,7 +130,7 @@ export default function CosmeticsCustomizer({
       <div className="cosmetics-customizer">
         <div className="cosmetics-customizer-header">
           <h2>{t("profileCosmetics")}</h2>
-          <button className="cosmetics-close-btn" onClick={onClose} aria-label="Close">
+          <button className="cosmetics-close-btn" onClick={onClose} aria-label={locale === "ru" ? "Закрыть" : "Close"}>
             <span className="material-symbols-rounded">close</span>
           </button>
         </div>
@@ -137,12 +139,12 @@ export default function CosmeticsCustomizer({
           <div className="cosmetics-preview-panel">
             <div className={`cosmetics-preview-card cosmetics-cover-${preview.cover} chat-background-${preview.chatBackground}`}>
               <div className="cosmetics-preview-avatar" style={preview.avatarFrame !== "none" ? { borderColor: preview.avatarFrame === "lime" ? "var(--lime)" : preview.avatarFrame === "pink" ? "var(--pink)" : preview.avatarFrame === "blue" ? "var(--blue)" : preview.avatarFrame === "neon" ? "#b829ff" : preview.avatarFrame === "gold" ? "#ffd700" : preview.avatarFrame === "crystal" ? "#80deea" : preview.avatarFrame === "inferno" ? "#ff6f00" : preview.avatarFrame === "frost" ? "#e0f7fa" : preview.avatarFrame === "rainbow" ? "#ff9800" : preview.avatarFrame === "animated_pulse" ? "var(--lime)" : preview.avatarFrame === "animated_glow" ? "#ff1791" : preview.avatarFrame === "animated_rotate" ? "#ff0000" : preview.avatarFrame === "animated_chrome" ? "#b0bec5" : preview.avatarFrame === "animated_neon_pulse" ? "#b829ff" : undefined} : undefined}>
-                <span>{profileCosmetics.cover?.slice(0, 2).toUpperCase() || "TU"}</span>
+                <span>{displayName.trim().slice(0, 2).toUpperCase() || "TU"}</span>
               </div>
               <div className="cosmetics-preview-info">
                 <span className="cosmetics-preview-name" style={preview.nameColor !== "#000000" ? { color: preview.nameColor } : undefined}>
                   {preview.badge !== "newcomer" && <span className="material-symbols-rounded" style={{ fontSize: 16, color: "var(--lime)", verticalAlign: "middle", marginRight: 3 }}>verified</span>}
-                  Preview
+                  {displayName || "TUSA"}
                 </span>
                 <span className="cosmetics-preview-label">{t("profilePreview")}</span>
               </div>

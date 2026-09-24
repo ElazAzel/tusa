@@ -19,7 +19,9 @@ export async function POST(request: NextRequest) {
   try {
     const form = await request.formData();
     const partyId = String(form.get("partyId") ?? "");
-    const kind = form.get("kind") === "voice" ? "voice" : "image";
+    const rawKind = form.get("kind");
+    if (rawKind !== "image" && rawKind !== "voice") return NextResponse.json({ error: "Invalid media kind." }, { status: 400 });
+    const kind = rawKind;
     const file = form.get("file");
     const consent = form.get("consent") === "true";
     if (!partyIdSchema.safeParse(partyId).success || !(file instanceof File)) return NextResponse.json({ error: "Invalid upload." }, { status: 400 });

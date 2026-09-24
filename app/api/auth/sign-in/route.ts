@@ -11,19 +11,19 @@ const credentialsSchema = z.object({
 export async function POST(request: Request) {
   try {
     const parsed = credentialsSchema.safeParse(await request.json().catch(() => null));
-    if (!parsed.success) return NextResponse.json({ error: "Invalid email or password." }, { status: 400 });
+    if (!parsed.success) return NextResponse.json({ error: "Invalid email or password.", code: "invalid_credentials" }, { status: 400 });
     const email = parsed.data.email.toLowerCase();
     const [ipLimit, accountLimit] = await Promise.all([
-      distributedRateLimit(`auth:sign-in:ip:${getClientIp(request.headers)}`, 12, 15 * 60_000),
+      distributedRateLimit(`auth:sign-in:ip:${getClientIp(request.headers)}`, 60, 15 * 60_000),
       distributedRateLimit(`auth:sign-in:email:${email}`, 8, 15 * 60_000),
     ]);
-    if (!ipLimit.allowed || !accountLimit.allowed) return NextResponse.json({ error: "Try again later." }, { status: 429 });
+    if (!ipLimit.allowed || !accountLimit.allowed) return NextResponse.json({ error: "Try again later.", code: "rate_limited" }, { status: 429 });
     const user = await signIn({ email, password: parsed.data.password });
     const response = NextResponse.json({ user });
     const cookie = await sessionCookie(user.id);
     response.cookies.set(cookie.name, cookie.value, cookie.options);
     return response;
   } catch {
-    return NextResponse.json({ error: "Invalid email or password." }, { status: 400 });
+    return NextResponse.json({ error: "Invalid email or password.", code: "invalid_credentials" }, { status: 400 });
   }
 }

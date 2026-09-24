@@ -13,7 +13,11 @@ type GameId = (typeof certificationGameIds)[number];
 type SessionResponse = { session: { id: string; state: Record<string, unknown>; participants: string[] }; viewerId?: string };
 
 async function post(request: APIRequestContext, body: Record<string, unknown>) {
-  const response = await request.post("/api/games", { data: body });
+  let response = await request.post("/api/games", { data: body });
+  for (let attempt = 0; response.status() === 429 && attempt < 12; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+    response = await request.post("/api/games", { data: body });
+  }
   expect(response.ok(), `${body.action}:${body.actionType ?? ""} returned ${response.status()} ${await response.text()}`).toBeTruthy();
   return response.json() as Promise<SessionResponse>;
 }
@@ -59,14 +63,40 @@ async function playRound(gameId: GameId, sessionId: string, host: APIRequestCont
   for (let index = 0; index < all.length; index += 1) await command(all[index], sessionId, "answer", { text: `${gameId}-answer-${index}` });
   await command(host, sessionId, "openVote");
   const voting = await state(host, sessionId);
-  const targets = gameId === "fibbage" ? Object.keys((voting.session.state.choiceOwners ?? {}) as Record<string, string>) : actorIds;
+  const choices = (voting.session.state.choices ?? []) as Array<{ id: string; text: string }>;
+  expect(voting.session.state.choiceOwners).toBeUndefined();
+  const targets = gameId === "fibbage" ? choices.map((choice) => choice.id) : actorIds;
   expect(targets.length).toBeGreaterThan(1);
   for (let index = 0; index < all.length; index += 1) {
     const own = actorIds[index];
-    const target = targets.find((candidate) => gameId === "fibbage" ? (voting.session.state.choiceOwners as Record<string, string>)[candidate] !== own : candidate !== own) ?? targets[0];
+    const ownTexts = [`${gameId}-answer-${index}`, `${gameId}-secret-${index - 1}`];
+    const target = gameId === "fibbage" ? choices.find((choice) => !ownTexts.includes(choice.text))?.id ?? targets[0] : targets.find((candidate) => candidate !== own) ?? targets[0];
     await command(all[index], sessionId, "vote", { target });
   }
   await command(host, sessionId, "reveal"); await command(host, sessionId, "next");
+}
+
+async function expectPrivateSnapshots(gameId: GameId, sessionId: string, host: APIRequestContext, controllers: APIRequestContext[], actorIds: string[]) {
+  const views = await Promise.all([host, ...controllers].map((request) => state(request, sessionId)));
+  const [, controllerView] = views;
+  const controllerState = controllerView.session.state;
+  if (gameId === "trivia") { expect(controllerState.correct).toBe(-1); expect(controllerState.roundPoints).toBeUndefined(); }
+  if (gameId === "twoTruths") expect(controllerState.lie).toBe(-1);
+  if (gameId === "bombParty") expect(controllerState.usedWords).toBeUndefined();
+  if (gameId === "fibbage") expect(controllerState.truth).toBe("");
+  if (gameId === "impostor") {
+    const hidden = views.filter((view) => view.session.state.word === "");
+    expect(hidden).toHaveLength(1);
+    for (const view of views) expect([null, view.viewerId]).toContain(view.session.state.impostorId);
+  }
+  if (gameId === "bombParty" || gameId === "quiplash" || gameId === "fibbage") {
+    const actionType = gameId === "bombParty" ? "submit" : "answer";
+    const payload = gameId === "bombParty" ? { word: `${String(controllerState.letter ?? "A")}secret0` } : { text: `${gameId}-secret-0` };
+    await command(controllers[0], sessionId, actionType, payload);
+    const other = await state(controllers[1] ?? host, sessionId);
+    const submissions = (other.session.state.submissions ?? {}) as Record<string, string>;
+    expect(submissions[actorIds[1]] ?? "").toBe("");
+  }
 }
 
 async function joinGuest(context: BrowserContext, displayName: string) {
@@ -97,9 +127,7 @@ test.describe("core game browser certification", () => {
       expect(lobby.session.participants).toHaveLength(certificationParticipantCount(gameId));
       await post(hostContext.request, { action: "start", sessionId });
       results.create_join_start.passed = true;
-      const stageBefore = await state(hostContext.request, sessionId);
-      const controllerBefore = await state(controllerOne.request, sessionId);
-      if (["impostor", "trivia", "bombParty", "quiplash", "fibbage", "twoTruths"].includes(gameId)) expect(JSON.stringify(controllerBefore.session.state)).not.toEqual(JSON.stringify(stageBefore.session.state));
+      await expectPrivateSnapshots(gameId, sessionId, hostContext.request, controllerContexts.map((context) => context.request), [hostId, ...controllerIds]);
       results.privacy.passed = true;
       await playRound(gameId, sessionId, hostContext.request, controllerContexts.map((context) => context.request), [hostId, ...controllerIds]);
       results.full_round.passed = true;

@@ -42,7 +42,7 @@ export default function Highlights({ partyId }: { partyId: string }) {
         <span className="material-symbols-rounded" style={{ color: "var(--lime)", fontSize: 28 }}>{typeIcon[h.type] || "emoji_events"}</span>
         <div style={{ flex: 1 }}>
           <p style={{ fontWeight: 700 }}>{h.displayName || h.userId.slice(0, 8)}</p>
-          <p style={{ color: "var(--gray)", fontSize: 12 }}>{typeLabel[h.type] || h.type} — {new Date(h.createdAt).toLocaleDateString()}</p>
+          <p style={{ color: "var(--gray)", fontSize: 12 }}>{typeLabel[h.type] || h.type} · {new Date(h.createdAt).toLocaleDateString()}</p>
           {typeof h.data.score === "number" && <p style={{ color: "var(--lime)", fontWeight: 700, fontSize: 18 }}>{h.data.score}</p>}
         </div>
         <button className="demo-action demo-action--white" onClick={() => remove(h.id)} type="button" style={{ padding: "4px 8px", fontSize: 12 }}>×</button>

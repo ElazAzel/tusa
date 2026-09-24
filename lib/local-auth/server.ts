@@ -7,7 +7,7 @@ import { neon } from "@neondatabase/serverless";
 const scrypt = promisify(scryptCallback);
 const COOKIE_NAME = "tusa_auth";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
-const PRODUCTION_SCHEMA_VERSION = 12;
+const PRODUCTION_SCHEMA_VERSION = 13;
 
 type AccountRow = { id: string; email: string; display_name: string; password_hash: string; image_url: string | null; session_version: number; email_verified_at: string | Date | null };
 export type LocalUser = { id: string; fullName: string; firstName: string; imageUrl: string; emailVerified: boolean; primaryEmailAddress: { emailAddress: string } };

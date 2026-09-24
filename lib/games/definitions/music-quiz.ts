@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
 import { MUSIC_QUIZ_ROUNDS, musicQuizPrompt } from "../music-quiz-content";
+import { deckOf, initialDeck, type DeckState } from "../content-deck";
 
 type MusicGameId = "guessSong" | "musicQuiz";
 type Phase = "clue" | "guess" | "reveal" | "finished";
@@ -21,14 +22,16 @@ type State = {
   guesses: Record<string, string>;
   winner: string;
   players: string[];
-};
+} & DeckState;
 
 const CLUE_MS = 6_000;
 const GUESS_MS = 12_000;
 
-function roundState(game: MusicGameId, locale: "ru" | "en", round: number, players: string[], now: number): State {
-  const prompt = musicQuizPrompt(locale, round);
+function roundState(game: MusicGameId, locale: "ru" | "en", round: number, players: string[], now: number, deck: DeckState): State {
+  const prompt = musicQuizPrompt(locale, round, deckOf(deck));
   return {
+    ...deck,
+    contentUsed: round + 1,
     engine: "server-v1",
     game,
     locale,
@@ -47,8 +50,22 @@ function roundState(game: MusicGameId, locale: "ru" | "en", round: number, playe
   };
 }
 
-function normalise(value: string) {
-  return value.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+export function normaliseTitle(value: string) {
+  return value
+    .toLocaleLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/&/g, " and ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .replace(/^the /, "");
+}
+
+function titleMatches(guess: string, answer: string) {
+  const expected = normaliseTitle(answer);
+  const full = answer.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const given = normaliseTitle(guess);
+  return given.length > 0 && (given === expected || given === full);
 }
 
 export function createMusicQuizDefinition(id: MusicGameId) {
@@ -56,7 +73,7 @@ export function createMusicQuizDefinition(id: MusicGameId) {
     id,
     version: 1,
     createInitialState(participants, config, now = Date.now()) {
-      return roundState(id, config.locale === "en" ? "en" : "ru", 0, participants, now);
+      return roundState(id, config.locale === "en" ? "en" : "ru", 0, participants, now, initialDeck(config, id));
     },
     commandSchemas: {
       openGuess: z.object({}).strict(),
@@ -77,7 +94,7 @@ export function createMusicQuizDefinition(id: MusicGameId) {
         if (state.guesses[ctx.actorId]) return { state, changed: false };
         const title = String((payload as { title: string }).title);
         const guesses = { ...state.guesses, [ctx.actorId]: title };
-        if (normalise(title) !== normalise(state.answer)) return { changed: true, state: { ...state, guesses } };
+        if (!titleMatches(title, state.answer)) return { changed: true, state: { ...state, guesses } };
         const points = state.deadline - ctx.now > GUESS_MS / 2 ? 3 : 1;
         return {
           changed: true,
@@ -102,7 +119,7 @@ export function createMusicQuizDefinition(id: MusicGameId) {
         if (state.phase !== "reveal") return { state, changed: false, error: "Reveal the answer first." };
         const round = state.round + 1;
         if (round >= MUSIC_QUIZ_ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
-        const next = roundState(id, state.locale, round, ctx.participants, ctx.now);
+        const next = roundState(id, state.locale, round, ctx.participants, ctx.now, state);
         return { changed: true, state: { ...next, scores: state.scores } };
       }
       return { state, changed: false, error: "Unsupported server game command." };

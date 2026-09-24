@@ -165,7 +165,7 @@ function makeEvent(overrides: Partial<EventData> = {}): EventData {
   return {
     id: uid("evt"),
     title: "Квартирник у Амира",
-    description: "Музыка, Alias и тот самый плейлист. Берите хорошее настроение — остальное соберём вместе.",
+    description: "Музыка, Alias и тот самый плейлист. Берите хорошее настроение, остальное соберём вместе.",
     category: "house_party",
     date: "2026-07-17",
     time: "21:00",

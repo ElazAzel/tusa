@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePlayerName } from "@/app/components/PlayerNames";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { useStageGame } from "@/app/components/useStageGame";
@@ -35,6 +36,7 @@ const emptyState = (): GameState => ({
 });
 
 export default function HeadsUp({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+  const playerName = usePlayerName();
   const { locale } = useLocale();
   const isHost = role === "stage";
   const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, emptyState);
@@ -48,8 +50,8 @@ export default function HeadsUp({ sessionId, onSave, role }: { partyId: string; 
   const isActive = me === state.activePlayer;
   const canScore = state.phase === "play" && !isActive && Boolean(state.word);
   const copy = locale === "ru"
-    ? { title: "Forehead Guess", round: "Раунд", active: "Угадывает", hidden: "Держи телефон у лба. Слово видят остальные.", word: "Слово для подсказок", explain: "Объясняйте без однокоренных слов и без показа экрана.", correct: "Угадал", skip: "Пас", turn: "За ход", total: "Всего", skipped: "Пасов", next: "Следующий игрок", finish: "Завершить" }
-    : { title: "Forehead Guess", round: "Round", active: "Guessing", hidden: "Hold the phone to your forehead. Everyone else sees the word.", word: "Word to explain", explain: "Give clues without saying the root word or showing the screen.", correct: "Correct", skip: "Pass", turn: "This turn", total: "Total", skipped: "Passes", next: "Next player", finish: "Finish" };
+    ? { title: "Слово на лбу", round: "Раунд", active: "Угадывает", hidden: "Держи телефон у лба. Слово видят остальные.", word: "Слово для подсказок", explain: "Объясняйте без однокоренных слов и без показа экрана.", correct: "Угадал", skip: "Пас", turn: "За ход", total: "Всего", skipped: "Пасов", next: "Следующий игрок", finish: "Завершить" }
+    : { title: "Heads Up", round: "Round", active: "Guessing", hidden: "Hold the phone to your forehead. Everyone else sees the word.", word: "Word to explain", explain: "Give clues without saying the root word or showing the screen.", correct: "Correct", skip: "Pass", turn: "This turn", total: "Total", skipped: "Passes", next: "Next player", finish: "Finish" };
 
   useEffect(() => {
     if (state.phase !== "play") return;
@@ -72,10 +74,10 @@ export default function HeadsUp({ sessionId, onSave, role }: { partyId: string; 
     onSave(state.score);
   }, [isHost, onSave, stage, state.phase, state.score]);
 
-  const activeLabel = state.activePlayer ? state.activePlayer.slice(-8) : "stage";
+  const activeLabel = state.activePlayer ? playerName(state.activePlayer) : "stage";
 
   return <div className="party-game-board game-board-enter charades-board">
-    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/5</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}s</strong></div>
+    <div className="trivia-head"><span className="game-step">{copy.round} {state.round + 1}/5</span><strong className={seconds <= 10 ? "is-ending" : ""}>{seconds}{locale === "ru" ? " с" : "s"}</strong></div>
     <h3>{copy.title}</h3>
     <p>{copy.active}: <b>{activeLabel}</b></p>
     {state.phase === "play" && <>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePlayerName } from "@/app/components/PlayerNames";
 import { useControllerGame } from "@/app/components/useControllerGame";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { useStageGame } from "@/app/components/useStageGame";
@@ -37,6 +38,7 @@ const emptyState = (): GameState => ({
 });
 
 export default function Impostor({ sessionId, onSave, role }: { partyId: string; sessionId?: string | null; onSave: (score: number) => void; role?: "stage" | "controller" }) {
+  const playerName = usePlayerName();
   const { locale } = useLocale();
   const isHost = role === "stage";
   const stage = useStageGame<GameState>(isHost ? sessionId ?? null : null, emptyState);
@@ -48,7 +50,7 @@ export default function Impostor({ sessionId, onSave, role }: { partyId: string;
   const [guess, setGuess] = useState("");
   const completed = useRef(false);
   const copy = locale === "ru"
-    ? { title: "Impostor", round: "Раунд", word: "Слово", impostor: "Ты импостор", crew: "Твоё слово", clue: "Подсказка", cluePlace: "Одно слово", send: "Отправить", sent: "Отправлено", openVote: "Перейти к голосованию", vote: "Голосование", voted: "голосов", guess: "Угадать слово", guessPlace: "Например, пицца", reveal: "Открыть результат", next: "Следующий раунд", finish: "Завершить", accused: "Под подозрением", impostorWas: "Импостор", crewWin: "Команда нашла импостора", impostorWin: "Импостор выкрутился" }
+    ? { title: "Импостор", round: "Раунд", word: "Слово", impostor: "Ты импостор", crew: "Твоё слово", clue: "Подсказка", cluePlace: "Одно слово", send: "Отправить", sent: "Отправлено", openVote: "Перейти к голосованию", vote: "Голосование", voted: "голосов", guess: "Угадать слово", guessPlace: "Например, пицца", reveal: "Открыть результат", next: "Следующий раунд", finish: "Завершить", accused: "Под подозрением", impostorWas: "Импостор", crewWin: "Команда нашла импостора", impostorWin: "Импостор выкрутился" }
     : { title: "Impostor", round: "Round", word: "Word", impostor: "You are the impostor", crew: "Your word", clue: "Clue", cluePlace: "One word", send: "Send", sent: "Sent", openVote: "Open voting", vote: "Voting", voted: "votes", guess: "Guess word", guessPlace: "For example, pizza", reveal: "Reveal result", next: "Next round", finish: "Finish", accused: "Accused", impostorWas: "Impostor", crewWin: "Crew found the impostor", impostorWin: "Impostor got away" };
 
   useEffect(() => { setClue(""); setVoteTarget(""); setGuess(""); }, [state.phase, state.round]);
@@ -80,14 +82,14 @@ export default function Impostor({ sessionId, onSave, role }: { partyId: string;
     </div>}
     {state.phase === "vote" && <div>
       <p>{Object.keys(state.votes).length}/{players.length} {copy.voted}</p>
-      <div className="quiz-options">{players.map((player) => <button className={voteTarget === player ? "selected" : ""} disabled={voted || voteTarget === player} key={player} onClick={() => { setVoteTarget(player); sendAction("vote", { target: player }); }} type="button">{player.slice(-8)}</button>)}</div>
+      <div className="quiz-options">{players.map((player) => <button className={voteTarget === player ? "selected" : ""} disabled={voted || voteTarget === player} key={player} onClick={() => { setVoteTarget(player); sendAction("vote", { target: player }); }} type="button">{playerName(player)}</button>)}</div>
       {isImpostor && <div className="game-primary-actions"><input className="bs-input" maxLength={80} onChange={(event) => setGuess(event.target.value)} placeholder={copy.guessPlace} value={guess} /><button className="demo-action demo-action--white" disabled={!guess.trim()} onClick={() => sendAction("guess", { word: guess.trim() })} type="button">{copy.guess}</button></div>}
       {isHost && <button className="demo-action demo-action--lime" disabled={!Object.keys(state.votes).length} onClick={() => sendAction("reveal")} type="button">{copy.reveal}</button>}
     </div>}
     {state.phase === "reveal" && <div className="trivia-result">
       <p>{copy.word}: <b>{state.word}</b></p>
-      <p>{copy.impostorWas}: <b>{state.impostorId?.slice(-8)}</b></p>
-      {state.accusedId && <p>{copy.accused}: <b>{state.accusedId.slice(-8)}</b></p>}
+      <p>{copy.impostorWas}: <b>{playerName(state.impostorId)}</b></p>
+      {state.accusedId && <p>{copy.accused}: <b>{playerName(state.accusedId)}</b></p>}
       <h4>{state.outcome === "crew" ? copy.crewWin : copy.impostorWin}</h4>
       {isHost && <button className="demo-action demo-action--lime" onClick={() => sendAction("next")} type="button">{state.round >= 4 ? copy.finish : copy.next}</button>}
     </div>}

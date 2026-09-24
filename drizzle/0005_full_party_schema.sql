@@ -250,12 +250,6 @@ ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS client_mutation_id TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS chat_messages_mutation_idx ON chat_messages (party_id, clerk_user_id, client_mutation_id) WHERE client_mutation_id IS NOT NULL;
 --> statement-breakpoint
 
-ALTER TABLE game_scores ADD COLUMN IF NOT EXISTS client_mutation_id TEXT;
---> statement-breakpoint
-
-CREATE UNIQUE INDEX IF NOT EXISTS game_scores_mutation_idx ON game_scores (session_id, client_mutation_id) WHERE client_mutation_id IS NOT NULL;
---> statement-breakpoint
-
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS koins_balance INTEGER NOT NULL DEFAULT 100;
 --> statement-breakpoint
 
@@ -398,6 +392,12 @@ CREATE TABLE IF NOT EXISTS game_scores (
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+--> statement-breakpoint
+
+ALTER TABLE game_scores ADD COLUMN IF NOT EXISTS client_mutation_id TEXT;
+--> statement-breakpoint
+
+CREATE UNIQUE INDEX IF NOT EXISTS game_scores_mutation_idx ON game_scores (session_id, client_mutation_id) WHERE client_mutation_id IS NOT NULL;
 --> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS party_highlights (id UUID PRIMARY KEY, party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE, session_id UUID REFERENCES game_sessions(id) ON DELETE SET NULL, clerk_user_id TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT '', type TEXT NOT NULL DEFAULT 'score' CHECK (type IN ('score','achievement','funny','quote','photo')), data JSONB NOT NULL DEFAULT '{}'::jsonb, thumbnail TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());

@@ -7,8 +7,10 @@ import { resolveActor } from "@/lib/guest-session";
 import { isManagedMediaUrl } from "@/lib/media";
 import { recordPlatformError } from "@/lib/observability";
 
+const FLOAT_EMOJIS = new Set(["🔥", "😂", "👏", "❤️", "😱"]);
+
 const messageSchema = z.object({
-  action: z.literal("react").optional(),
+  action: z.enum(["react", "float"]).optional(),
   partyId: z.string().uuid(),
   messageId: z.string().uuid().optional(),
   emoji: z.string().min(1).max(16).optional(),
@@ -42,11 +44,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   const actor = await resolveActor();
   if (!actor) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-  const rl = await distributedRateLimit(`chat:write:${actor.id}:${getClientIp(request.headers)}`, 25, 60_000);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many chat messages." }, { status: 429 });
   const parsed = messageSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid message.", details: parsed.error.flatten() }, { status: 400 });
   const body = parsed.data;
+  const isFloat = body.action === "float";
+  const rl = await distributedRateLimit(`chat:${isFloat ? "float" : "write"}:${actor.id}:${getClientIp(request.headers)}`, isFloat ? 60 : 25, 60_000);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many chat messages." }, { status: 429 });
 
   const requestId = crypto.randomUUID();
   try {
@@ -57,6 +60,12 @@ export async function POST(request: Request) {
       if (!reactions) return NextResponse.json({ error: "Message not found." }, { status: 404 });
       publish(`chat:${body.partyId}`, { type: "reaction", messageId: body.messageId, reactions, partyId: body.partyId });
       return NextResponse.json({ reactions });
+    }
+
+    if (body.action === "float") {
+      if (!body.emoji || !FLOAT_EMOJIS.has(body.emoji)) return NextResponse.json({ error: "Unsupported reaction." }, { status: 400 });
+      publish(`party:${body.partyId}`, { type: "reaction:float", emoji: body.emoji, userId: actor.id });
+      return NextResponse.json({ ok: true });
     }
 
     if (body.type === "voice" && (!body.voiceUrl || !isManagedMediaUrl(body.voiceUrl))) return NextResponse.json({ error: "Voice message must use managed storage." }, { status: 400 });

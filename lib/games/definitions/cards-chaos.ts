@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
 import { CHAOS_CARDS, CHAOS_PROMPTS } from "../cards-chaos-content";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
+
+export const CARDS_CHAOS_ROUNDS = 5;
+const HAND_SIZE = 4;
+const CARDS_PER_PROMPT = 12;
 
 type State = {
   engine: "server-v1";
@@ -15,11 +20,32 @@ type State = {
   winner: string;
   scores: Record<string, number>;
   players: string[];
-};
+  cardsDealt: number;
+} & DeckState;
 
-function dealHands(players: string[], locale: "ru" | "en", round: number) {
-  const cards = CHAOS_CARDS[locale];
-  return Object.fromEntries(players.map((id, player) => [id, Array.from({ length: 4 }, (_, slot) => cards[(round * 5 + player * 3 + slot) % cards.length])])) as Record<string, string[]>;
+type DeckSource = { deckSeed?: string; deckStart?: number; locale: "ru" | "en" };
+
+function promptAt(source: DeckSource, round: number) {
+  return deckItem(CHAOS_PROMPTS[source.locale], deckOf(source), round);
+}
+
+function cardAt(source: DeckSource, position: number) {
+  const deck = deckOf(source);
+  return deckItem(CHAOS_CARDS[source.locale], { deckSeed: `${deck.deckSeed}:cards`, deckStart: deck.deckStart * CARDS_PER_PROMPT }, position);
+}
+
+function refillHands(source: DeckSource, players: string[], previous: Record<string, string[]>, played: Record<string, string>, cardsDealt: number) {
+  let dealt = cardsDealt;
+  const hands: Record<string, string[]> = {};
+  for (const id of players) {
+    const hand = (previous[id] ?? []).filter((card) => card !== played[id]);
+    while (hand.length < HAND_SIZE) {
+      hand.push(cardAt(source, dealt));
+      dealt += 1;
+    }
+    hands[id] = hand;
+  }
+  return { hands, cardsDealt: dealt };
 }
 
 export default defineGame<State>({
@@ -27,15 +53,19 @@ export default defineGame<State>({
   version: 1,
   createInitialState(participants, config) {
     const locale = config.locale === "en" ? "en" : "ru";
+    const deck = initialDeck(config, "cardsChaos");
+    const dealt = refillHands({ ...deck, locale }, participants, {}, {}, 0);
     return {
+      ...deck,
       engine: "server-v1",
       game: "cardsChaos",
       locale,
       phase: "play",
       round: 0,
-      prompt: CHAOS_PROMPTS[locale][0],
+      prompt: promptAt({ ...deck, locale }, 0),
       judgeId: participants[0] ?? "",
-      hands: dealHands(participants, locale, 0),
+      hands: dealt.hands,
+      cardsDealt: dealt.cardsDealt,
       submissions: {},
       winner: "",
       scores: {},
@@ -67,17 +97,20 @@ export default defineGame<State>({
     if (actionType === "next") {
       if (state.phase !== "result" || ctx.actorId !== ctx.creatorId) return { state, changed: false, error: "Only the stage can advance after judging." };
       const round = state.round + 1;
-      if (round >= CHAOS_PROMPTS[state.locale].length) return { changed: true, state: { ...state, phase: "finished" } };
+      if (round >= CARDS_CHAOS_ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
       const players = ctx.participants;
+      const dealt = refillHands(state, players, state.hands, state.submissions, state.cardsDealt ?? 0);
       return {
         changed: true,
         state: {
           ...state,
           phase: "play",
           round,
-          prompt: CHAOS_PROMPTS[state.locale][round],
+          prompt: promptAt(state, round),
+          contentUsed: round + 1,
           judgeId: players[round % players.length] ?? "",
-          hands: dealHands(players, state.locale, round),
+          hands: dealt.hands,
+          cardsDealt: dealt.cardsDealt,
           submissions: {},
           winner: "",
           players,

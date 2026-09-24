@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineGame } from "../definition";
-import { BRAIN_BURST_QUESTIONS } from "../brain-burst-content";
+import { BRAIN_BURST_QUESTIONS, BRAIN_BURST_ROUNDS } from "../brain-burst-content";
+import { deckItem, deckOf, initialDeck, type DeckState } from "../content-deck";
 
 type State = {
   engine: "server-v1";
@@ -14,11 +15,12 @@ type State = {
   deadline: number;
   scores: Record<string, number>;
   answered: Record<string, boolean>;
+  roundPoints?: Record<string, number>;
   players: string[];
-};
+} & DeckState;
 
-function question(round: number, locale: "ru" | "en") {
-  const item = BRAIN_BURST_QUESTIONS[round % BRAIN_BURST_QUESTIONS.length];
+function question(round: number, locale: "ru" | "en", deck: { deckSeed?: string; deckStart?: number }) {
+  const item = deckItem(BRAIN_BURST_QUESTIONS, deckOf(deck), round);
   return { question: item.prompt[locale], options: [...item.options[locale]], correct: item.correct };
 }
 
@@ -27,13 +29,15 @@ export default defineGame<State>({
   version: 1,
   createInitialState(participants, config, now = Date.now()) {
     const locale = config.locale === "en" ? "en" : "ru";
+    const deck = initialDeck(config, "brainBurst");
     return {
+      ...deck,
       engine: "server-v1",
       game: "brainBurst",
       locale,
       phase: "question",
       round: 0,
-      ...question(0, locale),
+      ...question(0, locale, deck),
       deadline: now + 10_000,
       scores: {},
       answered: {},
@@ -58,7 +62,7 @@ export default defineGame<State>({
         state: {
           ...state,
           answered: { ...state.answered, [ctx.actorId]: true },
-          scores: points ? { ...state.scores, [ctx.actorId]: (state.scores[ctx.actorId] ?? 0) + points } : state.scores,
+          roundPoints: points ? { ...(state.roundPoints ?? {}), [ctx.actorId]: points } : (state.roundPoints ?? {}),
         },
       };
     }
@@ -67,18 +71,24 @@ export default defineGame<State>({
       if (state.phase !== "question") return { state, changed: false };
       const everyoneAnswered = ctx.participants.length > 0 && ctx.participants.every((id) => state.answered[id]);
       if (ctx.now < state.deadline && !everyoneAnswered) return { state, changed: false, error: "The round is still active." };
-      return { changed: true, state: { ...state, phase: "result" } };
+      return { changed: true, state: { ...state, phase: "result", scores: mergeRoundPoints(state.scores, state.roundPoints), roundPoints: {} } };
     }
     if (actionType === "next") {
       if (ctx.actorId !== ctx.creatorId) return { state, changed: false, error: "Only the stage can advance the game." };
       if (state.phase !== "result") return { state, changed: false, error: "Reveal the current answer first." };
       const round = state.round + 1;
-      if (round >= BRAIN_BURST_QUESTIONS.length) return { changed: true, state: { ...state, phase: "finished" } };
-      return { changed: true, state: { ...state, phase: "question", round, ...question(round, state.locale), deadline: ctx.now + 10_000, answered: {} } };
+      if (round >= BRAIN_BURST_ROUNDS) return { changed: true, state: { ...state, phase: "finished" } };
+      return { changed: true, state: { ...state, phase: "question", round, ...question(round, state.locale, state), contentUsed: round + 1, deadline: ctx.now + 10_000, answered: {} } };
     }
     return { state, changed: false, error: "Unsupported server game command." };
   },
   deriveScore(state) {
-    return Math.max(0, ...Object.values(state.scores));
+    return Math.max(0, ...Object.values(mergeRoundPoints(state.scores, state.roundPoints)));
   },
 });
+
+function mergeRoundPoints(scores: Record<string, number>, roundPoints: Record<string, number> = {}) {
+  const merged = { ...scores };
+  for (const [playerId, points] of Object.entries(roundPoints)) merged[playerId] = (merged[playerId] ?? 0) + points;
+  return merged;
+}

@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
+import ProductHeader from "@/app/components/ProductHeader";
 import { useEffect, useState } from "react";
 import type { UserProfile, FriendConnection, FriendList } from "@/lib/parties";
 import { useLocale } from "@/app/components/LocaleProvider";
@@ -80,14 +81,11 @@ export default function FriendsPage({ profile, friends: initialFriends, requests
   const friendName = (fr: FriendConnection) => fr.displayName;
 
   return <main className="user-app-page">
-    <header className="user-app-header">
-      <Link href="/app" className="user-app-brand">TUSA<span>.game</span></Link>
-      <nav>
+    <ProductHeader className="user-app-header" showLocale={false}>
         <Link href="/app">{t("dashMy")}</Link>
         <Link href="/app/leaderboard">{t("leaderboardTitle")}</Link>
         <Link href="/app/profile">{t("profile")}</Link>
-      </nav>
-    </header>
+    </ProductHeader>
     <div className="friends-page">
       <h1>{t("friendsTitle")}</h1>
       <div className="friend-add-form">
