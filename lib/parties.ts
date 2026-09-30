@@ -1460,9 +1460,9 @@ export async function addGameAction(sessionId: string, userId: string, actionTyp
   const partyId = await getSessionPartyId(sessionId);
   if (!partyId) throw new Error("Session not found");
   await requirePartyMember(partyId, userId);
-  const [session] = await db()`SELECT participants, status FROM game_sessions WHERE id = ${sessionId}` as unknown as { participants: string[]; status: string }[];
+  const [session] = await db()`SELECT participants, status, created_by FROM game_sessions WHERE id = ${sessionId}` as unknown as { participants: string[]; status: string; created_by: string }[];
   const participants = Array.isArray(session?.participants) ? session.participants : [];
-  if (!participants.includes(userId) || session.status === "completed" || session.status === "cancelled") throw new Error("Not an active player");
+  if ((!participants.includes(userId) && String(session?.created_by ?? "") !== userId) || session.status === "completed" || session.status === "cancelled") throw new Error("Not an active player");
   let [row] = await db()`INSERT INTO game_actions (id, session_id, clerk_user_id, action_type, payload, client_mutation_id)
     VALUES (${randomUUID()}, ${sessionId}, ${userId}, ${actionType.slice(0, 80)}, ${JSON.stringify(payload ?? {})}::jsonb, ${clientMutationId})
     ON CONFLICT (session_id, clerk_user_id, client_mutation_id) WHERE client_mutation_id IS NOT NULL DO NOTHING
@@ -1540,7 +1540,7 @@ export async function getPaymentAssignee(partyId: string) {
   return row ? { paidBy: String(row.paid_by || ""), displayName: String(row.display_name || "") } : { paidBy: "", displayName: "" };
 }
 
-export async function updateGameSession(sessionId: string, userId: string, updates: { status?: string; state?: Record<string, unknown>; expectedVersion?: number; participants?: string[] }) {
+export async function updateGameSession(sessionId: string, userId: string, updates: { status?: string; state?: Record<string, unknown>; expectedVersion?: number; participants?: string[]; config?: Record<string, unknown> }) {
   const partyId = await getSessionPartyId(sessionId);
   if (!partyId) return null;
   await requirePartyMember(partyId, userId);
@@ -1549,17 +1549,20 @@ export async function updateGameSession(sessionId: string, userId: string, updat
   const status = updates.status;
   const state = updates.state ? JSON.stringify(updates.state) : undefined;
   const participants = updates.participants ? JSON.stringify(updates.participants) : undefined;
+  const config = updates.config ? JSON.stringify(updates.config) : undefined;
   const rows = updates.expectedVersion !== undefined
     ? await db()`UPDATE game_sessions SET
         ${status ? db()`status = ${status},` : db()``}
         ${state ? db()`state = ${state}::jsonb,` : db()``}
         ${participants ? db()`participants = ${participants}::jsonb,` : db()``}
+        ${config ? db()`config = ${config}::jsonb,` : db()``}
         version = version + 1, updated_at = NOW()
         WHERE id = ${sessionId} AND version = ${updates.expectedVersion} RETURNING *` as unknown as Record<string, unknown>[]
     : await db()`UPDATE game_sessions SET
         ${status ? db()`status = ${status},` : db()``}
         ${state ? db()`state = ${state}::jsonb,` : db()``}
         ${participants ? db()`participants = ${participants}::jsonb,` : db()``}
+        ${config ? db()`config = ${config}::jsonb,` : db()``}
         version = version + 1, updated_at = NOW()
         WHERE id = ${sessionId} RETURNING *` as unknown as Record<string, unknown>[];
   const [row] = rows;

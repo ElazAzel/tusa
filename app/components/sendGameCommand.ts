@@ -6,7 +6,7 @@ function notify(type: "tusa:game-command-error" | "tusa:game-command-success", d
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(type, { detail }));
 }
 
-export async function sendGameCommand(sessionId: string, actionType: string, payload?: unknown) {
+export async function sendGameCommand(sessionId: string, actionType: string, payload?: unknown, actAs?: string) {
   const clientMutationId = commandId();
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -15,7 +15,7 @@ export async function sendGameCommand(sessionId: string, actionType: string, pay
       const response = await fetch("/api/games", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "playerAction", sessionId, actionType, payload, clientMutationId }),
+        body: JSON.stringify({ action: "playerAction", sessionId, actionType, payload, clientMutationId, ...(actAs ? { actAs } : {}) }),
       });
       const data = await response.json().catch(() => ({})) as { error?: string };
       if (response.ok) {

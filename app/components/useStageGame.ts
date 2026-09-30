@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { sendGameCommand } from "./sendGameCommand";
 import { useGameChannel } from "./useGameChannel";
 import { usePublicStage } from "./GameView";
+import { useLocalPlay } from "./LocalPlay";
 
 export type PlayerAction = {
   id?: string;
@@ -17,6 +18,11 @@ export function useStageGame<T extends Record<string, unknown>>(
   initialState: () => T,
 ) {
   const publicStage = usePublicStage();
+  const local = useLocalPlay();
+  const localSeat = local?.seat ?? "";
+  const localRef = useRef(local);
+  useEffect(() => { localRef.current = local; }, [local]);
+  const stateRef = useRef<T | null>(null);
   const [state, _setState] = useState<T>(initialState);
   const [playerActions, setPlayerActions] = useState<PlayerAction[]>([]);
   const initialStateRef = useRef(initialState);
@@ -42,6 +48,8 @@ export function useStageGame<T extends Record<string, unknown>>(
           const currentPlayers = merged.players as unknown[];
           if (!currentPlayers.length || currentPlayers.every((player) => typeof player === "string" && /^Player \d+$/.test(player))) (merged as Record<string, unknown>).players = participants;
         }
+        stateRef.current = merged;
+        if (localRef.current) queueMicrotask(() => localRef.current?.followTurn(merged));
         return merged;
       });
     }
@@ -51,8 +59,8 @@ export function useStageGame<T extends Record<string, unknown>>(
 
   const syncSnapshot = useCallback(() => {
     if (!sessionId) return;
-    void fetch(`/api/games?sessionId=${sessionId}${publicStage ? "&view=public" : ""}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
-  }, [sessionId, applySnapshot, publicStage]);
+    void fetch(`/api/games?sessionId=${sessionId}${publicStage ? "&view=public" : ""}${localSeat ? `&as=${localSeat}` : ""}`).then((r) => r.json()).then(applySnapshot).catch(() => undefined);
+  }, [sessionId, applySnapshot, publicStage, localSeat]);
 
   useEffect(() => {
     versionRef.current = 1;
@@ -87,13 +95,18 @@ export function useStageGame<T extends Record<string, unknown>>(
 
   const sendAction = useCallback((actionType: string, payload?: unknown) => {
     if (!sessionId) return;
-    void sendGameCommand(sessionId, actionType, payload)
+    const previous = (stateRef.current ?? {}) as Record<string, unknown>;
+    void sendGameCommand(sessionId, actionType, payload, localSeat || undefined)
       .then((data) => {
         if (publicStage) syncSnapshot();
-        else if (data && "session" in data && data.session) applySnapshot({ session: data.session as { state?: Partial<T>; version?: number; participants?: string[] } });
+        else if (data && "session" in data && data.session) {
+          const session = data.session as { state?: Partial<T>; version?: number; participants?: string[] };
+          applySnapshot({ session, ...(localSeat ? { viewerId: localSeat } : {}) });
+          if (localSeat && (data as { actedAs?: string }).actedAs === "seat" && session.state) localRef.current?.afterAction(previous, session.state as Record<string, unknown>);
+        }
       })
       .catch(() => undefined);
-  }, [sessionId, applySnapshot, publicStage, syncSnapshot]);
+  }, [sessionId, applySnapshot, publicStage, syncSnapshot, localSeat]);
 
   return { state, setState, playerActions, clearActions, complete, sendAction };
 }

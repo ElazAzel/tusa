@@ -16,6 +16,8 @@ import { useGameRole } from "@/app/components/useGameRole";
 import { botDisplayName, isBotId } from "@/lib/games/bot-names";
 import { PlayerNamesProvider } from "@/app/components/PlayerNames";
 import { PublicStageProvider } from "@/app/components/GameView";
+import { LocalPlayProvider } from "@/app/components/LocalPlay";
+import { localPlayerNames, MAX_LOCAL_PLAYERS } from "@/lib/games/bot-names";
 const LIVE_REACTIONS = ["🔥", "😂", "👏", "❤️", "😱"] as const;
 const AliasGame = dynamic(() => import("@/app/components/games/AliasGame"));
 const MafiaGame = dynamic(() => import("@/app/components/games/MafiaGame"));
@@ -158,13 +160,29 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
   const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/join/${party.inviteCode}` : "";
   const filteredMembers = rsvpFilter === "all" ? members : members.filter((m) => m.rsvpStatus === rsvpFilter);
   const activeSession = activeSessions.find((s) => s.id === gameSession);
+  const activeLocalNames = useMemo(() => localPlayerNames(activeSession?.config), [activeSession?.config]);
+  const isLocalSession = Object.keys(activeLocalNames).length > 0;
+  useEffect(() => {
+    let saved: string[] = [];
+    try { saved = JSON.parse(window.localStorage.getItem(`tusa:local-players:${party.id}`) ?? "[]") as string[]; } catch {}
+    const selfName = members.find((member) => member.clerkUserId === actorId)?.displayName ?? "";
+    setLocalNames((current) => current.length ? current : Array.isArray(saved) && saved.length ? saved.filter((name) => typeof name === "string").slice(0, MAX_LOCAL_PLAYERS) : selfName ? [selfName] : []);
+  }, [party.id, members, actorId]);
+  function addLocalName() {
+    const name = localDraft.replace(/\s+/g, " ").trim().slice(0, 24);
+    if (!name || localNames.length >= MAX_LOCAL_PLAYERS || localNames.some((item) => item.toLocaleLowerCase() === name.toLocaleLowerCase())) { setLocalDraft(""); return; }
+    setLocalNames((current) => [...current, name]);
+    setLocalDraft("");
+  }
+  const playerNames = useMemo(() => ({ ...Object.fromEntries(members.map((member) => [member.clerkUserId, member.displayName])), ...activeLocalNames }), [members, activeLocalNames]);
   useEffect(() => { gameSessionRef.current = gameSession; }, [gameSession]);
-  const invitingSession = gameSession ? undefined : activeSessions.find((s) => (s.status === "lobby" || s.status === "active") && s.createdBy !== actorId && isGameId(s.game));
+  const invitingSession = gameSession ? undefined : activeSessions.find((s) => (s.status === "lobby" || s.status === "active") && s.createdBy !== actorId && isGameId(s.game) && !Object.keys(localPlayerNames(s.config)).length);
   const invitingGame = invitingSession ? gameCatalogue.find((g) => g.id === invitingSession.game) : undefined;
   const gameRooms = roomPickerGame ? activeSessions.filter((session) => session.game === roomPickerGame) : [];
   const gameRole = useGameRole(activeSession?.participants ?? [], actorId, activeSession?.status, preferredRole, activeSession?.createdBy);
 
-  const playerNames = useMemo(() => Object.fromEntries(members.map((member) => [member.clerkUserId, member.displayName])), [members]);
+  const [localNames, setLocalNames] = useState<string[]>([]);
+  const [localDraft, setLocalDraft] = useState("");
   const liveChat = useLiveStream<Record<string, unknown>>(`chat:${party.id}`);
   const liveParty = useLiveStream<Record<string, unknown>>(`party:${party.id}`);
 
@@ -304,7 +322,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       const sessions = data.sessions as (GameSession & { participants: string[] })[];
       setActiveSessions(sessions);
       if (!gameRecoveryRef.current) {
-        const resumable = sessions.find((session) => session.status === "active" && session.participants.includes(actorId));
+        const resumable = sessions.find((session) => session.status === "active" && (session.participants.includes(actorId) || (session.createdBy === actorId && Object.keys(localPlayerNames(session.config)).length > 0)));
         if (resumable && isGameId(resumable.game)) {
           gameRecoveryRef.current = true;
           setGameSession(resumable.id);
@@ -434,10 +452,11 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
       }).catch((err) => console.error("saveGameScore failed", err));
   }
 
-  async function startGameSession(sandbox = false) {
+  async function startGameSession(sandbox = false, localPlayers?: string[]) {
     if (!gameSession) return;
     setError("");
-    const response = await fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", sessionId: gameSession, sandbox }) });
+    if (localPlayers) { try { window.localStorage.setItem(`tusa:local-players:${party.id}`, JSON.stringify(localPlayers)); } catch {} }
+    const response = await fetch("/api/games", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", sessionId: gameSession, sandbox, ...(localPlayers ? { localPlayers } : {}) }) });
     const data = await response.json();
     if (!response.ok) { setError(data.error || (locale === "ru" ? "Не удалось запустить игру" : "Could not start the game")); return; }
     setActiveSessions((prev) => prev.map((session) => session.id === gameSession ? data.session : session));
@@ -491,6 +510,8 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
 
   function participantName(id: string) {
     if (isBotId(id)) return botDisplayName(id);
+    const localName = localPlayerNames(activeSession?.config)[id];
+    if (localName) return localName;
     return members.find((member) => member.clerkUserId === id)?.displayName || id.slice(-8);
   }
 
@@ -530,6 +551,18 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
               </span>
             ))}
           </div>
+          {isCreator && <div className="local-lobby">
+            <div className="local-lobby-head"><span className="material-symbols-rounded" aria-hidden="true">phone_iphone</span><div><strong>{t("localTitle")}</strong><p>{t("localLead")}</p></div></div>
+            <div className="local-lobby-names">{localNames.map((name) => <span key={name}>{name}<button aria-label={`${t("localRemove")} ${name}`} onClick={() => setLocalNames((current) => current.filter((item) => item !== name))} type="button"><span className="material-symbols-rounded" aria-hidden="true">close</span></button></span>)}</div>
+            <form className="local-lobby-add" onSubmit={(event) => { event.preventDefault(); addLocalName(); }}>
+              <input aria-label={t("localPlaceholder")} maxLength={24} onChange={(event) => setLocalDraft(event.target.value)} placeholder={t("localPlaceholder")} value={localDraft} />
+              <button className="demo-action demo-action--cream" disabled={!localDraft.trim() || localNames.length >= MAX_LOCAL_PLAYERS} type="submit">{t("localAdd")}</button>
+            </form>
+            <button className="demo-action demo-action--lime game-lobby-start" disabled={localNames.length < minPlayers} onClick={() => startGameSession(false, localNames)} type="button">
+              <span className="material-symbols-rounded" aria-hidden="true">phone_iphone</span>
+              {localNames.length < minPlayers ? t("localNeed").replace("{count}", String(minPlayers - localNames.length)) : t("localStart")}
+            </button>
+          </div>}
           {isCreator ? (
             <div className="game-lobby-actions">
               {hasEnoughPlayers ? (
@@ -608,7 +641,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
             <h2>{game ? t(game.titleKey) : ""}</h2>
           </div>
           <div className="active-game-role-toggle" role="group" aria-label={t("roleSwitch")}>
-            {isSessionHost && (
+            {isSessionHost && !isLocalSession && (
               <>
                 <button aria-pressed={componentRole === "controller"} className="role-toggle-btn" onClick={() => setPreferredRole("controller")} title={t("roleControllerHint")} type="button">
                   <span className="material-symbols-rounded" aria-hidden="true">videogame_asset</span>
@@ -635,12 +668,14 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
             <strong>{t("spectating")}</strong>
           </div>
         )}
-        <div className="spectator-board"><PublicStageProvider value={preferredRole === "stage" && gameRole === "stage"}><PlayerNamesProvider names={playerNames}>{board}</PlayerNamesProvider></PublicStageProvider></div>
-        <div className="party-live-reactions-dock" role="group" aria-label={t("liveReactions")}>
+        <div className="spectator-board">{isLocalSession && isSessionHost
+          ? <LocalPlayProvider key={activeSession?.id} secret={(Boolean((game?.capabilities as readonly string[] | undefined)?.includes("secret_state")) && game?.id !== "headsup") || game?.id === "wavelength"} seats={(activeSession?.participants ?? []).filter((id) => activeLocalNames[id]).map((id) => ({ id, name: activeLocalNames[id] }))}><PlayerNamesProvider names={playerNames}>{board}</PlayerNamesProvider></LocalPlayProvider>
+          : <PublicStageProvider value={preferredRole === "stage" && gameRole === "stage"}><PlayerNamesProvider names={playerNames}>{board}</PlayerNamesProvider></PublicStageProvider>}</div>
+        {!isLocalSession && <div className="party-live-reactions-dock" role="group" aria-label={t("liveReactions")}>
           {LIVE_REACTIONS.map((emoji) => (
             <button aria-label={t("reactionSend").replace("{emoji}", emoji)} key={emoji} onClick={() => sendLiveReaction(emoji)} type="button">{emoji}</button>
           ))}
-        </div>
+        </div>}
         {floatingReactions.map((item) => (
           <div aria-hidden="true" className="floating-party-reaction" key={item.id} style={{ left: `${item.x}%` }}>{item.emoji}</div>
         ))}
@@ -771,6 +806,7 @@ export default function PartyRoom({ party, actorId, actorKind, chatBackground = 
 
     {tab === "games" && (selectedGame ? renderGame() : <section className="party-room-panel">
       <div className="demo-panel-title"><div><span>{t("gamesCatalogue")}</span><h2>{t("gamesTitle")}</h2></div><span className="demo-chip">{gameCatalogue.length}{t("gamesSessions")}</span></div>
+      <p className="local-catalogue-hint"><span className="material-symbols-rounded" aria-hidden="true">phone_iphone</span>{t("localCatalogueHint")}</p>
 
       <div className="game-catalogue-grid">
         {gameCatalogue.map((game) => {

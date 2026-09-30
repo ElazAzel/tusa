@@ -137,6 +137,8 @@ Role selection (`useGameRole`): the session creator is the stage by default and 
 
 Sandbox runs: `start` with `sandbox: true` fills missing seats with `bot_N` participants (`lib/games/bot-names.ts`). After every accepted command the server runs `runBotAutopilot` (`lib/games/bots.ts`), which makes each bot play one schema-valid move per pass through the normal reducer. Sandbox runs grant no Koins, XP, quests or highlights. `tests/sandbox-bots.test.ts` proves every catalogue game keeps moving with one human host and bots.
 
+One-phone mode: in the lobby the creator can type the players' names and start with `localPlayers`. The server seats them as `seat_N` participants (names in `session.config.localPlayers`) and the creator's device acts for the seat that holds the phone (`actAs`); a command rejected with "Only the stage…" is retried as the creator (`lib/games/local-play.ts`). `GET /api/games?sessionId=X&as=seat_N` returns that seat's private view. `LocalPlayProvider` (`app/components/LocalPlay.tsx`) renders the "phone with" seat bar, follows the turn owner, passes the phone after a vote/answer and shows a pass-the-phone gate for `secret_state` games. One-phone runs grant no rewards. `tests/local-play.test.ts` plays every catalogue game to the end with local seats.
+
 Component signature:
 ```tsx
 export default function Game({ partyId, sessionId, onSave, role }:

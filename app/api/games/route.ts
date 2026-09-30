@@ -17,6 +17,8 @@ import { contentFamily } from "@/lib/games/content-deck";
 import { applyServerGameCommand, initialServerGameState, isServerGameState } from "@/lib/games/engine";
 import { sanitizeSdkState } from "@/lib/games/sdk";
 import { isBotId, runBotAutopilot, sandboxBotIds } from "@/lib/games/bots";
+import { isLocalSeatId, localPlayerNames, localSeatIds, MAX_LOCAL_PLAYERS } from "@/lib/games/bot-names";
+import { applyLocalSeatCommand } from "@/lib/games/local-play";
 import { recordPlatformError } from "@/lib/observability";
 import { recordOperationalEvent } from "@/lib/operations";
 
@@ -33,6 +35,8 @@ const gameRequestSchema = z.object({
   actionType: z.string().min(1).max(80).regex(/^[a-zA-Z0-9:_-]+$/).optional(),
   payload: z.unknown().optional(),
   sandbox: z.boolean().optional(),
+  localPlayers: z.array(z.string().trim().min(1).max(24)).min(1).max(MAX_LOCAL_PLAYERS).optional(),
+  actAs: z.string().regex(/^seat_\d{1,2}$/).optional(),
 }).strict();
 
 function contentDeckSeed(partyId: string, game: string) {
@@ -90,10 +94,15 @@ export async function POST(request: Request) {
       const gameDefinition = getGameById(current.game);
       if (!gameDefinition) return apiError("Game definition was not found.", 400);
 
-      if (!body.sandbox && current.participants.length < gameDefinition.minPlayers) {
+      const localNames = body.localPlayers?.map((name) => name.replace(/\s+/g, " ").trim()).filter(Boolean);
+      if (localNames) {
+        if (localNames.length < gameDefinition.minPlayers) return apiError(`At least ${gameDefinition.minPlayers} players are required.`, 400);
+        if (new Set(localNames.map((name) => name.toLocaleLowerCase())).size !== localNames.length) return apiError("Player names must be different.", 400);
+      } else if (!body.sandbox && current.participants.length < gameDefinition.minPlayers) {
         return apiError(`At least ${gameDefinition.minPlayers} players are required.`, 400);
       }
-      const participants = [...current.participants];
+      const localSeats = localNames ? localSeatIds(localNames.length) : [];
+      const participants = localNames ? localSeats : [...current.participants];
       if (body.sandbox && participants.length < gameDefinition.minPlayers) participants.push(...sandboxBotIds(gameDefinition.minPlayers - participants.length));
       const family = contentFamily(current.game);
       const deckStart = await getContentConsumed(current.partyId, family, current.id);
@@ -104,13 +113,14 @@ export async function POST(request: Request) {
         state: initialState ?? undefined,
         participants,
         expectedVersion: current.version,
+        ...(localNames ? { config: { ...current.config, localPlayers: Object.fromEntries(localSeats.map((id, index) => [id, localNames[index]])) } } : {}),
       });
       if (!session) return apiError("Session version changed. Refresh and retry.", 409);
       const responseSession = { ...session, participants, createdBy: current.createdBy };
       publish(`game:${body.sessionId}`, { type: "session:started", session: publicGameSession(responseSession) });
       publish(`party:${session.partyId}`, { type: "session:updated", session: publicGameSession(responseSession) });
       void recordOperationalEvent({ eventType: "game_start", durationMs: performance.now() - startedAt, dimensions: { game: current.game } }).catch(() => undefined);
-      return NextResponse.json({ session: sanitizeControllerSession(responseSession, userId) });
+      return NextResponse.json({ session: sanitizeControllerSession(responseSession, localSeats[0] ?? userId) });
     }
 
     if (body.action === "leave") {
@@ -149,7 +159,7 @@ export async function POST(request: Request) {
       const score = await addGameScore(body.sessionId, userId, verifiedScore, metadata);
       const scores = await getGameScores(body.sessionId);
       publish(`game:${body.sessionId}`, { type: "score:added", sessionId: body.sessionId, score, scores });
-      const sandboxRun = current.participants.some(isBotId);
+      const sandboxRun = current.participants.some((id) => isBotId(id) || isLocalSeatId(id));
       if (score.created) {
         void trackAnalytics(userId, "game_played", { sessionId: body.sessionId, game: current.game, score: score.score });
         if (!sandboxRun) {
@@ -174,14 +184,19 @@ export async function POST(request: Request) {
       const existingCommand = await getGameActionByMutationId(body.sessionId, userId, commandId);
       if (existingCommand) return NextResponse.json({ ok: true, commandId, action: existingCommand, duplicate: true });
 
+      const localSeat = body.actAs;
+      if (localSeat && !(current.createdBy === userId && current.participants.includes(localSeat) && localPlayerNames(current.config)[localSeat])) return apiError("This device cannot act for that player.", 403);
       if (isServerGameState(current.state)) {
         let snapshot = current;
         for (let attempt = 0; attempt < 3; attempt += 1) {
           const creatorId = String(snapshot.createdBy ?? "");
-          const reduced = applyServerGameCommand(snapshot.game, snapshot.state, actionType, command.payload, { actorId: userId, creatorId, participants: snapshot.participants, now: Date.now() });
+          const context = { creatorId, participants: snapshot.participants, now: Date.now() };
+          const local = localSeat ? applyLocalSeatCommand(snapshot.game, snapshot.state, actionType, command.payload, localSeat, context) : null;
+          const reduced = local ? local.result : applyServerGameCommand(snapshot.game, snapshot.state, actionType, command.payload, { ...context, actorId: userId });
+          const actedAs = local ? local.actedAs : "self";
           if (!reduced) break;
           if (reduced.error) return apiError(reduced.error, 409);
-          if (!reduced.changed) return NextResponse.json({ ok: true, commandId, duplicate: true, session: sanitizeControllerSession(snapshot, userId) });
+          if (!reduced.changed) return NextResponse.json({ ok: true, commandId, duplicate: true, session: sanitizeControllerSession(snapshot, localSeat ?? userId) });
           const nextState = runBotAutopilot({ game: snapshot.game, state: reduced.state, participants: snapshot.participants, creatorId }).state;
           const updated = await updateGameSession(body.sessionId, creatorId, { state: nextState, expectedVersion: snapshot.version });
           if (updated) {
@@ -190,7 +205,7 @@ export async function POST(request: Request) {
             publish(`game:${body.sessionId}`, { type: "state:updated", sessionId: body.sessionId, version: updated.version });
             void recordOperationalEvent({ eventType: "game_action", durationMs: performance.now() - startedAt, dimensions: { game: current.game, actionType } }).catch(() => undefined);
             if (actionType === "next") void recordOperationalEvent({ eventType: "round_complete", durationMs: performance.now() - startedAt, dimensions: { game: current.game } }).catch(() => undefined);
-            return NextResponse.json({ ok: true, commandId, action: gameAction, session: sanitizeControllerSession(responseSession, userId) });
+            return NextResponse.json({ ok: true, commandId, action: gameAction, actedAs, session: sanitizeControllerSession(responseSession, localSeat ?? userId) });
           }
           const latest = await getGameSessionById(body.sessionId);
           if (!latest) return apiError("Session not found.", 404);
@@ -245,8 +260,10 @@ export async function GET(request: NextRequest) {
         session.createdBy === userId ? getPendingGameActions(sessionId) : Promise.resolve([]),
       ]);
       const publicView = request.nextUrl.searchParams.get("view") === "public" && session.createdBy === userId;
-      const safeSession = sanitizeControllerSession(session, userId, publicView);
-      return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant, viewerId: publicView ? "" : userId, publicView });
+      const requestedSeat = request.nextUrl.searchParams.get("as") ?? "";
+      const viewer = !publicView && session.createdBy === userId && session.participants.includes(requestedSeat) && localPlayerNames(session.config)[requestedSeat] ? requestedSeat : userId;
+      const safeSession = sanitizeControllerSession(session, viewer, publicView);
+      return NextResponse.json({ scores, session: safeSession, actions, spectator: !isParticipant && viewer === userId && session.createdBy !== userId, viewerId: publicView ? "" : viewer, publicView });
     }
 
     if (partyId) {
@@ -280,7 +297,7 @@ const PUBLIC_VIEWER = "__public__";
 
 function sanitizeControllerState(game: string, rawState: Record<string, unknown>, userId: string, creatorId = "") {
   const publicView = userId === PUBLIC_VIEWER;
-  const sdkViewer = !publicView && userId === creatorId && STAGE_DEVICE_GAMES.has(game) ? "__stage__" : userId;
+  const sdkViewer = !publicView && (userId === creatorId || isLocalSeatId(userId)) && STAGE_DEVICE_GAMES.has(game) ? "__stage__" : userId;
   const state = sanitizeSdkState(game, structuredClone(rawState), sdkViewer);
   delete state.deckSeed;
   delete state.deckStart;
@@ -296,7 +313,7 @@ function sanitizeControllerState(game: string, rawState: Record<string, unknown>
     state.submissions = Object.fromEntries(Object.keys(submissions).map((id) => [id, id === userId ? submissions[id] : ""]));
     delete state.usedWords;
   }
-  if (game === "wavelength" && phase !== "reveal" && phase !== "finished") state.target = -1;
+  if (game === "wavelength" && phase !== "reveal" && phase !== "finished" && !(!publicView && (userId === creatorId || (isLocalSeatId(userId) && phase === "clue")))) state.target = -1;
   if (game === "quiplash" && phase === "answer") {
     const submissions = (state.submissions ?? {}) as Record<string, string>;
     state.submissions = Object.fromEntries(Object.keys(submissions).map((id) => [id, id === userId ? submissions[id] : ""]));
