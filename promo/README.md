@@ -50,7 +50,15 @@ REMOTION_BROWSER=/path/to/chrome-headless-shell npm run render
 - `src/series/games/impostor.tsx`: экраны игры, повторяют интерфейс режима «Импостор» в продукте.
 - `src/series/episodes/E01.tsx`: сценарий первой серии, обычный массив реплик.
 
-Новая серия: скопируй `E01.tsx`, перепиши массив реплик, при необходимости добавь локацию в `sets.tsx` и экраны игры в `src/series/games/`, зарегистрируй композицию в `src/Root.tsx`. Правила игры сверяй с `lib/games/definitions/*.ts`, чтобы серия не обещала то, чего в продукте нет.
+Новые серии делаются через скилл `tusa-series` (`.claude/skills/tusa-series/SKILL.md`): он ведёт по шагам от канона до рендера. Коротко:
+
+- `src/series/CANON.md`: канон сериала. Герои, постоянная структура серии, лог вышедших серий, ротация объясняющих, покрытие игр. Читается перед серией, дописывается после.
+- `src/series/Episode.tsx`: `makeEpisode` собирает постоянный каркас (титр, анонс, музыку), `chatBeat`, `introCard`, `timedRules` дают повторяющиеся приёмы.
+- `src/series/episodes/index.ts`: реестр серий, композиции `TusaS01E0N` появляются сами.
+- `npm run check:episode -- src/series/episodes/E0N.tsx`: проверка серии на отклонения от канона и стиля.
+- `npm run qa -- TusaS01E0N --every 120`: контрольные кадры и контактные листы в `out/qa/`.
+
+Правила игры сверяй с `lib/games/definitions/*.ts`, чтобы серия не обещала то, чего в продукте нет.
 
 Звук генерируется скриптом `scripts/gen-audio.mjs`: «тарабарские» голоса героев, шум кафе, эффекты и музыкальная петля. Файлы кладутся в `public/sfx/` и в git не попадают. `npm run studio` и `npm run render:e01` запускают генерацию сами.
 

@@ -1,15 +1,15 @@
 import React from "react";
-import { AbsoluteFill, Html5Audio as Audio, Sequence, Series, spring, staticFile } from "remotion";
-import { type Beat, DialogueScene, beatDuration, scriptDuration } from "../engine";
+import { AbsoluteFill, spring } from "remotion";
+import type { Beat } from "../engine";
+import { chatBeat, introCard as intro, makeEpisode, timedRules, type ChatLine } from "../Episode";
 import { CAFE, ROOM } from "../sets";
-import { ChatBubble, IntroCard, MiniPhone, NextEpisode, Stopwatch, TitleCard, plural } from "../screens";
+import { MiniPhone, plural } from "../screens";
 import { ClueBalance, ClueInput, PhonesRow, ResultScreen, RoundsCard, ScoreRules, VoteScreen, WordReveal } from "../games/impostor";
-import type { CastId } from "../cast";
 
 const INK = "#121218";
 const sp = (f: number) => spring({ frame: f, fps: 30, config: { damping: 12, stiffness: 190 } });
 
-const flood: { who: CastId; text: string; x: number; y: number; r: number }[] = [
+const flood: ChatLine[] = [
   { who: "dana", text: "кто идёт в пятницу?", x: 60, y: 160, r: -3 },
   { who: "erlan", text: "а где?", x: 520, y: 300, r: 4 },
   { who: "aliya", text: "я подумаю", x: 90, y: 420, r: 2 },
@@ -19,7 +19,7 @@ const flood: { who: CastId; text: string; x: number; y: number; r: number }[] = 
   { who: "aliya", text: "в каком чате ссылка??", x: 110, y: 1000, r: 5 },
 ];
 
-const replies: { who: CastId; text: string; x: number; y: number; r: number }[] = [
+const replies: ChatLine[] = [
   { who: "dana", text: "иду", x: 70, y: 180, r: -2 },
   { who: "erlan", text: "иду. беру угли", x: 380, y: 320, r: 3 },
   { who: "aliya", text: "уже еду!", x: 90, y: 460, r: -3 },
@@ -52,46 +52,30 @@ const CreateTusa: React.FC<{ f: number }> = ({ f }) => {
 };
 
 const coldOpen: Beat[] = [
-  {
+  chatBeat(flood, {
     dur: 84,
     shot: { kind: "close", on: "amir", zoom: 1.25 },
     emo: { amir: "panic" },
     pose: { amir: "phone" },
-    sfx: [{ name: "buzz", vol: 0.5 }, ...flood.map((_, i) => ({ name: "msg", at: 6 + i * 8, vol: 0.5 }))],
-    overlay: (f) => (
-      <>
-        {flood.map((m, i) => (
-          <ChatBubble key={i} {...m} age={f - 6 - i * 8} />
-        ))}
-      </>
-    ),
-  },
+    sfx: [{ name: "buzz", vol: 0.5 }],
+  }),
   { who: "amir", text: "Всё. Хватит.", shot: { kind: "close", on: "amir", zoom: 1.7 }, emo: { amir: "angry" }, pose: { amir: "idle" }, shake: 12 },
   { who: "amir", text: "Создаю тусу.", shot: { kind: "close", on: "amir", zoom: 1.4 }, emo: { amir: "smug" }, pose: { amir: "phone" } },
   { dur: 78, screen: (f) => <CreateTusa f={f} />, sfx: [{ name: "whoosh", vol: 0.5 }, { name: "ding", at: 40, vol: 0.5 }] },
-  {
-    who: "amir",
-    text: "Вот так-то.",
-    dur: 80,
-    shot: { kind: "close", on: "amir", zoom: 1.25 },
-    emo: { amir: "happy" },
-    pose: { amir: "hips" },
-    sfx: replies.map((_, i) => ({ name: "msg", at: 4 + i * 7, vol: 0.5 })),
-    overlay: (f) => (
-      <>
-        {replies.map((m, i) => (
-          <ChatBubble key={i} {...m} age={f - 4 - i * 7} />
-        ))}
-      </>
-    ),
-  },
+  chatBeat(
+    replies,
+    {
+      who: "amir",
+      text: "Вот так-то.",
+      dur: 80,
+      shot: { kind: "close", on: "amir", zoom: 1.25 },
+      emo: { amir: "happy" },
+      pose: { amir: "hips" },
+    },
+    7,
+    4,
+  ),
 ];
-
-const intro = (who: CastId, index: number, emotion: "happy" | "smug" | "dreamy" | "panic", pose: "wave" | "hips" | "hold" | "glasses" | "cheer" | "shrug"): Beat => ({
-  dur: 66,
-  screen: (f) => <IntroCard who={who} f={f} index={index} emotion={emotion} pose={pose} />,
-  sfx: [{ name: "whoosh", vol: 0.45 }, { name: "tick", at: 6, vol: 0.6 }],
-});
 
 const arrival: Beat[] = [
   { dur: 66, shot: { kind: "wide" }, caption: "Кафе на Абая. Пятница, 21:00", pose: { amir: "phone" } },
@@ -147,13 +131,7 @@ const rulesRaw: Beat[] = [
   { who: "timur", text: "Пять раундов. Всё.", screen: (f) => <RoundsCard f={f} />, sfx: [{ name: "boing", vol: 0.4 }] },
 ];
 
-let clock = 0;
-const rules: Beat[] = rulesRaw.map((b) => {
-  const base = clock;
-  clock += beatDuration(b);
-  return { ...b, overlay: (f) => <Stopwatch frame={base + f} label="секундомер Даны" /> };
-});
-const rulesSeconds = Math.floor(clock / 30);
+const { beats: rules, seconds: rulesSeconds } = timedRules(rulesRaw, "dana");
 
 const round: Beat[] = [
   { who: "dana", text: `${rulesSeconds} ${plural(rulesSeconds, ["секунда", "секунды", "секунд"])}.`, emo: { dana: "smug" }, pose: { dana: "phone" }, sfx: [{ name: "ding", vol: 0.5 }] },
@@ -238,36 +216,15 @@ const finale: Beat[] = [
 ];
 
 const cafeBeats = [...arrival, ...rules, ...round, ...clues, ...finale];
-const cafeInitial = { present: ["amir"] as CastId[], pose: { amir: "phone" as const } };
-const roomInitial = { present: ["amir"] as CastId[] };
 
-const COLD = scriptDuration(coldOpen);
-const TITLE = 90;
-const CAFE_LEN = scriptDuration(cafeBeats);
-const OUTRO = 170;
-
-export const E01_DURATION = COLD + TITLE + CAFE_LEN + OUTRO;
-
-export const Episode01: React.FC = () => (
-  <AbsoluteFill style={{ background: INK }}>
-    <Series>
-      <Series.Sequence durationInFrames={COLD}>
-        <DialogueScene spec={ROOM} beats={coldOpen} initial={roomInitial} />
-      </Series.Sequence>
-      <Series.Sequence durationInFrames={TITLE}>
-        <TitleCard season={1} episode={1} title="Кто здесь лишний?" />
-        <Audio src={staticFile("sfx/sting.wav")} volume={0.6} />
-      </Series.Sequence>
-      <Series.Sequence durationInFrames={CAFE_LEN}>
-        <DialogueScene spec={CAFE} beats={cafeBeats} initial={cafeInitial} />
-      </Series.Sequence>
-      <Series.Sequence durationInFrames={OUTRO}>
-        <NextEpisode who="dana" game="Alias" cta="Играйте в Импостора со своими" />
-        <Sequence from={90} layout="none">
-          <Audio src={staticFile("sfx/tada.wav")} volume={0.5} />
-        </Sequence>
-      </Series.Sequence>
-    </Series>
-    <Audio src={staticFile("sfx/music.wav")} loop volume={0.1} />
-  </AbsoluteFill>
-);
+export const E01 = makeEpisode({
+  season: 1,
+  episode: 1,
+  title: "Кто здесь лишний?",
+  explainer: "timur",
+  games: ["impostor"],
+  cold: { spec: ROOM, beats: coldOpen, initial: { present: ["amir"] } },
+  scenes: [{ spec: CAFE, beats: cafeBeats, initial: { present: ["amir"], pose: { amir: "phone" } } }],
+  next: { who: "dana", game: "Alias" },
+  cta: "Играйте в Импостора со своими",
+});

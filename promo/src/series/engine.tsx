@@ -64,7 +64,7 @@ type CharState = { emo: Emotion; pose: Pose; prop: Prop; look: CastId | "cam" | 
 
 type Snapshot = { start: number; dur: number; chars: Record<CastId, CharState>; chips: Partial<Record<CastId, { text: string; at: number }>>; flags: Record<string, number> };
 
-function buildTimeline(beats: Beat[], initial: { present: CastId[]; emo?: Partial<Record<CastId, Emotion>>; pose?: Partial<Record<CastId, Pose>>; props?: Partial<Record<CastId, Prop>> }) {
+function buildTimeline(beats: Beat[], initial: SceneInitial) {
   const ids = Object.keys(CAST) as CastId[];
   let chars = Object.fromEntries(
     ids.map((id) => [id, { emo: initial.emo?.[id] ?? "neutral", pose: initial.pose?.[id] ?? "idle", prop: initial.props?.[id] ?? null, look: null, present: initial.present.includes(id), arrivedAt: -999 }]),
@@ -144,7 +144,9 @@ const Chip: React.FC<{ text: string; age: number; who: CastId }> = ({ text, age,
   );
 };
 
-export const DialogueScene: React.FC<{ spec: SceneSpec; beats: Beat[]; initial: { present: CastId[]; emo?: Partial<Record<CastId, Emotion>>; pose?: Partial<Record<CastId, Pose>>; props?: Partial<Record<CastId, Prop>> } }> = ({ spec, beats, initial }) => {
+export type SceneInitial = { present: CastId[]; emo?: Partial<Record<CastId, Emotion>>; pose?: Partial<Record<CastId, Pose>>; props?: Partial<Record<CastId, Prop>> };
+
+export const DialogueScene: React.FC<{ spec: SceneSpec; beats: Beat[]; initial: SceneInitial }> = ({ spec, beats, initial }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const timeline = useMemo(() => buildTimeline(beats, initial), [beats, initial]);

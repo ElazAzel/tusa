@@ -44,6 +44,7 @@ export const color = {
   warn: "#ffc247",
   info: "#57c2ff",
   fg: "#f2f3f8",
+  fg2: "#d7dae6",
   muted: "#b3b7c9",
   gray: "#8b90a2",
 };

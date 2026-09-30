@@ -3,6 +3,7 @@ export type CastId = "amir" | "dana" | "erlan" | "aliya" | "timur";
 export type CastMember = {
   id: CastId;
   name: string;
+  nameGen: string;
   tagline: string;
   skin: string;
   cloth: string;
@@ -18,6 +19,7 @@ export const CAST: Record<CastId, CastMember> = {
   amir: {
     id: "amir",
     name: "Амир",
+    nameGen: "Амира",
     tagline: "Создаёт тусу быстрее, чем все ответят «я подумаю»",
     skin: "#e2a877",
     cloth: "#c9ff05",
@@ -31,6 +33,7 @@ export const CAST: Record<CastId, CastMember> = {
   dana: {
     id: "dana",
     name: "Дана",
+    nameGen: "Даны",
     tagline: "Играет только на победу. Даже в «камень, ножницы, бумага»",
     skin: "#f1c59b",
     cloth: "#ff007f",
@@ -44,6 +47,7 @@ export const CAST: Record<CastId, CastMember> = {
   erlan: {
     id: "erlan",
     name: "Ерлан",
+    nameGen: "Ерлана",
     tagline: "Отвечает за угли. Всегда. Даже когда шашлыка нет",
     skin: "#c98b5d",
     cloth: "#ffc247",
@@ -57,6 +61,7 @@ export const CAST: Record<CastId, CastMember> = {
   aliya: {
     id: "aliya",
     name: "Алия",
+    nameGen: "Алии",
     tagline: "Рисует лучше всех. Врёт хуже всех",
     skin: "#f4d0ae",
     cloth: "#f6f6ee",
@@ -70,6 +75,7 @@ export const CAST: Record<CastId, CastMember> = {
   timur: {
     id: "timur",
     name: "Тимур",
+    nameGen: "Тимура",
     tagline: "Единственный, кто читает правила до конца",
     skin: "#dfb189",
     cloth: "#57c2ff",

@@ -242,6 +242,7 @@ npm run test:e2e     # Playwright E2E (requires install)
 | `rag-index` | Rebuild RAG index | `.opencode/skills/rag-index.md` |
 | `humanize-text` | Write/edit any Russian text per humanizer-ru standard (HARD BANS, fact-lock) | `.opencode/skills/humanize-text/SKILL.md` |
 | `security-review` | OWASP Top 10:2025 checklist mapped to this codebase | `.opencode/skills/security-review/SKILL.md` |
+| `tusa-series` | Episodes of the TUSA cartoon (Remotion): canon, visual bible, template, consistency check | `.claude/skills/tusa-series/SKILL.md` |
 
 Load a skill with `opencode use-skill <name>` (or equivalent in your AI tool). External reference libraries registered in `opencode.json`: `humanizer-ru`, `open-design`, `owasp-top10`.
 

@@ -11,6 +11,8 @@
     "render:features": "remotion render src/index.ts TusaFeatures out/tusa-features.mp4",
     "render:e01": "npm run audio && remotion render src/index.ts TusaS01E01 out/tusa-s01e01.mp4",
     "render:cast": "remotion still src/index.ts TusaCastSheet out/tusa-cast.png --frame=20",
+    "qa": "node scripts/qa-stills.mjs",
+    "check:episode": "node ../.claude/skills/tusa-series/scripts/check_episode.mjs",
     "render": "npm run render:sales && npm run render:features && npm run render:e01",
     "stills": "remotion still src/index.ts TusaSales out/sales-cover.png --frame=285 && remotion still src/index.ts TusaFeatures out/features-cover.png --frame=780",
     "typecheck": "tsc --noEmit"
