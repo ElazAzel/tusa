@@ -38,7 +38,7 @@
     "ably": "^2.24.0",
     "drizzle-orm": "^0.45.2",
     "material-symbols": "^0.45.7",
-    "next": "^16.3.2",
+    "next": "^16.3.8",
     "qrcode": "^1.5.4",
     "react": "19.2.6",
     "react-dom": "19.2.6",
