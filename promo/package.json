@@ -4,10 +4,14 @@
   "private": true,
   "description": "TUSA.game promo videos built with Remotion",
   "scripts": {
+    "audio": "node scripts/gen-audio.mjs",
+    "prestudio": "npm run audio",
     "studio": "remotion studio src/index.ts",
     "render:sales": "remotion render src/index.ts TusaSales out/tusa-sales.mp4",
     "render:features": "remotion render src/index.ts TusaFeatures out/tusa-features.mp4",
-    "render": "npm run render:sales && npm run render:features",
+    "render:e01": "npm run audio && remotion render src/index.ts TusaS01E01 out/tusa-s01e01.mp4",
+    "render:cast": "remotion still src/index.ts TusaCastSheet out/tusa-cast.png --frame=20",
+    "render": "npm run render:sales && npm run render:features && npm run render:e01",
     "stills": "remotion still src/index.ts TusaSales out/sales-cover.png --frame=285 && remotion still src/index.ts TusaFeatures out/features-cover.png --frame=780",
     "typecheck": "tsc --noEmit"
   },
