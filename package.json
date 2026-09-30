@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "node scripts/migrate-on-deploy.mjs && next build",
     "start": "next start",
     "test": "tsx --test tests/*.test.mjs tests/*.test.ts",
     "test:e2e": "playwright test",
