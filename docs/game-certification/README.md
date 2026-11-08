@@ -19,3 +19,9 @@ npm run test:certification
 `CERTIFICATION_BASE_URL` is also the Playwright `baseURL`; no local server is started for this command. The harness creates enough isolated Controller contexts to meet each mode's manifest minimum, with at least two controllers and one mobile controller in every run.
 
 Each run uses a Host browser context and two isolated Controller contexts, performs real guest joins and game commands, reconnects, rematch, leave/spectator checks, RU/EN coverage, a mobile viewport, privacy checks and moderation for UGC modes. Evidence contains no cookies, tokens, user names, email addresses, party content or secret game state.
+
+## Current evidence
+
+The 08.11.2026 evidence for all core eight games was captured on an isolated production build (`next start` behind HTTPS, Postgres 16 behind the Neon HTTP protocol, a fresh Host account and party). Realtime ran on the SSE fallback. Before a paid venue night, re-run the same command against a Vercel preview with Ably and a preview database.
+
+The source hash ignores only the manifest `releaseStatus` value, so promoting a game keeps its evidence valid while any other change to the hashed files makes it stale.

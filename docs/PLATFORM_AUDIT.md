@@ -3,7 +3,7 @@
 **Актуализировано:** 19.07.2026<br>
 **Original audit baseline:** `main@0356f6d`<br>
 **Current reconciliation:** `main@edee56e` on 22.07.2026<br>
-**Status:** public beta; 32 Beta modes; certified = 0
+**Status:** public beta; core eight certified, 24 Beta modes
 
 > **Reconciled 16.08.2026:** this dated audit is retained for its certification criteria. Its findings about request-time business DDL, non-atomic KOINS bets, absent moderation/reporting and incomplete controlled media are resolved in the current beta baseline. The current code requires schema v13; the last external database verification was v12. All 32 games still remain Beta; no mode may be called certified until current browser evidence is recorded.
 
@@ -15,7 +15,7 @@
 |---|---|---|
 | Catalogue | 32 canonical manifest modes | Не использовать количество как readiness metric |
 | Game SDK | 32 registered definitions, strict schemas, server snapshots | Per-mode browser certification отсутствует |
-| Release status | Все 32 Beta | Certified = 0 |
+| Release status | 8 certified, 24 Beta | Certified = 8 (core eight) |
 | Join | Guest-first HMAC session and local email/password lifecycle | Production email/MFA setup remains |
 | Realtime | Authenticated SSE, Ably integration, reconnect | Production credentials, strict mode и load не подтверждены |
 | Rate limiting | Upstash integration + local fallback | Strict production preflight не подтверждён |

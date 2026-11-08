@@ -30,7 +30,7 @@ The platform has a broad public-beta surface and a complete 32-mode SDK registry
 | Priority | Finding | Required evidence to close |
 |---|---|---|
 | P0 | Current production database is one migration behind the code gate | Apply migration 0013, then rerun `/api/health` and rollback rehearsal |
-| P0 | 32 Beta modes, certified = 0 | Manifest-pinned core eight and per-mode certification evidence |
+| Closed 08.11.2026 | Core eight certified with source-bound evidence; 24 modes Beta | Re-run certification on a Vercel preview with Ably before paid venue use |
 | P0 | Production distributed runtime unverified | Ably/Upstash strict mode, load results, dashboards, alerts and fallback drill |
 | P0 | Production auth delivery and root-admin MFA are not owner-configured | Resend delivery checks and MFA enrollment/recovery evidence |
 | P0 | Legal, DNS and naming/IP evidence is external | Canonical DNS smoke and approved privacy/naming review |

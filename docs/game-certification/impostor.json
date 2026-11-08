@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "gameId": "impostor",
+  "createdAt": "2026-11-08T04:16:58.774Z",
+  "commitSha": "391b8f46a688cc9ec9252123aab94fc9d770a30b",
+  "sourceHash": "f88b196053265b7d85d0dfaf2bfdc565fc0d08e7084dd4db2db1171fe7dae410",
+  "browser": "chromium",
+  "contexts": 4,
+  "viewports": [
+    "desktop",
+    "390x844"
+  ],
+  "scenarios": {
+    "create_join_start": {
+      "passed": true
+    },
+    "full_round": {
+      "passed": true
+    },
+    "reconnect": {
+      "passed": true
+    },
+    "rematch": {
+      "passed": true
+    },
+    "privacy": {
+      "passed": true
+    },
+    "moderation": {
+      "passed": true
+    },
+    "spectator_leave": {
+      "passed": true
+    },
+    "ru": {
+      "passed": true
+    },
+    "en": {
+      "passed": true
+    },
+    "mobile": {
+      "passed": true
+    }
+  },
+  "screenshots": [
+    "screenshots/impostor-ru.png",
+    "screenshots/impostor-en.png"
+  ]
+}

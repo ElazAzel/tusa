@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "gameId": "alias",
+  "createdAt": "2026-11-08T04:17:01.907Z",
+  "commitSha": "391b8f46a688cc9ec9252123aab94fc9d770a30b",
+  "sourceHash": "ba8fd870c67ab8829fcb583e6f792b22d650fdd9b1d45642564e424f18f1a018",
+  "browser": "chromium",
+  "contexts": 4,
+  "viewports": [
+    "desktop",
+    "390x844"
+  ],
+  "scenarios": {
+    "create_join_start": {
+      "passed": true
+    },
+    "full_round": {
+      "passed": true
+    },
+    "reconnect": {
+      "passed": true
+    },
+    "rematch": {
+      "passed": true
+    },
+    "privacy": {
+      "passed": true
+    },
+    "moderation": {
+      "passed": true
+    },
+    "spectator_leave": {
+      "passed": true
+    },
+    "ru": {
+      "passed": true
+    },
+    "en": {
+      "passed": true
+    },
+    "mobile": {
+      "passed": true
+    }
+  },
+  "screenshots": [
+    "screenshots/alias-ru.png",
+    "screenshots/alias-en.png"
+  ]
+}

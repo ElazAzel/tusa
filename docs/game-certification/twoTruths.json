@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "gameId": "twoTruths",
+  "createdAt": "2026-11-08T04:18:10.961Z",
+  "commitSha": "391b8f46a688cc9ec9252123aab94fc9d770a30b",
+  "sourceHash": "280de572a8a13ed9a57a00daf8d622f3aeca40e95b4dbdef5126e21ddfc6c295",
+  "browser": "chromium",
+  "contexts": 3,
+  "viewports": [
+    "desktop",
+    "390x844"
+  ],
+  "scenarios": {
+    "create_join_start": {
+      "passed": true
+    },
+    "full_round": {
+      "passed": true
+    },
+    "reconnect": {
+      "passed": true
+    },
+    "rematch": {
+      "passed": true
+    },
+    "privacy": {
+      "passed": true
+    },
+    "moderation": {
+      "passed": true
+    },
+    "spectator_leave": {
+      "passed": true
+    },
+    "ru": {
+      "passed": true
+    },
+    "en": {
+      "passed": true
+    },
+    "mobile": {
+      "passed": true
+    }
+  },
+  "screenshots": [
+    "screenshots/twoTruths-ru.png",
+    "screenshots/twoTruths-en.png"
+  ]
+}

@@ -10,7 +10,7 @@
 ## Подтверждено кодом и production health
 
 - 32 canonical режима в manifest и 32 server-owned Game SDK definitions.
-- Все режимы имеют `releaseStatus: "beta"`; `certified = 0`. Contract-tested режим не равен browser-certified игре.
+- Core eight (impostor, alias, trivia, bombParty, quiplash, fibbage, wouldRather, twoTruths) имеют `releaseStatus: "certified"` с evidence в `docs/game-certification/`; остальные 24 режима остаются `beta`. Contract-tested режим не равен browser-certified игре.
 - Guest-first вход через подписанные HMAC guest sessions и локальные email/password аккаунты с verification, reset и revoke-all-sessions.
 - Party Room, RSVP, chat, gallery, shopping, profile, KOINS, moderation, controlled Blob media и admin RBAC.
 - Server-authoritative snapshots, strict Zod game commands, optimistic version locking и idempotency.

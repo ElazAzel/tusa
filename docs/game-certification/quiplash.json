@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "gameId": "quiplash",
+  "createdAt": "2026-11-08T04:17:11.442Z",
+  "commitSha": "391b8f46a688cc9ec9252123aab94fc9d770a30b",
+  "sourceHash": "66de8bf3872ab5fde84366eb20a11af405d0afe298077b812e68785db6858709",
+  "browser": "chromium",
+  "contexts": 3,
+  "viewports": [
+    "desktop",
+    "390x844"
+  ],
+  "scenarios": {
+    "create_join_start": {
+      "passed": true
+    },
+    "full_round": {
+      "passed": true
+    },
+    "reconnect": {
+      "passed": true
+    },
+    "rematch": {
+      "passed": true
+    },
+    "privacy": {
+      "passed": true
+    },
+    "moderation": {
+      "passed": true
+    },
+    "spectator_leave": {
+      "passed": true
+    },
+    "ru": {
+      "passed": true
+    },
+    "en": {
+      "passed": true
+    },
+    "mobile": {
+      "passed": true
+    }
+  },
+  "screenshots": [
+    "screenshots/quiplash-ru.png",
+    "screenshots/quiplash-en.png"
+  ]
+}

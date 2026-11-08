@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "gameId": "wouldRather",
+  "createdAt": "2026-11-08T04:18:07.995Z",
+  "commitSha": "391b8f46a688cc9ec9252123aab94fc9d770a30b",
+  "sourceHash": "f0c4933bf3da92b1e294e8f970d6aef2421117c63fa34e333bc94206af7e8263",
+  "browser": "chromium",
+  "contexts": 3,
+  "viewports": [
+    "desktop",
+    "390x844"
+  ],
+  "scenarios": {
+    "create_join_start": {
+      "passed": true
+    },
+    "full_round": {
+      "passed": true
+    },
+    "reconnect": {
+      "passed": true
+    },
+    "rematch": {
+      "passed": true
+    },
+    "privacy": {
+      "passed": true
+    },
+    "moderation": {
+      "passed": true
+    },
+    "spectator_leave": {
+      "passed": true
+    },
+    "ru": {
+      "passed": true
+    },
+    "en": {
+      "passed": true
+    },
+    "mobile": {
+      "passed": true
+    }
+  },
+  "screenshots": [
+    "screenshots/wouldRather-ru.png",
+    "screenshots/wouldRather-en.png"
+  ]
+}

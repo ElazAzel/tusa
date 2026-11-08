@@ -1,6 +1,6 @@
 # TUSA.game — AI Context & Orchestration Hub
 
-> Updated 24.09.2026 · Supported pilot 8.8/10 · Next.js 16 · React 19 · TypeScript · verified local accounts + HMAC guests · Neon Postgres · first-party observability · SSE/Ably/Neon fallback · 50+ route handlers · 32 Beta modes · certified = 0
+> Updated 08.11.2026 · Supported pilot 8.8/10 · Next.js 16 · React 19 · TypeScript · verified local accounts + HMAC guests · Neon Postgres · first-party observability · SSE/Ably/Neon fallback · 50+ route handlers · 8 certified + 24 Beta modes
 
 > Current source of truth: `docs/IMPLEMENTATION_STATUS_2026-07-19.md`. Documentation precedence and shipped/gap/target/pre-implementation semantics: `docs/DOCUMENTATION_GOVERNANCE_2026-07-19.md`.
 
