@@ -24,6 +24,9 @@ const sources: Record<(typeof certificationGameIds)[number], [string, string]> =
 export function computeCertificationSourceHash(gameId: (typeof certificationGameIds)[number], cwd = process.cwd()) {
   const files = ["lib/games/manifest.ts", "lib/games/commands.ts", "lib/games/sdk.ts", "app/api/games/route.ts", ...sources[gameId]];
   const hash = createHash("sha256");
-  for (const file of files) hash.update(file).update("\0").update(readFileSync(resolve(cwd, file)));
+  for (const file of files) {
+    const source = readFileSync(resolve(cwd, file), "utf8");
+    hash.update(file).update("\0").update(file === "lib/games/manifest.ts" ? source.replace(/releaseStatus: "(beta|certified)"/g, "releaseStatus") : source);
+  }
   return hash.digest("hex");
 }

@@ -3,7 +3,10 @@ import test from "node:test";
 import { applyServerGameCommand, initialServerGameState } from "../lib/games/engine";
 import { GAME_MANIFEST } from "../lib/games/manifest";
 import { getDefinition, hasDefinition, sanitizeSdkState } from "../lib/games/sdk";
-import { certificationGameIds, certificationParticipantCount } from "../lib/games/certification-node";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { certificationGameIds, certificationParticipantCount, computeCertificationSourceHash } from "../lib/games/certification-node";
 
 const players = ["host", "guest"];
 const context = (actorId: string, now: number) => ({ actorId, creatorId: "host", participants: players, now });
@@ -294,6 +297,25 @@ test("core certification uses at least each mode's manifest minimum", () => {
     assert.ok(game, `${gameId} must exist in the manifest`);
     assert.ok(certificationParticipantCount(gameId) >= game.minPlayers, `${gameId} certification player count must meet the manifest minimum`);
     assert.ok(certificationParticipantCount(gameId) >= 3, `${gameId} certification must include Host and two Controllers`);
+  }
+});
+
+test("certification evidence survives a release status change but not a source change", () => {
+  const root = mkdtempSync(join(tmpdir(), "tusa-cert-"));
+  try {
+    for (const dir of ["lib", "app"]) cpSync(dir, join(root, dir), { recursive: true });
+    const before = computeCertificationSourceHash("trivia", root);
+    const manifest = join(root, "lib/games/manifest.ts");
+    const original = readFileSync(manifest, "utf8");
+    const promoted = original.replace(/(id: "trivia".*?)releaseStatus: "(beta|certified)"/, (_, prefix: string, status: string) => `${prefix}releaseStatus: "${status === "beta" ? "certified" : "beta"}"`);
+    assert.notEqual(promoted, original);
+    writeFileSync(manifest, promoted);
+    assert.equal(computeCertificationSourceHash("trivia", root), before);
+    const definition = join(root, "lib/games/definitions/trivia.ts");
+    writeFileSync(definition, `${readFileSync(definition, "utf8")}\n`);
+    assert.notEqual(computeCertificationSourceHash("trivia", root), before);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
 
